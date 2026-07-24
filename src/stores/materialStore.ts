@@ -20,12 +20,12 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
     set({ materials: newMaterials })
   },
   updateMaterial: (id, updates) => {
-    const newMaterials = get().materials.map(m => m.id === id ? { ...m, ...updates, updatedAt: Date.now() } : m)
+    const newMaterials = get().materials.map((m: Material) => (m as any).id === id ? { ...m, ...updates, updatedAt: Date.now() } : m)
     storage.set('list', newMaterials)
     set({ materials: newMaterials })
   },
   deleteMaterial: (id) => {
-    const newMaterials = get().materials.filter(m => m.id !== id)
+    const newMaterials = get().materials.filter((m: Material) => (m as any).id !== id)
     storage.set('list', newMaterials)
     set({ materials: newMaterials })
   },
