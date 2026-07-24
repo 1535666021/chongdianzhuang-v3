@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { RoutePath } from './route'
 import App from '@/App'
@@ -6,8 +7,13 @@ import OrderDetail from '@/features/order/pages/OrderDetail'
 import OrderForm from '@/features/order/pages/OrderForm'
 import BatchParser from '@/features/batchParser/pages/BatchParser'
 
-// 懒加载页面（后续实现）
-const SettingsPage = () => <div>设置占位</div>
+const MaterialList = lazy(() => import('@/features/material/pages/MaterialList'))
+const StatsPage = () => <div className="p-4 text-center text-gray-400">统计占位</div>
+const SettingsPage = () => <div className="p-4 text-center text-gray-400">设置占位</div>
+
+function LoadingFallback() {
+  return <div className="p-4 text-center text-gray-400">加载中...</div>
+}
 
 export default function AppRoutes() {
   return (
@@ -19,8 +25,15 @@ export default function AppRoutes() {
           <Route path="order/new" element={<OrderForm />} />
           <Route path="order/edit/:id" element={<OrderForm />} />
           <Route path="batch-parser" element={<BatchParser />} />
-          <Route path={RoutePath.SCHEDULED} element={<OrderList fixedStatus="已预约" />} />
-          <Route path={RoutePath.COMPLETED} element={<OrderList fixedStatus="已完成" />} />
+          <Route
+            path={RoutePath.MATERIALS}
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <MaterialList />
+              </Suspense>
+            }
+          />
+          <Route path={RoutePath.STATS} element={<StatsPage />} />
           <Route path={RoutePath.SETTINGS} element={<SettingsPage />} />
         </Route>
       </Routes>
