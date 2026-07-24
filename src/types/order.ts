@@ -1,4 +1,4 @@
-import type { ID, Timestamp, Platform, OrderStatus, Region } from './common'
+import type { BaseEntity, Platform, OrderStatus, Region } from './common'
 
 export interface Order extends BaseEntity {
   customerName: string
