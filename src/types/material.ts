@@ -1,4 +1,4 @@
-import type { ID } from './common'
+import type { BaseEntity } from './common'
 
 export type MaterialCategory = '线缆' | '管材' | '辅材' | '工具' | '其他'
 
@@ -13,7 +13,7 @@ export interface Material extends BaseEntity {
 }
 
 export interface MaterialUsage {
-  materialId: ID
+  materialId: string
   quantity: number
   unitPrice: number
 }
