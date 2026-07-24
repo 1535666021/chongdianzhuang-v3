@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import type { Order, Platform } from '@/types'
+import type { Order, Platform, OrderStatus } from '@/types'
 
 export interface FormData {
   customerName: string
   phone: string
   address: string
   platform: Platform
-  status: '待办' | '已预约' | '已完成'
+  status: OrderStatus
   appointmentDate: string
   appointmentTime: string
   materialCost: number
@@ -74,11 +74,12 @@ export function useOrderForm(orderId?: string) {
   ) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value }
+      // 自动计算实际利润
       if (field === 'materialCost' || field === 'laborCost' || field === 'platformFee') {
-        const revenue = (field === 'materialCost' ? value : next.materialCost) +
-                        (field === 'laborCost' ? value : next.laborCost)
-        const fee = field === 'platformFee' ? value : next.platformFee
-        next.actualProfit = Math.round((revenue - fee) * 100) / 100
+        const mat = field === 'materialCost' ? (value as number) : next.materialCost
+        const lab = field === 'laborCost' ? (value as number) : next.laborCost
+        const fee = field === 'platformFee' ? (value as number) : next.platformFee
+        next.actualProfit = Math.round((mat + lab - fee) * 100) / 100
       }
       return next
     })
