@@ -8,7 +8,7 @@ interface OrderCardProps {
 }
 
 export default function OrderCard({ order, onClick }: OrderCardProps) {
-  const statusColor = STATUS_COLORS[order.status as any] || '#6b7280'
+  const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
 
   return (
     <div
