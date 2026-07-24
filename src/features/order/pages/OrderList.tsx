@@ -5,9 +5,9 @@ import { useState } from 'react'
 import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Filter, Plus, FileText } from 'lucide-react'
 
-export default function OrderList() {
+export default function OrderList({ fixedStatus }: { fixedStatus?: string }) {
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState<string>('全部')
+  const [activeFilter, setActiveFilter] = useState<string>(fixedStatus ?? '全部')
   const [searchKw, setSearchKw] = useState('')
 
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
