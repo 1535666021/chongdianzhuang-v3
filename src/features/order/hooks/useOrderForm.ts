@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import type { Order, Platform } from '@/types'
-import { PLATFORMS } from '@/constants/order'
 
 export interface FormData {
   customerName: string
@@ -75,7 +74,6 @@ export function useOrderForm(orderId?: string) {
   ) => {
     setForm((prev) => {
       const next = { ...prev, [field]: value }
-      // 自动计算实际利润
       if (field === 'materialCost' || field === 'laborCost' || field === 'platformFee') {
         const revenue = (field === 'materialCost' ? value : next.materialCost) +
                         (field === 'laborCost' ? value : next.laborCost)
@@ -91,7 +89,7 @@ export function useOrderForm(orderId?: string) {
     const newErrors: Record<string, string> = {}
     if (!form.customerName.trim()) newErrors.customerName = '请输入客户姓名'
     if (!form.phone.trim()) newErrors.phone = '请输入电话'
-    else if (!/^1\d{10}$/.test(form.phone)) newErrors.phone = '手机号格式错误'
+    else if (!new RegExp('^1\\d{10}$').test(form.phone)) newErrors.phone = '手机号格式错误'
     if (!form.address.trim()) newErrors.address = '请输入地址'
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
