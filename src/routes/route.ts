@@ -1,9 +1,12 @@
 export enum RoutePath {
   HOME = '/',
   ORDERS = '/orders',
+  ORDER_NEW = '/order/new',
+  ORDER_EDIT = '/order/edit',
   MATERIALS = '/materials',
   STATS = '/stats',
   SETTINGS = '/settings',
+  BATCH_PARSER = '/batch-parser',
 }
 
 export const ROUTES = [
