@@ -27,7 +27,7 @@ export default function OrderDetail() {
     )
   }
 
-  const statusColor = STATUS_COLORS[order.status as any] || '#6b7280'
+  const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
 
   const handleDelete = () => {
     if (window.confirm('确定要删除该订单吗？')) {
