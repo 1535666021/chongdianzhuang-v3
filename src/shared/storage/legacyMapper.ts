@@ -20,5 +20,5 @@ export function mapLegacyToNew(legacy: LegacyOrderData): Order {
     meterStatus: legacy.meterStatus as any || '未安装',
     createdAt: legacy.createdAt || Date.now(),
     updatedAt: Date.now(),
-  }
+  } as Order
 }
