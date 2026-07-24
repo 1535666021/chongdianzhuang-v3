@@ -14,12 +14,19 @@ export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
 
+  const isActive = (path: string) => {
+    if (path === '/') {
+      return location.pathname === '/' || location.pathname === '/chongdianzhuang-v3/'
+    }
+    return location.pathname.startsWith(path)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <main className="flex-1 overflow-auto p-4">
+      <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
-      <nav className="bg-white border-t border-gray-200 px-2 py-1">
+      <nav className="bg-white border-t border-gray-200 px-2 py-1 fixed bottom-0 left-0 right-0">
         <div className="flex justify-around">
           {ROUTES.map((route) => (
             <button
@@ -28,7 +35,7 @@ export default function App() {
                 navigate(route.path)
               }}
               className={`flex flex-col items-center py-2 px-3 rounded-lg text-xs ${
-                location.pathname === route.path || (route.path === '/' && location.pathname === '/chongdianzhuang-v3/')
+                isActive(route.path)
                   ? 'text-blue-600'
                   : 'text-gray-500'
               }`}
