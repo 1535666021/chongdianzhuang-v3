@@ -1,83 +1,51 @@
-import { useState, useCallback } from 'react'
+﻿import { useState, useCallback } from 'react'
 import type { Order } from '@/types'
-
-export interface ParsedOrder {
-  customerName: string
-  phone: string
-  address: string
-  platform: string
-  appointmentDate?: string
-  appointmentTime?: string
-  rawText: string
-}
+import {
+  parseOrderText,
+  parseOrderTextDetailed,
+  parsedItemsToOrders,
+  filterNewParsedItems,
+  type ParsedOrderItem,
+} from '@/lib/parser'
 
 export function useBatchParser() {
   const [rawText, setRawText] = useState('')
-  const [parsedOrders, setParsedOrders] = useState<ParsedOrder[]>([])
+  const [parsedOrders, setParsedOrders] = useState<ParsedOrderItem[]>([])
+  const [blockCount, setBlockCount] = useState(0)
   const [isParsing, setIsParsing] = useState(false)
 
   const parse = useCallback(() => {
     setIsParsing(true)
-    const lines = rawText.split('\n').map((l) => l.trim()).filter(Boolean)
-    const results: ParsedOrder[] = []
-
-    for (const line of lines) {
-      const nameMatch = line.match(/姓名[：:]\s*([^\s,，]+)/)
-      const phoneMatch = line.match(/(1\d{10})/)
-      const addrMatch = line.match(/地址[：:]\s*(.+?)(?:[,，]|$)/)
-      const platformMatch = line.match(/平台[：:]\s*([^\s,，]+)/)
-      const dateMatch = line.match(/(\d{4}-\d{2}-\d{2})/)
-      const timeMatch = line.match(/(\d{2}:\d{2})/)
-
-      if (nameMatch || phoneMatch) {
-        results.push({
-          customerName: nameMatch?.[1] || '',
-          phone: phoneMatch?.[1] || '',
-          address: addrMatch?.[1] || '',
-          platform: platformMatch?.[1] || '其他',
-          appointmentDate: dateMatch?.[1],
-          appointmentTime: timeMatch?.[1],
-          rawText: line,
-        })
-      }
+    const text = rawText.trim()
+    if (!text) {
+      setParsedOrders([])
+      setBlockCount(0)
+      setIsParsing(false)
+      return []
     }
 
-    setParsedOrders(results)
+    const result = parseOrderTextDetailed(text)
+    setParsedOrders(result.items)
+    setBlockCount(result.blockCount)
     setIsParsing(false)
-    return results
+    return result.items
   }, [rawText])
 
   const clear = useCallback(() => {
     setRawText('')
     setParsedOrders([])
+    setBlockCount(0)
   }, [])
 
   const convertToOrders = useCallback((): Order[] => {
-    return parsedOrders.map((po) => ({
-      id: String(Date.now() + Math.random()),
-      customerName: po.customerName,
-      phone: po.phone,
-      address: po.address,
-      platform: po.platform as any,
-      status: '待办',
-      region: '其他',
-      appointmentDate: po.appointmentDate,
-      appointmentTime: po.appointmentTime,
-      materialCost: 0,
-      laborCost: 0,
-      platformFee: 0,
-      actualProfit: 0,
-      notes: po.rawText,
-      meterStatus: '未安装',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    } as Order))
+    return parsedItemsToOrders(parsedOrders)
   }, [parsedOrders])
 
   return {
     rawText,
     setRawText,
     parsedOrders,
+    blockCount,
     isParsing,
     parse,
     clear,
