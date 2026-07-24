@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import { STATUS_COLORS } from '@/constants/order'
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2 } from 'lucide-react'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -9,6 +9,7 @@ export default function OrderDetail() {
   const order = useOrderStore((state) =>
     state.orders.find((o: any) => o.id === id)
   )
+  const deleteOrder = useOrderStore((state) => state.deleteOrder)
 
   if (!order) {
     return (
@@ -28,10 +29,17 @@ export default function OrderDetail() {
 
   const statusColor = STATUS_COLORS[order.status as any] || '#6b7280'
 
+  const handleDelete = () => {
+    if (window.confirm('确定要删除该订单吗？')) {
+      deleteOrder(id!)
+      navigate('/')
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* 顶部栏 */}
-      <div className="bg-white p-4 border-b border-gray-200 flex items-center gap-3">
+      <div className="bg-white p-4 border-b border-gray-200 flex items-center gap-3 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="p-1">
           <ArrowLeft size={20} />
         </button>
@@ -42,6 +50,24 @@ export default function OrderDetail() {
         >
           {order.status}
         </span>
+      </div>
+
+      {/* 操作按钮 */}
+      <div className="flex gap-2 p-3">
+        <button
+          onClick={() => navigate(`/order/edit/${id}`)}
+          className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
+        >
+          <Edit3 size={16} />
+          编辑
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex-1 flex items-center justify-center gap-1 bg-red-500 text-white py-2 rounded-lg text-sm"
+        >
+          <Trash2 size={16} />
+          删除
+        </button>
       </div>
 
       {/* 客户信息 */}
