@@ -22,7 +22,6 @@ export function useBatchParser() {
     const results: ParsedOrder[] = []
 
     for (const line of lines) {
-      // 简单解析：尝试提取姓名、电话、地址
       const nameMatch = line.match(/姓名[：:]\s*([^\s,，]+)/)
       const phoneMatch = line.match(/(1\d{10})/)
       const addrMatch = line.match(/地址[：:]\s*(.+?)(?:[,，]|$)/)
