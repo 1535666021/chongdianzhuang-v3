@@ -3,7 +3,7 @@ import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
 import { useState } from 'react'
 import { ORDER_STATUSES } from '@/constants/order'
-import { Search, Filter } from 'lucide-react'
+import { Search, Filter, Plus, FileText } from 'lucide-react'
 
 export default function OrderList() {
   const navigate = useNavigate()
@@ -45,9 +45,9 @@ export default function OrderList() {
         </div>
       </div>
 
-      {/* 搜索栏 */}
+      {/* 搜索栏 + 操作按钮 */}
       <div className="p-3 bg-white border-b border-gray-200">
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-2">
           <div className="flex-1 relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
@@ -58,6 +58,22 @@ export default function OrderList() {
               className="w-full pl-9 pr-3 py-2 bg-gray-100 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/order/new')}
+            className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
+          >
+            <Plus size={16} />
+            新增订单
+          </button>
+          <button
+            onClick={() => navigate('/batch-parser')}
+            className="flex-1 flex items-center justify-center gap-1 bg-green-600 text-white py-2 rounded-lg text-sm"
+          >
+            <FileText size={16} />
+            批量解析
+          </button>
         </div>
       </div>
 
@@ -84,6 +100,12 @@ export default function OrderList() {
           <div className="text-center py-20 text-gray-400">
             <Filter size={48} className="mx-auto mb-4 opacity-30" />
             <p>暂无订单</p>
+            <button
+              onClick={() => navigate('/order/new')}
+              className="mt-4 text-blue-600 text-sm"
+            >
+              点击新增订单
+            </button>
           </div>
         ) : (
           displayOrders.map((order: any) => (
