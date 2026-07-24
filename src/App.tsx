@@ -1,12 +1,11 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/routes/route'
-import { Home, ClipboardList, Package, BarChart3, Settings } from 'lucide-react'
+import { Home, Calendar, CheckCircle, Settings } from 'lucide-react'
 
 const iconMap: Record<string, React.ReactNode> = {
   Home: <Home size={20} />,
-  ClipboardList: <ClipboardList size={20} />,
-  Package: <Package size={20} />,
-  BarChart3: <BarChart3 size={20} />,
+  Calendar: <Calendar size={20} />,
+  CheckCircle: <CheckCircle size={20} />,
   Settings: <Settings size={20} />,
 }
 
