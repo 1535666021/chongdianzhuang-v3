@@ -28,12 +28,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     set({ orders: newOrders })
   },
   updateOrder: (id, updates) => {
-    const newOrders = get().orders.map((o: Order) => (o as any).id === id ? { ...o, ...updates, updatedAt: Date.now() } : o)
+    const newOrders = get().orders.map((o) => (o as any).id === id ? { ...o, ...updates, updatedAt: Date.now() } : o)
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },
   deleteOrder: (id) => {
-    const newOrders = get().orders.filter((o: Order) => (o as any).id !== id)
+    const newOrders = get().orders.filter((o) => (o as any).id !== id)
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },
