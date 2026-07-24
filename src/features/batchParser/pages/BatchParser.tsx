@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom'
+﻿import { useNavigate } from 'react-router-dom'
 import { useBatchParser } from '../hooks/useBatchParser'
 import { useOrderStore } from '@/stores/orderStore'
 import { ArrowLeft, FileText, Play, Check, Trash2 } from 'lucide-react'
 
 export default function BatchParser() {
   const navigate = useNavigate()
-  const { rawText, setRawText, parsedOrders, isParsing, parse, clear, convertToOrders } = useBatchParser()
+  const { rawText, setRawText, parsedOrders, blockCount, isParsing, parse, clear, convertToOrders } = useBatchParser()
   const addOrder = useOrderStore((state) => state.addOrder)
 
   const handleImport = () => {
@@ -66,6 +66,9 @@ export default function BatchParser() {
             <div className="flex justify-between items-center mb-3">
               <h2 className="font-semibold text-gray-900">
                 解析结果 ({parsedOrders.length}条)
+                {blockCount > parsedOrders.length && (
+                  <span className="text-xs text-amber-500 ml-2">(识别{parsedOrders.length}/{blockCount}条)</span>
+                )}
               </h2>
               <button
                 onClick={handleImport}
@@ -84,8 +87,11 @@ export default function BatchParser() {
                   </div>
                   <div className="text-gray-600 mt-1">{po.address || '未识别地址'}</div>
                   <div className="text-xs text-gray-400 mt-1">
-                    平台: {po.platform} | 预约: {po.appointmentDate || '无'} {po.appointmentTime || ''}
+                    平台: {po.platformName || '其他'} | 品牌: {po.brandName || '未识别'} | 功率: {po.powerKw || '未识别'}kW | 米数: {po.packageMeters || '未识别'}m
                   </div>
+                  {po.remark && (
+                    <div className="text-xs text-gray-400 mt-1">备注: {po.remark}</div>
+                  )}
                 </div>
               ))}
             </div>
