@@ -7,8 +7,6 @@ import OrderForm from '@/features/order/pages/OrderForm'
 import BatchParser from '@/features/batchParser/pages/BatchParser'
 
 // 懒加载页面（后续实现）
-const MaterialsPage = () => <div>材料占位</div>
-const StatsPage = () => <div>统计占位</div>
 const SettingsPage = () => <div>设置占位</div>
 
 export default function AppRoutes() {
@@ -21,8 +19,8 @@ export default function AppRoutes() {
           <Route path="order/new" element={<OrderForm />} />
           <Route path="order/edit/:id" element={<OrderForm />} />
           <Route path="batch-parser" element={<BatchParser />} />
-          <Route path={RoutePath.MATERIALS} element={<MaterialsPage />} />
-          <Route path={RoutePath.STATS} element={<StatsPage />} />
+          <Route path={RoutePath.SCHEDULED} element={<OrderList fixedStatus="已预约" />} />
+          <Route path={RoutePath.COMPLETED} element={<OrderList fixedStatus="已完成" />} />
           <Route path={RoutePath.SETTINGS} element={<SettingsPage />} />
         </Route>
       </Routes>
