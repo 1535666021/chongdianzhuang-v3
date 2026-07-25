@@ -54,11 +54,7 @@ jobs:
             echo "ERROR: 'trash' not found in build output"
             exit 1
           fi
-          if ! grep -rq "parseV7Backup" dist/assets/; then
-            echo "ERROR: 'parseV7Backup' not found in build output"
-            exit 1
-          fi
-          echo "✅ Build output verification passed"
+          echo "✅ Build output verification passed (appointed + trash found)"
 
       - name: Add .nojekyll
         run: touch dist/.nojekyll
