@@ -13,21 +13,22 @@ export default function MaterialForm({ onAdd }: MaterialFormProps) {
   const [form, setForm] = useState({
     name: '',
     unit: '',
+    settlementPrice: '',
     costPrice: '',
     category: '其他' as MaterialCategory,
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.name.trim() || !form.unit.trim() || !form.costPrice) return
+    if (!form.name.trim() || !form.unit.trim() || !form.settlementPrice || !form.costPrice) return
 
     const now = Date.now()
     const material: Material = {
       id: 'mat_' + now,
       name: form.name.trim(),
       unit: form.unit.trim(),
+      settlementPrice: parseFloat(form.settlementPrice) || 0,
       costPrice: parseFloat(form.costPrice) || 0,
-      settlementPrice: parseFloat(form.costPrice) || 0,
       category: form.category,
       stock: 0,
       minStock: 0,
@@ -36,7 +37,7 @@ export default function MaterialForm({ onAdd }: MaterialFormProps) {
     }
 
     onAdd(material)
-    setForm({ name: '', unit: '', costPrice: '', category: '其他' })
+    setForm({ name: '', unit: '', settlementPrice: '', costPrice: '', category: '其他' })
     setShow(false)
   }
 
@@ -66,12 +67,22 @@ export default function MaterialForm({ onAdd }: MaterialFormProps) {
           className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
           required
         />
+        <input
+          type="text"
+          value={form.unit}
+          onChange={(e) => setForm({ ...form, unit: e.target.value })}
+          placeholder="单位（如：米、个）"
+          className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
+          required
+        />
         <div className="flex gap-2">
           <input
-            type="text"
-            value={form.unit}
-            onChange={(e) => setForm({ ...form, unit: e.target.value })}
-            placeholder="单位（如：米、个）"
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.settlementPrice}
+            onChange={(e) => setForm({ ...form, settlementPrice: e.target.value })}
+            placeholder="结算价（元）"
             className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
             required
           />
@@ -81,7 +92,7 @@ export default function MaterialForm({ onAdd }: MaterialFormProps) {
             min="0"
             value={form.costPrice}
             onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
-            placeholder="单价（元）"
+            placeholder="成本价（元）"
             className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
             required
           />
