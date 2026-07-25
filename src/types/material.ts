@@ -1,46 +1,31 @@
 import type { BaseEntity } from './common'
 
-export type MaterialCategory = '线缆' | '管材' | '辅材' | '工具' | '其他' | '漏保' | '接地' | '保护箱' | '立柱' | '开孔' | '路面' | '桥架' | '吊筋' | '电表' | '浪涌' | '服务' | '拆除' | '安装' | '基础' | '高空'
+export type MaterialCategory = '线缆' | '管材' | '辅材' | '工具' | '其他'
 
-export type MaterialCategoryCode = 'CABLE' | 'PVC' | 'BREAKER' | 'GROUND' | 'OTHER' | 'BOX' | 'POLE' | 'WALL_DRILL' | 'ROAD_OPEN' | 'BRIDGE' | 'HANGER' | 'METER' | 'SURGE' | 'SERVICE' | 'REMOVE' | 'INSTALL' | 'FOUNDATION' | 'HIGH_ALTITUDE'
+export type MaterialCategoryCode = 'CABLE' | 'PVC' | 'BREAKER' | 'GROUND' | 'OTHER'
 
 export const CATEGORY_CODE_MAP: Record<MaterialCategoryCode, MaterialCategory> = {
   CABLE: '线缆',
   PVC: '管材',
-  BREAKER: '漏保',
-  GROUND: '接地',
+  BREAKER: '辅材',
+  GROUND: '工具',
   OTHER: '其他',
-  BOX: '保护箱',
-  POLE: '立柱',
-  WALL_DRILL: '开孔',
-  ROAD_OPEN: '路面',
-  BRIDGE: '桥架',
-  HANGER: '吊筋',
-  METER: '电表',
-  SURGE: '浪涌',
-  SERVICE: '服务',
-  REMOVE: '拆除',
-  INSTALL: '安装',
-  FOUNDATION: '基础',
-  HIGH_ALTITUDE: '高空',
 }
 
-export interface Material {
-  id: string
+export interface Material extends BaseEntity {
   name: string
   category: MaterialCategory
   categoryCode?: MaterialCategoryCode
   unit: string
   costPrice: number | null
   settlementPrice: number
-  stock: number
-  minStock: number
-  isFixed?: boolean
+  customerPrice?: number
   brand?: string | null
   freeQuota?: number
   source?: 'cost' | 'addon'
-  createdAt?: number
-  updatedAt?: number
+  stock: number
+  minStock: number
+  isFixed?: boolean
 }
 
 export interface MaterialUsage {
