@@ -8,7 +8,7 @@ import OrderForm from '@/features/order/pages/OrderForm'
 import BatchParser from '@/features/batchParser/pages/BatchParser'
 
 const MaterialList = lazy(() => import('@/features/material/pages/MaterialList'))
-const StatsPage = () => <div className="p-4 text-center text-gray-400">统计占位</div>
+const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/components/BackupImport'))
 
 function LoadingFallback() {
@@ -33,7 +33,14 @@ export default function AppRoutes() {
               </Suspense>
             }
           />
-          <Route path={RoutePath.STATS} element={<StatsPage />} />
+          <Route
+            path={RoutePath.STATS}
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <Statistics />
+              </Suspense>
+            }
+          />
           <Route
             path={RoutePath.SETTINGS}
             element={
