@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import { parseV7Backup } from '@/features/order/repository/legacyImporter'
-import { Upload, FileJson, AlertCircle, CheckCircle, XCircle } from 'lucide-react'
+import { Upload, FileJson, AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function BackupImport() {
   const [preview, setPreview] = useState<{
@@ -10,6 +10,7 @@ export default function BackupImport() {
     failed: { reason: string; index: number }[]
     orders: ReturnType<typeof parseV7Backup>['success']
   } | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string>('')
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<{
     added: number
@@ -26,6 +27,37 @@ export default function BackupImport() {
     const reader = new FileReader()
     reader.onload = (ev) => {
       const text = String(ev.target?.result || '')
+
+      // 调试：解析原始JSON，显示桶结构和前几条订单的status
+      let debug = ''
+      try {
+        const rawObj = JSON.parse(text)
+        const keys = Object.keys(rawObj)
+        debug += `顶层字段: ${keys.join(', ')}\n`
+
+        // 检查每个桶
+        const bucketChecks = ['orders', 'completedOrders', 'trashOrders', 'trash', 'deletedOrders']
+        for (const key of bucketChecks) {
+          const arr = rawObj[key]
+          if (Array.isArray(arr)) {
+            debug += `\n【${key}】共 ${arr.length} 条\n`
+            // 显示前3条的status和appointment信息
+            for (let i = 0; i < Math.min(3, arr.length); i++) {
+              const item = arr[i]
+              const status = item?.status || '无status'
+              const name = item?.name || '无名'
+              const apptDate = item?.appointmentDate || (item?.appointment?.appointmentDate) || '无'
+              const apptTime = item?.appointmentTime || (item?.appointment?.timeSlot) || (item?.appointment?.time) || '无'
+              debug += `  [${i}] status=${status} name=${name} appointmentDate=${apptDate} time=${apptTime}\n`
+            }
+            if (arr.length > 3) debug += `  ... 共 ${arr.length} 条\n`
+          }
+        }
+      } catch (err) {
+        debug = `JSON解析失败: ${err}`
+      }
+      setDebugInfo(debug)
+
       const parsed = parseV7Backup(text)
       setPreview({
         total: parsed.success.length,
@@ -48,11 +80,13 @@ export default function BackupImport() {
     setResult({ added, skipped, total: preview.total })
     setImporting(false)
     setPreview(null)
+    setDebugInfo('')
   }
 
   const handleCancel = () => {
     setPreview(null)
     setResult(null)
+    setDebugInfo('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -84,6 +118,16 @@ export default function BackupImport() {
             支持老系统导出的 v7 格式备份文件
           </p>
         </div>
+
+        {/* 调试信息 */}
+        {debugInfo && (
+          <div className="bg-gray-100 rounded-lg border border-gray-300 p-3">
+            <h3 className="text-xs font-medium text-gray-500 mb-1">调试信息（供开发排查）</h3>
+            <pre className="text-xs text-gray-600 whitespace-pre-wrap break-all font-mono">
+              {debugInfo}
+            </pre>
+          </div>
+        )}
 
         {/* 预览 */}
         {preview && (
@@ -174,10 +218,10 @@ export default function BackupImport() {
           </div>
         )}
 
-      {/* 版本号 */}
-      <div className="text-center text-xs text-gray-400 py-4">
-        版本: {import.meta.env.VITE_APP_VERSION || 'dev'}
-      </div>
+        {/* 版本号 */}
+        <div className="text-center text-xs text-gray-400 py-4">
+          版本: {import.meta.env.VITE_APP_VERSION || 'dev'}
+        </div>
       </main>
     </div>
   )
