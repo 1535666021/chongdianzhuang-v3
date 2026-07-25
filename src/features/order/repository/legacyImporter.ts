@@ -1,20 +1,26 @@
 import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器（批次4-R6修复版）
- * 修复：
- *  1. trashOrders桶忽略STATUS_MAP，直接用桶默认状态'回收站'
- *  2. 调试日志显示appointment嵌套对象
+ * v7 老备份 → v3 Order 转换器（R7修复版）
+ * 修复：增加第4组桶（appointmentOrders/appointedOrders/scheduledOrders）
  * ------------------------------------------------------------ */
 
-/** v7 状态 → v3 中文状态映射（仅用于orders桶） */
+/** v7 状态 → v3 中文状态映射（含历史别名） */
 const STATUS_MAP: Record<string, OrderStatus> = {
+  // 标准英文
   'pending':    '待办',
   'surveyed':   '待办',
   'appointed':  '已预约',
+  'appointment': '已预约',
+  'scheduled':  '已预约',
+  'booked':     '已预约',
   'completed':  '已完成',
+  'done':       '已完成',
+  'finished':   '已完成',
   'cancelled':  '待办',
   'trash':      '回收站',
+  'deleted':    '回收站',
+  // 中文
   '待办':       '待办',
   '已勘测':     '待办',
   '已预约':     '已预约',
@@ -69,23 +75,17 @@ function shouldFlipToAppointed(
 ): OrderStatus {
   if (rawStatus !== 'pending' && finalStatus !== '待办') return finalStatus
 
-  // 检查 appointment 对象
   const rawAppointment = raw.appointment
   if (rawAppointment && typeof rawAppointment === 'object') {
     const appt = rawAppointment as Record<string, unknown>
     const hasDate = asStr(appt.appointmentDate || appt.date).trim() !== ''
     const hasTime = asStr(appt.timeSlot || appt.time || appt.period).trim() !== ''
-    if (hasDate && hasTime) {
-      return '已预约'
-    }
+    if (hasDate && hasTime) return '已预约'
   }
 
-  // 检查顶层字段
   const hasTopDate = asStr(raw.appointmentDate).trim() !== ''
   const hasTopTime = asStr(raw.appointmentTime || raw.timeSlot).trim() !== ''
-  if (hasTopDate && hasTopTime) {
-    return '已预约'
-  }
+  if (hasTopDate && hasTopTime) return '已预约'
 
   return finalStatus
 }
@@ -146,9 +146,10 @@ export function parseV7Backup(jsonText: string): {
   const success: Order[] = []
   const failed: { reason: string; index: number }[] = []
 
-  // 三桶遍历，兼容多种键名
+  // 四桶遍历（新增第2组：已预约桶）
   const bucketDefs: { keys: string[]; bucketDefaultStatus: OrderStatus; useStatusMap: boolean }[] = [
-    { keys: ['orders', 'pendingOrders', 'orderList'], bucketDefaultStatus: '待办', useStatusMap: true },
+    { keys: ['orders', 'pendingOrders', 'orderList', 'cdz_orders', 'cp_orders'], bucketDefaultStatus: '待办', useStatusMap: true },
+    { keys: ['appointmentOrders', 'appointedOrders', 'scheduledOrders'], bucketDefaultStatus: '已预约', useStatusMap: true },
     { keys: ['completedOrders', 'completed', 'doneOrders'], bucketDefaultStatus: '已完成', useStatusMap: true },
     { keys: ['trashOrders', 'trash', 'deletedOrders', 'recycleOrders'], bucketDefaultStatus: '回收站', useStatusMap: false },
   ]
@@ -178,7 +179,7 @@ export function parseV7Backup(jsonText: string): {
       const rawRecord = raw as Record<string, unknown>
       const rawStatus = asStr(rawRecord.status)
 
-      // 关键修复：trashOrders桶忽略STATUS_MAP，直接用桶默认状态
+      // 是否使用STATUS_MAP
       let finalStatus: OrderStatus
       if (useStatusMap) {
         finalStatus = STATUS_MAP[rawStatus] || bucketDefaultStatus
@@ -186,8 +187,9 @@ export function parseV7Backup(jsonText: string): {
         finalStatus = bucketDefaultStatus
       }
 
-      // 翻正逻辑：仅对orders桶生效
-      if (usedKey === 'orders' || usedKey === 'pendingOrders' || usedKey === 'orderList') {
+      // 翻正逻辑：仅对主待办桶生效
+      const isMainBucket = ['orders', 'pendingOrders', 'orderList', 'cdz_orders', 'cp_orders'].includes(usedKey)
+      if (isMainBucket) {
         finalStatus = shouldFlipToAppointed(rawStatus, finalStatus, rawRecord)
       }
 
