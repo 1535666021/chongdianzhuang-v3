@@ -173,6 +173,11 @@ export default function BackupImport() {
             </button>
           </div>
         )}
+
+      {/* 版本号 */}
+      <div className="text-center text-xs text-gray-400 py-4">
+        版本: {import.meta.env.VITE_APP_VERSION || 'dev'}
+      </div>
       </main>
     </div>
   )
