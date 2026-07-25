@@ -9,7 +9,7 @@ import BatchParser from '@/features/batchParser/pages/BatchParser'
 
 const MaterialList = lazy(() => import('@/features/material/pages/MaterialList'))
 const StatsPage = () => <div className="p-4 text-center text-gray-400">统计占位</div>
-const SettingsPage = () => <div className="p-4 text-center text-gray-400">设置占位</div>
+const SettingsPage = lazy(() => import('@/features/settings/components/BackupImport'))
 
 function LoadingFallback() {
   return <div className="p-4 text-center text-gray-400">加载中...</div>
@@ -34,7 +34,14 @@ export default function AppRoutes() {
             }
           />
           <Route path={RoutePath.STATS} element={<StatsPage />} />
-          <Route path={RoutePath.SETTINGS} element={<SettingsPage />} />
+          <Route
+            path={RoutePath.SETTINGS}
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <SettingsPage />
+              </Suspense>
+            }
+          />
         </Route>
       </Routes>
     </BrowserRouter>
