@@ -1,23 +1,27 @@
 import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器（批次4-R2修复版）
- * 修复：恢复三桶遍历（orders/completedOrders/trashOrders），
- *       同时保留英文STATUS_MAP映射。
- * 老备份真实结构：
- *   orders: 9条（status含pending/appointed/surveyed/cancelled）
- *   completedOrders: 125条（status=completed）
- *   trashOrders: 6条（status=trash）
+ * v7 老备份 → v3 Order 转换器（批次4-R3修复版）
+ * 修复：增加中文status映射 + 翻正逻辑 + 调试日志
+ * 兼容：英文status + 中文status + 混合status + pending+appointment翻正
  * ------------------------------------------------------------ */
 
-/** v7 英文状态 → v3 中文状态映射 */
+/** v7 状态 → v3 中文状态映射（英文+中文双兼容） */
 const STATUS_MAP: Record<string, OrderStatus> = {
+  // 英文 → v3中文
   'pending':    '待办',
   'surveyed':   '待办',
   'appointed':  '已预约',
   'completed':  '已完成',
   'cancelled':  '待办',
   'trash':      '回收站',
+  // 中文 → v3中文（兼容中文status备份）
+  '待办':       '待办',
+  '已勘测':     '待办',
+  '已预约':     '已预约',
+  '已完成':     '已完成',
+  '已取消':     '待办',
+  '回收站':     '回收站',
 }
 
 /** v7 平台 → v3 平台映射 */
@@ -58,6 +62,35 @@ function extractPhone(raw: unknown): string {
   return m ? m[0] : text
 }
 
+/** 翻正逻辑：pending + 有appointment信息 → 已预约 */
+function shouldFlipToAppointed(
+  rawStatus: string,
+  finalStatus: OrderStatus,
+  raw: Record<string, unknown>
+): OrderStatus {
+  if (finalStatus !== '待办' && rawStatus !== 'pending') return finalStatus
+
+  // 检查appointment对象
+  const rawAppointment = raw.appointment
+  if (rawAppointment && typeof rawAppointment === 'object') {
+    const appt = rawAppointment as Record<string, unknown>
+    const hasDate = asStr(appt.appointmentDate || appt.date).trim() !== ''
+    const hasTime = asStr(appt.timeSlot || appt.time || appt.period).trim() !== ''
+    if (hasDate && hasTime) {
+      return '已预约'
+    }
+  }
+
+  // 检查顶层appointmentDate/appointmentTime字段
+  const hasTopDate = asStr(raw.appointmentDate).trim() !== ''
+  const hasTopTime = asStr(raw.appointmentTime).trim() !== ''
+  if (hasTopDate && hasTopTime) {
+    return '已预约'
+  }
+
+  return finalStatus
+}
+
 /** 单条 v7 订单 → v3 Order */
 function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus): Order | null {
   try {
@@ -93,9 +126,7 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
   }
 }
 
-/** 解析 v7 备份 JSON 文本
- *  老备份真实结构：三桶（orders/completedOrders/trashOrders）
- */
+/** 解析 v7 备份 JSON 文本 */
 export function parseV7Backup(jsonText: string): {
   success: Order[]
   failed: { reason: string; index: number }[]
@@ -116,7 +147,6 @@ export function parseV7Backup(jsonText: string): {
   const success: Order[] = []
   const failed: { reason: string; index: number }[] = []
 
-  // 三桶遍历：orders（待办/已预约/已勘测/已取消）/ completedOrders（已完成）/ trashOrders（回收站）
   const buckets: { key: string; bucketDefaultStatus: OrderStatus }[] = [
     { key: 'orders', bucketDefaultStatus: '待办' },
     { key: 'completedOrders', bucketDefaultStatus: '已完成' },
@@ -134,11 +164,20 @@ export function parseV7Backup(jsonText: string): {
         continue
       }
 
-      const rawStatus = asStr((raw as Record<string, unknown>).status)
-      // 优先用 STATUS_MAP 映射英文status；映射失败用桶默认状态兜底
-      const finalStatus = STATUS_MAP[rawStatus] || bucketDefaultStatus
+      const rawRecord = raw as Record<string, unknown>
+      const rawStatus = asStr(rawRecord.status)
 
-      const order = convertV7Order(raw as Record<string, unknown>, finalStatus)
+      // 优先STATUS_MAP映射，失败用桶默认状态兜底
+      let finalStatus = STATUS_MAP[rawStatus] || bucketDefaultStatus
+
+      // 翻正逻辑：pending + 有appointment信息 → 已预约
+      finalStatus = shouldFlipToAppointed(rawStatus, finalStatus, rawRecord)
+
+      // 调试日志（开发阶段，方便定位）
+      // eslint-disable-next-line no-console
+      console.log(`[import] ${key}[${i}] rawStatus=${rawStatus} finalStatus=${finalStatus} name=${rawRecord.name}`)
+
+      const order = convertV7Order(rawRecord, finalStatus)
       if (order) {
         success.push(order)
       } else {
