@@ -1,88 +1,85 @@
 import { useMemo } from 'react'
-import { useOrderStore } from '@/stores/orderStore'
-import { BarChart3 } from 'lucide-react'
+import type { Order } from '@/types'
+import { PLATFORMS } from '@/constants/order'
 
-const PLATFORM_CONFIG: Record<string, { label: string; color: string; deduction: number }> = {
-  JD: { label: '京东', color: '#E4393C', deduction: 0.1 },
-  TB: { label: '淘宝', color: '#FF5000', deduction: 0.2 },
-  DY: { label: '抖音', color: '#000000', deduction: 0.2 },
-  OTHER: { label: '其他', color: '#999999', deduction: 0.2 },
+interface PlatformStats {
+  platform: string
+  orderCount: number
+  materialCost: number
+  laborCost: number
+  platformFee: number
+  actualProfit: number
 }
 
-export default function PlatformBreakdown() {
-  const orders = useOrderStore((s) => s.orders)
+interface Props {
+  orders: Order[]
+}
 
+export default function PlatformBreakdown({ orders }: Props) {
   const stats = useMemo(() => {
-    const result = Object.keys(PLATFORM_CONFIG).map((key) => {
-      const platformOrders = orders.filter((o: any) => o.platform === key)
-      const count = platformOrders.length
-      const revenue = platformOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
-      const cost = platformOrders.reduce((sum: number, o: any) => sum + (o.materialCost || 0), 0)
-      const profit = revenue - cost
-      const deduction = revenue * PLATFORM_CONFIG[key].deduction
-      const actualProfit = profit - deduction
-      return {
-        key,
-        ...PLATFORM_CONFIG[key],
-        count,
-        revenue,
-        cost,
-        profit,
-        deduction,
-        actualProfit,
+    const map = new Map<string, PlatformStats>()
+    PLATFORMS.forEach((p) => map.set(p, { platform: p, orderCount: 0, materialCost: 0, laborCost: 0, platformFee: 0, actualProfit: 0 }))
+    orders.forEach((o) => {
+      const s = map.get(o.platform)
+      if (s) {
+        s.orderCount += 1
+        s.materialCost += o.materialCost
+        s.laborCost += o.laborCost
+        s.platformFee += o.platformFee
+        s.actualProfit += o.actualProfit
       }
     })
-    return result.filter((s) => s.count > 0)
+    return Array.from(map.values()).filter((s) => s.orderCount > 0)
   }, [orders])
 
-  const totalCount = stats.reduce((sum, s) => sum + s.count, 0)
-
-  if (stats.length === 0) {
-    return (
-      <div className="bg-white rounded-lg p-4 shadow-sm">
-        <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-          <BarChart3 size={16} />
-          平台分布
-        </h3>
-        <div className="text-center text-gray-400 text-sm py-4">暂无数据</div>
-      </div>
+  const total = useMemo(() => {
+    return stats.reduce(
+      (acc, s) => ({
+        orderCount: acc.orderCount + s.orderCount,
+        materialCost: acc.materialCost + s.materialCost,
+        laborCost: acc.laborCost + s.laborCost,
+        platformFee: acc.platformFee + s.platformFee,
+        actualProfit: acc.actualProfit + s.actualProfit,
+      }),
+      { orderCount: 0, materialCost: 0, laborCost: 0, platformFee: 0, actualProfit: 0 }
     )
-  }
+  }, [stats])
+
+  const fmt = (n: number) => n.toFixed(2)
 
   return (
-    <div className="bg-white rounded-lg p-4 shadow-sm">
-      <h3 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
-        <BarChart3 size={16} />
-        平台分布
-      </h3>
-      <div className="space-y-3">
+    <div className="space-y-3">
+      <h2 className="text-sm font-semibold text-gray-700 px-1">平台收入明细</h2>
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="grid grid-cols-6 gap-2 px-3 py-2 bg-gray-50 text-xs text-gray-500 font-medium">
+          <div>平台</div>
+          <div className="text-right">订单</div>
+          <div className="text-right">材料</div>
+          <div className="text-right">人工</div>
+          <div className="text-right">扣点</div>
+          <div className="text-right">利润</div>
+        </div>
         {stats.map((s) => (
-          <div key={s.key} className="flex items-center gap-3">
-            <div
-              className="w-3 h-3 rounded-full flex-shrink-0"
-              style={{ backgroundColor: s.color }}
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex justify-between items-center mb-1">
-                <span className="text-sm font-medium text-gray-700">{s.label}</span>
-                <span className="text-xs text-gray-500">{s.count}单</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full transition-all"
-                  style={{
-                    width: `${totalCount > 0 ? (s.count / totalCount) * 100 : 0}%`,
-                    backgroundColor: s.color,
-                  }}
-                />
-              </div>
-              <div className="flex justify-between mt-1 text-xs text-gray-500">
-                <span>收入 ¥{s.revenue.toFixed(2)}</span>
-                <span>利润 ¥{s.actualProfit.toFixed(2)}</span>
-              </div>
-            </div>
+          <div
+            key={s.platform}
+            className="grid grid-cols-6 gap-2 px-3 py-2.5 border-t border-gray-100 text-sm"
+          >
+            <div className="font-medium text-gray-900">{s.platform}</div>
+            <div className="text-right text-gray-700">{s.orderCount}</div>
+            <div className="text-right text-gray-700">{fmt(s.materialCost)}</div>
+            <div className="text-right text-gray-700">{fmt(s.laborCost)}</div>
+            <div className="text-right text-red-500">{fmt(s.platformFee)}</div>
+            <div className="text-right font-medium text-green-600">{fmt(s.actualProfit)}</div>
           </div>
         ))}
+        <div className="grid grid-cols-6 gap-2 px-3 py-2.5 border-t border-gray-200 bg-gray-50 text-sm font-semibold">
+          <div>合计</div>
+          <div className="text-right">{total.orderCount}</div>
+          <div className="text-right">{fmt(total.materialCost)}</div>
+          <div className="text-right">{fmt(total.laborCost)}</div>
+          <div className="text-right text-red-600">{fmt(total.platformFee)}</div>
+          <div className="text-right text-green-700">{fmt(total.actualProfit)}</div>
+        </div>
       </div>
     </div>
   )
