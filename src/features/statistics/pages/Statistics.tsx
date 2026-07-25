@@ -1,131 +1,153 @@
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { CalendarDays, TrendingUp, DollarSign, Package, Wrench } from 'lucide-react'
-import MonthlyChart from './components/MonthlyChart'
-import ProfitTable from './components/ProfitTable'
-import PlatformBreakdown from './components/PlatformBreakdown'
+import PlatformBreakdown from '../components/PlatformBreakdown'
+import { BarChart3, TrendingUp, Package, Wrench, Receipt, Wallet } from 'lucide-react'
 
-const MONTH_OPTIONS = [
-  '2024-05', '2024-06', '2024-07', '2024-08', '2024-09', '2024-10',
-  '2024-11', '2024-12', '2025-01', '2025-02', '2025-03', '2025-04',
-  '2025-05', '2025-06', '2025-07', '2025-08', '2025-09', '2025-10',
-  '2025-11', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04',
-  '2026-05', '2026-06', '2026-07',
-]
+interface MonthStats {
+  month: string
+  orderCount: number
+  materialCost: number
+  laborCost: number
+  platformFee: number
+  actualProfit: number
+}
 
 export default function Statistics() {
-  const [selectedMonth, setSelectedMonth] = useState('2026-07')
   const orders = useOrderStore((s) => s.orders)
 
-  const monthStats = useMemo(() => {
-    const monthOrders = orders.filter((o: any) => {
-      const orderMonth = (o.date || o.createdAt || '').slice(0, 7)
-      return orderMonth === selectedMonth
+  const monthlyStats = useMemo(() => {
+    const map = new Map<string, MonthStats>()
+    orders.forEach((o) => {
+      const date = new Date(o.createdAt)
+      const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+      const existing = map.get(month)
+      if (existing) {
+        existing.orderCount += 1
+        existing.materialCost += o.materialCost
+        existing.laborCost += o.laborCost
+        existing.platformFee += o.platformFee
+        existing.actualProfit += o.actualProfit
+      } else {
+        map.set(month, {
+          month,
+          orderCount: 1,
+          materialCost: o.materialCost,
+          laborCost: o.laborCost,
+          platformFee: o.platformFee,
+          actualProfit: o.actualProfit,
+        })
+      }
     })
+    return Array.from(map.values()).sort((a, b) => b.month.localeCompare(a.month))
+  }, [orders])
 
-    const count = monthOrders.length
-    const revenue = monthOrders.reduce((sum: number, o: any) => sum + (o.totalAmount || 0), 0)
-    const cost = monthOrders.reduce((sum: number, o: any) => sum + (o.materialCost || 0), 0)
-    const profit = revenue - cost
+  const total = useMemo(() => {
+    return monthlyStats.reduce(
+      (acc, m) => ({
+        orderCount: acc.orderCount + m.orderCount,
+        materialCost: acc.materialCost + m.materialCost,
+        laborCost: acc.laborCost + m.laborCost,
+        platformFee: acc.platformFee + m.platformFee,
+        actualProfit: acc.actualProfit + m.actualProfit,
+      }),
+      { orderCount: 0, materialCost: 0, laborCost: 0, platformFee: 0, actualProfit: 0 }
+    )
+  }, [monthlyStats])
 
-    const deduction = monthOrders.reduce((sum: number, o: any) => {
-      const rate = o.platform === 'JD' ? 0.1 : 0.2
-      return sum + (o.totalAmount || 0) * rate
-    }, 0)
-
-    const actualProfit = profit - deduction
-
-    return { count, revenue, cost, profit, deduction, actualProfit }
-  }, [orders, selectedMonth])
-
-  const cards = [
-    {
-      label: '总单数',
-      value: monthStats.count,
-      icon: <Package size={20} className="text-blue-500" />,
-      color: 'bg-blue-50',
-    },
-    {
-      label: '客户应收',
-      value: `¥${monthStats.revenue.toFixed(2)}`,
-      icon: <DollarSign size={20} className="text-green-500" />,
-      color: 'bg-green-50',
-    },
-    {
-      label: '材料成本',
-      value: `¥${monthStats.cost.toFixed(2)}`,
-      icon: <Wrench size={20} className="text-orange-500" />,
-      color: 'bg-orange-50',
-    },
-    {
-      label: '应收利润',
-      value: `¥${monthStats.profit.toFixed(2)}`,
-      icon: <TrendingUp size={20} className="text-purple-500" />,
-      color: 'bg-purple-50',
-    },
-  ]
+  const fmt = (n: number) => n.toFixed(2)
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* 头部 */}
-      <div className="bg-white px-4 py-3 shadow-sm sticky top-0 z-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-gray-800">统计报表</h1>
-          <div className="flex items-center gap-2">
-            <CalendarDays size={16} className="text-gray-400" />
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="text-sm border border-gray-200 rounded-lg px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              {MONTH_OPTIONS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </div>
+    <div className="min-h-screen bg-gray-50 pb-24">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <BarChart3 size={20} className="text-blue-600" />
+          <h1 className="text-lg font-semibold">统计报表</h1>
         </div>
-      </div>
+      </header>
 
-      {/* 数据概览卡片 */}
-      <div className="p-4 grid grid-cols-2 gap-3">
-        {cards.map((card) => (
-          <div key={card.label} className={`${card.color} rounded-lg p-3`}>
-            <div className="flex items-center gap-2 mb-1">
-              {card.icon}
-              <span className="text-xs text-gray-500">{card.label}</span>
+      <main className="p-3 space-y-4">
+        {/* 总计卡片 */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+              <TrendingUp size={14} />
+              <span>累计订单</span>
             </div>
-            <div className="text-lg font-bold text-gray-800">{card.value}</div>
+            <div className="text-xl font-bold text-gray-900">{total.orderCount}</div>
           </div>
-        ))}
-      </div>
-
-      {/* 实际利润大卡片 */}
-      <div className="px-4 mb-4">
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-4 text-white">
-          <div className="text-sm opacity-80 mb-1">实际利润（扣点后）</div>
-          <div className="text-2xl font-bold">¥{monthStats.actualProfit.toFixed(2)}</div>
-          <div className="text-xs opacity-60 mt-1">
-            平台扣点 ¥{monthStats.deduction.toFixed(2)}
+          <div className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+              <Wallet size={14} />
+              <span>累计利润</span>
+            </div>
+            <div className="text-xl font-bold text-green-600">{fmt(total.actualProfit)}</div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+              <Package size={14} />
+              <span>累计材料</span>
+            </div>
+            <div className="text-xl font-bold text-gray-900">{fmt(total.materialCost)}</div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+              <Wrench size={14} />
+              <span>累计人工</span>
+            </div>
+            <div className="text-xl font-bold text-gray-900">{fmt(total.laborCost)}</div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-3 col-span-2">
+            <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
+              <Receipt size={14} />
+              <span>累计平台扣点</span>
+            </div>
+            <div className="text-xl font-bold text-red-500">{fmt(total.platformFee)}</div>
           </div>
         </div>
-      </div>
 
-      {/* 月度趋势图表 */}
-      <div className="px-4 mb-4">
-        <MonthlyChart />
-      </div>
+        {/* 月度明细 */}
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700 px-1">月度汇总</h2>
+          {monthlyStats.length === 0 ? (
+            <div className="text-center text-gray-400 py-8 text-sm">暂无订单数据</div>
+          ) : (
+            <div className="space-y-2">
+              {monthlyStats.map((m) => (
+                <div
+                  key={m.month}
+                  className="bg-white rounded-lg border border-gray-200 p-3"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold text-gray-900">{m.month}</div>
+                    <div className="text-xs text-gray-500">{m.orderCount} 单</div>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="text-gray-500">材料</div>
+                      <div className="font-medium text-gray-900">{fmt(m.materialCost)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-500">人工</div>
+                      <div className="font-medium text-gray-900">{fmt(m.laborCost)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-500">扣点</div>
+                      <div className="font-medium text-red-500">{fmt(m.platformFee)}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-gray-500">利润</div>
+                      <div className="font-medium text-green-600">{fmt(m.actualProfit)}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* 利润明细表 */}
-      <div className="px-4 mb-4">
-        <ProfitTable />
-      </div>
-
-      {/* 平台分布 */}
-      <div className="px-4 mb-4">
-        <PlatformBreakdown />
-      </div>
+        {/* 平台分析 */}
+        <PlatformBreakdown orders={orders} />
+      </main>
     </div>
   )
 }
