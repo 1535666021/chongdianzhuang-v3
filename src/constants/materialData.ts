@@ -33,7 +33,7 @@ export const addonMaterialsData: Material[] = [
 ].flat()
 
 export const allMaterialsData: Material[] = [
-  ...costMaterialsData,
+  ...costMaterials,
   ...addonMaterialsData
 ]
 
