@@ -10,6 +10,7 @@ interface OrderState {
   updateOrder: (id: string, updates: Partial<Order>) => void
   deleteOrder: (id: string) => void
   setFilter: (filter: OrderFilter) => void
+  importOrders: (orders: Order[]) => { added: number; skipped: number }
   importFromLegacy: (legacyOrders: any[]) => void
 }
 
@@ -38,6 +39,25 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     set({ orders: newOrders })
   },
   setFilter: (filter) => set({ filter }),
+  importOrders: (incoming) => {
+    const existing = get().orders
+    const existingIds = new Set(existing.map((o) => (o as any).id))
+    const merged = [...existing]
+    let added = 0
+    let skipped = 0
+    for (const order of incoming) {
+      if (existingIds.has((order as any).id)) {
+        skipped++
+      } else {
+        merged.push(order)
+        existingIds.add((order as any).id)
+        added++
+      }
+    }
+    storage.set('list', merged)
+    set({ orders: merged })
+    return { added, skipped }
+  },
   importFromLegacy: (legacyOrders) => {
     console.log('Import legacy orders:', legacyOrders.length)
   },
