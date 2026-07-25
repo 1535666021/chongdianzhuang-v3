@@ -1,118 +1,133 @@
-import { useCallback } from 'react'
-import type { Material, MaterialCategory } from '@/types'
+import { useCallback, useMemo } from 'react'
+import type { Material } from '@/types'
 import { useMaterialStore } from '@/stores/materialStore'
+import { COST_MATERIALS, ALL_ADDON_MATERIALS } from '@/constants/materialData'
 
-/** 固定辅材基准数据（只读） */
-const FIXED_MATERIALS: Material[] = [
-  {
-    id: 'fixed_pvc',
-    name: 'PVC管',
-    unit: '米',
-    costPrice: 3.5,
-    settlementPrice: 3.5,
-    category: '管材' as MaterialCategory,
-    categoryCode: 'PVC',
-    stock: 0,
-    minStock: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    isFixed: true,
-  },
-  {
-    id: 'fixed_cable',
-    name: '电缆',
-    unit: '米',
-    costPrice: 8.0,
-    settlementPrice: 8.0,
-    category: '线缆' as MaterialCategory,
-    categoryCode: 'CABLE',
-    stock: 0,
-    minStock: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    isFixed: true,
-  },
-  {
-    id: 'fixed_leakage',
-    name: '漏保',
-    unit: '个',
-    costPrice: 45.0,
-    settlementPrice: 45.0,
-    category: '辅材' as MaterialCategory,
-    categoryCode: 'BREAKER',
-    stock: 0,
-    minStock: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    isFixed: true,
-  },
-  {
-    id: 'fixed_air',
-    name: '空开',
-    unit: '个',
-    costPrice: 25.0,
-    settlementPrice: 25.0,
-    category: '辅材' as MaterialCategory,
-    categoryCode: 'BREAKER',
-    stock: 0,
-    minStock: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    isFixed: true,
-  },
-  {
-    id: 'fixed_ground',
-    name: '接地棒',
-    unit: '根',
-    costPrice: 15.0,
-    settlementPrice: 15.0,
-    category: '工具' as MaterialCategory,
-    categoryCode: 'GROUND',
-    stock: 0,
-    minStock: 0,
-    createdAt: 0,
-    updatedAt: 0,
-    isFixed: true,
-  },
-]
+const FIXED_COST_MATERIALS: Material[] = COST_MATERIALS
+const FIXED_ADDON_MATERIALS: Material[] = ALL_ADDON_MATERIALS
 
 export function useMaterial() {
   const {
-    materials: customMaterials,
-    addMaterial: storeAdd,
+    materials: storedMaterials,
     updateMaterial: storeUpdate,
-    deleteMaterial: storeDelete,
   } = useMaterialStore()
 
-  const allMaterials = [...FIXED_MATERIALS, ...customMaterials]
+  const costMaterials = useMemo(() => {
+    return FIXED_COST_MATERIALS.map((m) => {
+      const stored = storedMaterials.find((s) => s.id === m.id)
+      if (stored) {
+        return {
+          ...m,
+          costPrice: stored.costPrice ?? m.costPrice,
+          settlementPrice: stored.settlementPrice ?? m.settlementPrice,
+          customerPrice: stored.customerPrice ?? m.customerPrice,
+          freeQuota: stored.freeQuota ?? m.freeQuota,
+          updatedAt: stored.updatedAt ?? m.updatedAt,
+        }
+      }
+      return m
+    })
+  }, [storedMaterials])
 
-  const addMaterial = useCallback(
-    (material: Material) => {
-      storeAdd(material)
-    },
-    [storeAdd]
-  )
+  const addonMaterials = useMemo(() => {
+    return FIXED_ADDON_MATERIALS.map((m) => {
+      const stored = storedMaterials.find((s) => s.id === m.id)
+      if (stored) {
+        return {
+          ...m,
+          costPrice: stored.costPrice ?? m.costPrice,
+          freeQuota: stored.freeQuota ?? m.freeQuota,
+          updatedAt: stored.updatedAt ?? m.updatedAt,
+        }
+      }
+      return m
+    })
+  }, [storedMaterials])
 
-  const updateMaterial = useCallback(
-    (id: string, updates: Partial<Material>) => {
-      storeUpdate(id, updates)
+  const updateCostPrice = useCallback(
+    (id: string, price: number) => {
+      const target = FIXED_COST_MATERIALS.find((m) => m.id === id)
+      if (!target) return
+      const updated: Partial<Material> = {
+        id,
+        name: target.name,
+        unit: target.unit,
+        category: target.category,
+        costPrice: price,
+        settlementPrice: price,
+        customerPrice: price,
+        brand: target.brand,
+        freeQuota: target.freeQuota,
+        source: target.source,
+        stock: target.stock,
+        minStock: target.minStock,
+        isFixed: true,
+        createdAt: target.createdAt,
+        updatedAt: Date.now(),
+      }
+      storeUpdate(id, updated)
     },
     [storeUpdate]
   )
 
-  const deleteMaterial = useCallback(
-    (id: string) => {
-      storeDelete(id)
+  const updateAddonCostPrice = useCallback(
+    (id: string, price: number) => {
+      const target = FIXED_ADDON_MATERIALS.find((m) => m.id === id)
+      if (!target) return
+      const updated: Partial<Material> = {
+        id,
+        name: target.name,
+        unit: target.unit,
+        category: target.category,
+        costPrice: price,
+        settlementPrice: target.settlementPrice,
+        customerPrice: target.customerPrice,
+        brand: target.brand,
+        freeQuota: target.freeQuota,
+        source: target.source,
+        stock: target.stock,
+        minStock: target.minStock,
+        isFixed: true,
+        createdAt: target.createdAt,
+        updatedAt: Date.now(),
+      }
+      storeUpdate(id, updated)
     },
-    [storeDelete]
+    [storeUpdate]
+  )
+
+  const updateAddonFreeQuota = useCallback(
+    (id: string, quota: number) => {
+      const target = FIXED_ADDON_MATERIALS.find((m) => m.id === id)
+      if (!target) return
+      const updated: Partial<Material> = {
+        id,
+        name: target.name,
+        unit: target.unit,
+        category: target.category,
+        costPrice: target.costPrice,
+        settlementPrice: target.settlementPrice,
+        customerPrice: target.customerPrice,
+        brand: target.brand,
+        freeQuota: quota,
+        source: target.source,
+        stock: target.stock,
+        minStock: target.minStock,
+        isFixed: true,
+        createdAt: target.createdAt,
+        updatedAt: Date.now(),
+      }
+      storeUpdate(id, updated)
+    },
+    [storeUpdate]
   )
 
   return {
-    allMaterials,
-    customMaterials,
-    fixedMaterials: FIXED_MATERIALS,
-    addMaterial,
-    updateMaterial,
-    deleteMaterial,
+    costMaterials,
+    addonMaterials,
+    allMaterials: [...costMaterials, ...addonMaterials],
+    updateCostPrice,
+    updateAddonCostPrice,
+    updateAddonFreeQuota,
   }
 }
