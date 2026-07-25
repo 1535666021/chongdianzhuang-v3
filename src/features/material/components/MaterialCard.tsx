@@ -108,7 +108,7 @@ export default function MaterialCard({ material, onUpdate, onDelete }: MaterialC
         </div>
         <div className="text-xs text-gray-500 mt-1">
           结算 ¥{material.settlementPrice.toFixed(2)} ·
-          成本 ¥{material.costPrice.toFixed(2)} · {material.unit}
+          成本 ¥{material.costPrice !== null ? (material.costPrice !== null ? material.costPrice.toFixed(2) : "--") : "待补录"} · {material.unit}
         </div>
       </div>
       {!isFixed && (
