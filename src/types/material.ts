@@ -25,7 +25,8 @@ export const CATEGORY_CODE_MAP: Record<MaterialCategoryCode, MaterialCategory> =
   HIGH_ALTITUDE: '高空',
 }
 
-export interface Material extends BaseEntity {
+export interface Material {
+  id: string
   name: string
   category: MaterialCategory
   categoryCode?: MaterialCategoryCode
@@ -38,6 +39,8 @@ export interface Material extends BaseEntity {
   brand?: string | null
   freeQuota?: number
   source?: 'cost' | 'addon'
+  createdAt?: number
+  updatedAt?: number
 }
 
 export interface MaterialUsage {
