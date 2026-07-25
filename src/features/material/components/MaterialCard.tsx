@@ -13,6 +13,7 @@ export default function MaterialCard({ material, onUpdate, onDelete }: MaterialC
   const [form, setForm] = useState({
     name: material.name,
     unit: material.unit,
+    settlementPrice: String(material.settlementPrice),
     costPrice: String(material.costPrice),
   })
 
@@ -22,10 +23,16 @@ export default function MaterialCard({ material, onUpdate, onDelete }: MaterialC
     onUpdate(material.id, {
       name: form.name,
       unit: form.unit,
+      settlementPrice: parseFloat(form.settlementPrice) || 0,
       costPrice: parseFloat(form.costPrice) || 0,
-      settlementPrice: parseFloat(form.costPrice) || 0,
     })
     setEditing(false)
+  }
+
+  const handleDelete = () => {
+    if (window.confirm(`确定删除「${material.name}」吗？`)) {
+      onDelete(material.id)
+    }
   }
 
   if (editing) {
@@ -39,21 +46,31 @@ export default function MaterialCard({ material, onUpdate, onDelete }: MaterialC
             className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
             placeholder="名称"
           />
+          <input
+            type="text"
+            value={form.unit}
+            onChange={(e) => setForm({ ...form, unit: e.target.value })}
+            className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
+            placeholder="单位"
+          />
           <div className="flex gap-2">
             <input
-              type="text"
-              value={form.unit}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              type="number"
+              step="0.01"
+              min="0"
+              value={form.settlementPrice}
+              onChange={(e) => setForm({ ...form, settlementPrice: e.target.value })}
               className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
-              placeholder="单位"
+              placeholder="结算价（元）"
             />
             <input
               type="number"
               step="0.01"
+              min="0"
               value={form.costPrice}
               onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
               className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-400"
-              placeholder="单价"
+              placeholder="成本价（元）"
             />
           </div>
           <div className="flex gap-2 justify-end">
@@ -90,7 +107,8 @@ export default function MaterialCard({ material, onUpdate, onDelete }: MaterialC
           </span>
         </div>
         <div className="text-xs text-gray-500 mt-1">
-          {material.unit} · ¥{material.costPrice.toFixed(2)}
+          结算 ¥{material.settlementPrice.toFixed(2)} ·
+          成本 ¥{material.costPrice.toFixed(2)} · {material.unit}
         </div>
       </div>
       {!isFixed && (
@@ -102,7 +120,7 @@ export default function MaterialCard({ material, onUpdate, onDelete }: MaterialC
             <Edit2 size={16} />
           </button>
           <button
-            onClick={() => onDelete(material.id)}
+            onClick={handleDelete}
             className="p-1.5 text-red-500 hover:bg-red-50 rounded"
           >
             <Trash2 size={16} />
