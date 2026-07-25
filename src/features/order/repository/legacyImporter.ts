@@ -1,21 +1,21 @@
 import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器（批次4-R3修复版）
- * 修复：增加中文status映射 + 翻正逻辑 + 调试日志
- * 兼容：英文status + 中文status + 混合status + pending+appointment翻正
+ * v7 老备份 → v3 Order 转换器（批次4-R5修复版）
+ * 修复：
+ *  1. 翻正逻辑顶层字段检查增加 timeSlot（老系统用timeSlot不是appointmentTime）
+ *  2. 增加更多桶名兼容（trashOrders/trash/deletedOrders/recycleOrders）
+ *  3. 增加调试日志输出每个订单的原始字段
  * ------------------------------------------------------------ */
 
 /** v7 状态 → v3 中文状态映射（英文+中文双兼容） */
 const STATUS_MAP: Record<string, OrderStatus> = {
-  // 英文 → v3中文
   'pending':    '待办',
   'surveyed':   '待办',
   'appointed':  '已预约',
   'completed':  '已完成',
   'cancelled':  '待办',
   'trash':      '回收站',
-  // 中文 → v3中文（兼容中文status备份）
   '待办':       '待办',
   '已勘测':     '待办',
   '已预约':     '已预约',
@@ -62,15 +62,18 @@ function extractPhone(raw: unknown): string {
   return m ? m[0] : text
 }
 
-/** 翻正逻辑：pending + 有appointment信息 → 已预约 */
+/** 翻正逻辑：pending + 有预约信息 → 已预约
+ *  老系统用 timeSlot，不是 appointmentTime
+ */
 function shouldFlipToAppointed(
   rawStatus: string,
   finalStatus: OrderStatus,
   raw: Record<string, unknown>
 ): OrderStatus {
-  if (finalStatus !== '待办' && rawStatus !== 'pending') return finalStatus
+  // 只有 pending 状态才需要翻正
+  if (rawStatus !== 'pending' && finalStatus !== '待办') return finalStatus
 
-  // 检查appointment对象
+  // 检查 appointment 对象
   const rawAppointment = raw.appointment
   if (rawAppointment && typeof rawAppointment === 'object') {
     const appt = rawAppointment as Record<string, unknown>
@@ -81,9 +84,9 @@ function shouldFlipToAppointed(
     }
   }
 
-  // 检查顶层appointmentDate/appointmentTime字段
+  // 检查顶层字段（老系统用 timeSlot 或 appointmentTime）
   const hasTopDate = asStr(raw.appointmentDate).trim() !== ''
-  const hasTopTime = asStr(raw.appointmentTime).trim() !== ''
+  const hasTopTime = asStr(raw.appointmentTime || raw.timeSlot).trim() !== ''
   if (hasTopDate && hasTopTime) {
     return '已预约'
   }
@@ -108,7 +111,7 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       status: finalStatus,
       region: mapRegion(raw.region),
       appointmentDate: asStr(raw.appointmentDate) || undefined,
-      appointmentTime: asStr(raw.appointmentTime) || undefined,
+      appointmentTime: asStr(raw.appointmentTime || raw.timeSlot) || undefined,
       materialCost: asNum(raw.materialCost),
       laborCost: asNum(raw.laborCost),
       platformFee: asNum(raw.platformFee),
@@ -147,20 +150,33 @@ export function parseV7Backup(jsonText: string): {
   const success: Order[] = []
   const failed: { reason: string; index: number }[] = []
 
-  const buckets: { key: string; bucketDefaultStatus: OrderStatus }[] = [
-    { key: 'orders', bucketDefaultStatus: '待办' },
-    { key: 'completedOrders', bucketDefaultStatus: '已完成' },
-    { key: 'trashOrders', bucketDefaultStatus: '回收站' },
+  // 三桶遍历，兼容多种键名
+  const bucketDefs: { keys: string[]; bucketDefaultStatus: OrderStatus }[] = [
+    { keys: ['orders', 'pendingOrders', 'orderList'], bucketDefaultStatus: '待办' },
+    { keys: ['completedOrders', 'completed', 'doneOrders'], bucketDefaultStatus: '已完成' },
+    { keys: ['trashOrders', 'trash', 'deletedOrders', 'recycleOrders'], bucketDefaultStatus: '回收站' },
   ]
 
-  for (const { key, bucketDefaultStatus } of buckets) {
-    const list = obj[key]
-    if (!Array.isArray(list)) continue
+  for (const { keys, bucketDefaultStatus } of bucketDefs) {
+    // 找到第一个存在的键
+    let list: unknown[] | null = null
+    let usedKey = ''
+    for (const key of keys) {
+      const candidate = obj[key]
+      if (Array.isArray(candidate)) {
+        list = candidate
+        usedKey = key
+        break
+      }
+    }
+    if (!list) continue
+
+    console.log(`[import] 桶 ${usedKey}: ${list.length} 条`)
 
     for (let i = 0; i < list.length; i++) {
       const raw = list[i]
       if (typeof raw !== 'object' || raw === null) {
-        failed.push({ reason: `${key}[${i}] 不是对象`, index: i })
+        failed.push({ reason: `${usedKey}[${i}] 不是对象`, index: i })
         continue
       }
 
@@ -170,18 +186,16 @@ export function parseV7Backup(jsonText: string): {
       // 优先STATUS_MAP映射，失败用桶默认状态兜底
       let finalStatus = STATUS_MAP[rawStatus] || bucketDefaultStatus
 
-      // 翻正逻辑：pending + 有appointment信息 → 已预约
+      // 翻正逻辑：pending + 有预约信息 → 已预约
       finalStatus = shouldFlipToAppointed(rawStatus, finalStatus, rawRecord)
 
-      // 调试日志（开发阶段，方便定位）
-      // eslint-disable-next-line no-console
-      console.log(`[import] ${key}[${i}] rawStatus=${rawStatus} finalStatus=${finalStatus} name=${rawRecord.name}`)
+      console.log(`[import] ${usedKey}[${i}] rawStatus=${rawStatus} finalStatus=${finalStatus} name=${rawRecord.name} appointmentDate=${rawRecord.appointmentDate} timeSlot=${(rawRecord.appointment as any)?.timeSlot}`)
 
       const order = convertV7Order(rawRecord, finalStatus)
       if (order) {
         success.push(order)
       } else {
-        failed.push({ reason: `${key}[${i}] 转换失败`, index: i })
+        failed.push({ reason: `${usedKey}[${i}] 转换失败`, index: i })
       }
     }
   }
@@ -190,6 +204,8 @@ export function parseV7Backup(jsonText: string): {
   for (const s of ['待办', '已预约', '已完成', '回收站'] as OrderStatus[]) {
     summary[s] = success.filter((o) => o.status === s).length
   }
+
+  console.log(`[import] 汇总: ${JSON.stringify(summary)}`)
 
   return { success, failed, summary }
 }
