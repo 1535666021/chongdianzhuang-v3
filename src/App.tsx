@@ -8,7 +8,7 @@ const iconMap: Record<string, React.ReactNode> = {
   Calendar: <Calendar size={20} />,
   CheckCircle: <CheckCircle size={20} />,
   Package: <Package size={20} />,
-  BarChart: <BarChart3 size={20} />,
+  BarChart3: <BarChart3 size={20} />,
   Settings: <Settings size={20} />,
 }
 
@@ -43,20 +43,22 @@ export default function App() {
       <main className="flex-1 overflow-auto">
         <Outlet />
       </main>
-      <nav className="bg-white border-t border-gray-200 px-2 py-1.5 sticky bottom-0 z-50">
-        <div className="flex justify-around items-center">
+      <nav className="bg-white border-t border-gray-200 px-2 py-1 fixed bottom-0 left-0 right-0">
+        <div className="flex justify-around">
           {ROUTES.map((route) => (
             <button
               key={route.path}
-              onClick={() => navigate(route.path)}
-              className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors ${
+              onClick={() => {
+                navigate(route.path)
+              }}
+              className={`flex flex-col items-center py-2 px-3 rounded-lg text-xs ${
                 isActive(route.path)
                   ? 'text-blue-600'
-                  : 'text-gray-400 hover:text-gray-600'
+                  : 'text-gray-500'
               }`}
             >
-              {iconMap[route.icon] || <Package size={20} />}
-              <span className="text-[10px]">{route.label}</span>
+              {iconMap[route.icon]}
+              <span className="mt-1">{route.label}</span>
             </button>
           ))}
         </div>
