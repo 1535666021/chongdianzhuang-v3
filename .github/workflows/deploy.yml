@@ -40,19 +40,21 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
 
       - name: Verify build output
         run: |
           echo "Checking build output for legacyImporter keywords..."
-          if ! grep -q "appointed" dist/assets/*.js; then
+          if ! grep -rq "appointed" dist/assets/; then
             echo "ERROR: 'appointed' not found in build output"
             exit 1
           fi
-          if ! grep -q "trash" dist/assets/*.js; then
+          if ! grep -rq "trash" dist/assets/; then
             echo "ERROR: 'trash' not found in build output"
             exit 1
           fi
-          if ! grep -q "legacyImporter" dist/assets/*.js; then
+          if ! grep -rq "legacyImporter" dist/assets/; then
             echo "ERROR: 'legacyImporter' not found in build output"
             exit 1
           fi
