@@ -1,16 +1,22 @@
 import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器
- * 字段映射基于老系统源码分析（S1产出）
+ * v7 老备份 → v3 Order 转换器（批次4-R1修复版）
+ * 修复：老备份status字段为英文小写，非中文；单桶结构
  * ------------------------------------------------------------ */
 
-/** v7 状态 → v3 状态映射 */
+/** v7 英文状态 → v3 中文状态映射
+ *  老系统：pending(待勘测)/surveyed(已勘测)/appointed(已预约)/
+ *         completed(已完成)/cancelled(已取消)/trash(回收站)
+ *  v3简化：待勘测/已勘测/已取消 → 归入"待办"（甲方可后续手动调整）
+ */
 const STATUS_MAP: Record<string, OrderStatus> = {
-  '待办': '待办',
-  '已预约': '已预约',
-  '已完成': '已完成',
-  '回收站': '回收站',
+  'pending':    '待办',
+  'surveyed':   '待办',
+  'appointed':  '已预约',
+  'completed':  '已完成',
+  'cancelled':  '待办',
+  'trash':      '回收站',
 }
 
 /** v7 平台 → v3 平台映射 */
@@ -52,7 +58,7 @@ function extractPhone(raw: unknown): string {
 }
 
 /** 单条 v7 订单 → v3 Order */
-function convertV7Order(raw: Record<string, unknown>, forcedStatus: OrderStatus): Order | null {
+function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus): Order | null {
   try {
     const id = asStr(raw.id) || 'legacy_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)
     const now = Date.now()
@@ -65,7 +71,7 @@ function convertV7Order(raw: Record<string, unknown>, forcedStatus: OrderStatus)
       phone: extractPhone(raw.phone),
       address: asStr(raw.addr).trim() || '地址未填写',
       platform: mapPlatform(raw.platform),
-      status: forcedStatus,
+      status: finalStatus,
       region: mapRegion(raw.region),
       appointmentDate: asStr(raw.appointmentDate) || undefined,
       appointmentTime: asStr(raw.appointmentTime) || undefined,
@@ -86,7 +92,9 @@ function convertV7Order(raw: Record<string, unknown>, forcedStatus: OrderStatus)
   }
 }
 
-/** 解析 v7 备份 JSON 文本 */
+/** 解析 v7 备份 JSON 文本
+ *  老备份结构：单桶 orders，status字段为英文
+ */
 export function parseV7Backup(jsonText: string): {
   success: Order[]
   failed: { reason: string; index: number }[]
@@ -107,39 +115,27 @@ export function parseV7Backup(jsonText: string): {
   const success: Order[] = []
   const failed: { reason: string; index: number }[] = []
 
-  // 处理三个桶：orders(待办/已预约) / completedOrders(已完成) / trashOrders(回收站)
-  const buckets: { key: string; status: OrderStatus }[] = [
-    { key: 'orders', status: '待办' },
-    { key: 'completedOrders', status: '已完成' },
-    { key: 'trashOrders', status: '回收站' },
-  ]
+  // 老备份只有一个 orders 桶，所有订单在里面
+  const list = obj['orders']
+  if (!Array.isArray(list)) {
+    return { success: [], failed: [{ reason: '备份中无订单数据', index: -1 }], summary: {} }
+  }
 
-  for (const { key, status } of buckets) {
-    const list = obj[key]
-    if (!Array.isArray(list)) continue
+  for (let i = 0; i < list.length; i++) {
+    const raw = list[i]
+    if (typeof raw !== 'object' || raw === null) {
+      failed.push({ reason: `orders[${i}] 不是对象`, index: i })
+      continue
+    }
 
-    for (let i = 0; i < list.length; i++) {
-      const raw = list[i]
-      if (typeof raw !== 'object' || raw === null) {
-        failed.push({ reason: `${key}[${i}] 不是对象`, index: i })
-        continue
-      }
+    const rawStatus = asStr((raw as Record<string, unknown>).status)
+    const finalStatus = STATUS_MAP[rawStatus] || '待办'
 
-      // orders桶内可能混有待办和已预约，按raw.status细分
-      let finalStatus = status
-      if (key === 'orders') {
-        const rawStatus = asStr((raw as Record<string, unknown>).status)
-        if (STATUS_MAP[rawStatus] === '已预约') {
-          finalStatus = '已预约'
-        }
-      }
-
-      const order = convertV7Order(raw as Record<string, unknown>, finalStatus)
-      if (order) {
-        success.push(order)
-      } else {
-        failed.push({ reason: `${key}[${i}] 转换失败`, index: i })
-      }
+    const order = convertV7Order(raw as Record<string, unknown>, finalStatus)
+    if (order) {
+      success.push(order)
+    } else {
+      failed.push({ reason: `orders[${i}] 转换失败`, index: i })
     }
   }
 
