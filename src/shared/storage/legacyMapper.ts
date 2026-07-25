@@ -1,9 +1,8 @@
-import type { Order, OrderStatus } from '@/types'
+import type { Order, OrderStatus, Platform, Region } from '@/types'
 import type { LegacyOrderData } from './legacyReader'
 
 /** v7 状态 → v3 中文状态映射（含历史别名） */
 const STATUS_MAP: Record<string, OrderStatus> = {
-  // 标准英文
   'pending':     '待办',
   'surveyed':    '待办',
   'appointed':   '已预约',
@@ -16,7 +15,6 @@ const STATUS_MAP: Record<string, OrderStatus> = {
   'cancelled':   '待办',
   'trash':       '回收站',
   'deleted':     '回收站',
-  // 中文
   '待办':        '待办',
   '已勘测':      '待办',
   '已预约':      '已预约',
@@ -50,9 +48,9 @@ export function mapLegacyToNew(legacy: LegacyOrderData): Order {
     customerName: legacy.customerName || '',
     phone: legacy.phone || '',
     address: legacy.address || '',
-    platform: legacy.platform || '其他',
+    platform: (legacy.platform || '其他') as Platform,
     status: finalStatus,
-    region: legacy.region || '其他',
+    region: (legacy.region || '其他') as Region,
     appointmentDate: legacy.appointmentDate,
     appointmentTime: legacy.appointmentTime,
     materialCost: legacy.materialCost || 0,
@@ -60,7 +58,7 @@ export function mapLegacyToNew(legacy: LegacyOrderData): Order {
     platformFee: legacy.platformFee || 0,
     actualProfit: legacy.actualProfit || 0,
     notes: legacy.notes || '',
-    meterStatus: legacy.meterStatus || '未安装',
+    meterStatus: (legacy.meterStatus || '未安装') as '已安装' | '未安装',
     createdAt: legacy.createdAt || Date.now(),
     updatedAt: Date.now(),
   }
