@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 
 export default defineConfig({
-  base: '/chongdianzhuang-v3/',
+  base: './',
   plugins: [
     react(),
     VitePWA({
@@ -19,7 +19,7 @@ export default defineConfig({
               cacheName: 'api-cache',
               expiration: {
                 maxEntries: 100,
-                maxAgeSeconds: 24 * 60 * 60, // 1天
+                maxAgeSeconds: 24 * 60 * 60,
               },
             },
           },
