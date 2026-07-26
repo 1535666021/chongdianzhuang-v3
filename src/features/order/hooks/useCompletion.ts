@@ -3,6 +3,7 @@ import { usePackageMeters } from './usePackageMeters'
 import { DEFAULT_PACKAGE_METERS } from '@/constants/package'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitPreview, CompletionFormData } from '../types/completion'
@@ -32,6 +33,7 @@ export function useCompletion(orderId: string) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
+  const stockOut = useInventoryStore((s) => s.stockOut)
 
   const [packageMeters, setPackageMeters] = useState(DEFAULT_PACKAGE_METERS)
 
@@ -158,6 +160,35 @@ export function useCompletion(orderId: string) {
 
   const save = useCallback(() => {
     if (!order) return false
+
+    // 自动出库：扣减增项材料库存
+    form.materials.forEach((m) => {
+      if (m.name && m.quantity > 0) {
+        const addon = findAddonMaterial(m.name)
+        if (addon) {
+          stockOut(addon.id, addon.name, m.quantity, `订单完成: ${order.customerName}`)
+        }
+      }
+    })
+
+    // 自动出库：扣减固定辅材库存
+    if (form.fixedAux.cableMeters > 0) {
+      const cable = findCostMaterial('电缆')
+      if (cable) stockOut(cable.id, cable.name, form.fixedAux.cableMeters, `订单完成: ${order.customerName}`)
+    }
+    if (form.fixedAux.pvcMeters > 0) {
+      const pvc = findCostMaterial('PVC')
+      if (pvc) stockOut(pvc.id, pvc.name, form.fixedAux.pvcMeters, `订单完成: ${order.customerName}`)
+    }
+    if (form.fixedAux.breakerCount > 0) {
+      const breaker = findCostMaterial('漏保盒')
+      if (breaker) stockOut(breaker.id, breaker.name, form.fixedAux.breakerCount, `订单完成: ${order.customerName}`)
+    }
+    if (form.fixedAux.groundRodCount > 0) {
+      const ground = findCostMaterial('接地棒') || findCostMaterial('接地')
+      if (ground) stockOut(ground.id, ground.name, form.fixedAux.groundRodCount, `订单完成: ${order.customerName}`)
+    }
+
     updateOrder(orderId, {
       status: '已完成',
       completeDate: form.completeDate,
@@ -177,7 +208,7 @@ export function useCompletion(orderId: string) {
       notes: form.notes,
     })
     return true
-  }, [order, orderId, form, profit, updateOrder])
+  }, [order, orderId, form, profit, updateOrder, stockOut])
 
   return {
     order,

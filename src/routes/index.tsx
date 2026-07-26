@@ -14,6 +14,7 @@ const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
 const OrderComplete = lazy(() => import('@/features/order/pages/OrderComplete'))
 const OrderSurvey = lazy(() => import('@/features/order/pages/OrderSurvey'))
 const BackupImport = lazy(() => import('@/features/settings/components/BackupImport'))
+const InventoryPage = lazy(() => import('@/features/material/pages/InventoryPage'))
 
 function LoadingFallback() {
   return <div className="p-4 text-center text-gray-400">加载中...</div>
@@ -68,6 +69,14 @@ export default function AppRoutes() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <FinancePage />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/inventory"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <InventoryPage />
               </Suspense>
             }
           />
