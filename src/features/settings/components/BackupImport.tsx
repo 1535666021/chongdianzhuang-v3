@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import { parseV7Backup } from '@/features/order/repository/legacyImporter'
-import { Upload, FileJson, AlertCircle, CheckCircle } from 'lucide-react'
+import { Upload, Download, FileJson, AlertCircle, CheckCircle } from 'lucide-react'
 
 export default function BackupImport() {
   const [preview, setPreview] = useState<{
@@ -46,7 +46,7 @@ export default function BackupImport() {
             for (let i = 0; i < Math.min(3, arr.length); i++) {
               const item = arr[i]
               const status = item?.status || '无status'
-              const name = item?.name || '无名'
+              const name = item?.name || item?.customerName || '无名'
               const apptDate = item?.appointmentDate || (item?.appointment?.appointmentDate) || '无'
               const apptTime = item?.appointmentTime || (item?.appointment?.timeSlot) || (item?.appointment?.time) || '无'
               debug += `  [${i}] status=${status} name=${name} appointmentDate=${apptDate} time=${apptTime}\n`
@@ -104,6 +104,32 @@ export default function BackupImport() {
     setDebugInfo('')
   }
 
+  /** 数据导出：v3统一标准格式（字段名固定，杜绝老字段混乱） */
+  const handleExport = () => {
+    const orders = useOrderStore.getState().orders
+    const summary: Record<string, number> = {}
+    for (const s of ['待办', '已预约', '已完成', '回收站']) {
+      summary[s] = orders.filter((o) => o.status === s).length
+    }
+    const payload = {
+      format: 'cdz-v3-backup',
+      formatVersion: 1,
+      exportDate: new Date().toISOString(),
+      count: orders.length,
+      summary,
+      orders,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `cdz_v3_backup_${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }
+
   const handleCancel = () => {
     setPreview(null)
     setResult(null)
@@ -136,7 +162,7 @@ export default function BackupImport() {
             选择备份文件（.json / .txt）
           </button>
           <p className="text-xs text-gray-400 mt-2">
-            支持老系统导出的 v7 格式备份文件
+            支持老系统导出的 v7 格式备份文件，也支持v3标准格式备份
           </p>
         </div>
 
@@ -242,6 +268,22 @@ export default function BackupImport() {
             </button>
           </div>
         )}
+
+        {/* 数据导出：统一v3标准格式 */}
+        <div className="bg-white rounded-lg border border-gray-200 p-4">
+          <h2 className="text-sm font-medium text-gray-700 mb-3">数据导出（统一格式备份）</h2>
+          <button
+            onClick={handleExport}
+            disabled={existingCount === 0}
+            className="w-full py-3 border-2 border-dashed border-green-300 rounded-lg text-green-600 text-sm flex items-center justify-center gap-2 hover:border-green-500 transition-colors disabled:opacity-50"
+          >
+            <Download size={18} />
+            导出全部订单（{existingCount} 条 · v3标准格式）
+          </button>
+          <p className="text-xs text-gray-400 mt-2">
+            导出为v3统一字段格式，可用于备份/迁移，重新导入时自动识别
+          </p>
+        </div>
 
         {/* 版本号 */}
         <div className="text-center text-xs text-gray-400 py-4">
