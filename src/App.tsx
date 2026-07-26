@@ -20,7 +20,7 @@ export default function App() {
 
   const isActive = (path: string) => {
     if (path === '/') {
-      return location.pathname === '/' || location.pathname === '/chongdianzhuang-v3/'
+      return location.pathname === '/' || location.hash === '#/'
     }
     return location.pathname.startsWith(path)
   }
