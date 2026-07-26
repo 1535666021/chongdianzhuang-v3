@@ -2,7 +2,7 @@ import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
  * v7 老备份 → v3 Order 转换器（R9精准对齐版）
- * R8：金额宽兼容
+ * R9b：翻正逻辑补appointmentPeriod（老系统预约时段真实字段名）
  * R9：依据老备份真实字段结构精准对齐——
  *   应收   = profitData.customerPaid（客户实付，第一优先）
  *   扣点   = 老系统不存此字段 → 按官方公式补算（京东/天猫10%，其他20%）
@@ -115,7 +115,7 @@ function shouldFlipToAppointed(
   }
 
   const hasTopDate = asStr(raw.appointmentDate).trim() !== ''
-  const hasTopTime = asStr(raw.appointmentTime || raw.timeSlot).trim() !== ''
+  const hasTopTime = asStr(raw.appointmentTime || raw.appointmentPeriod || raw.timeSlot).trim() !== ''
   if (hasTopDate && hasTopTime) return '已预约'
 
   return finalStatus
