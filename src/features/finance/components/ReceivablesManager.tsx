@@ -1,50 +1,89 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { CheckCircle, Circle, Wallet } from 'lucide-react'
 import { useFinance } from '../hooks/useFinance'
-import type { ReceivableFilter } from '../types/finance'
-import { CheckCircle, Circle, DollarSign } from 'lucide-react'
 
-const FILTERS: { key: ReceivableFilter; label: string }[] = [
-  { key: 'all', label: '全部' }, { key: 'unpaid', label: '未回款' }, { key: 'paid', label: '已回款' },
-]
-function fmt(n: number): string { return n.toFixed(2) }
+type FilterType = 'all' | 'unpaid' | 'paid'
 
-export default function ReceivablesManager() {
-  const { receivableOrders, getFilteredReceivables, togglePaymentStatus } = useFinance()
-  const [filter, setFilter] = useState<ReceivableFilter>('all')
-  const filtered = getFilteredReceivables(filter)
-  const unpaidCount = receivableOrders.filter((o) => !o.paid).length
-  const paidCount = receivableOrders.filter((o) => o.paid).length
-  const unpaidAmount = receivableOrders.filter((o) => !o.paid).reduce((sum, o) => sum + o.revenue, 0)
+export function ReceivablesManager() {
+  const { getReceivables, togglePaid } = useFinance()
+  const [filter, setFilter] = useState<FilterType>('all')
+
+  const list = useMemo(() => {
+    const all = getReceivables()
+    if (filter === 'unpaid') return all.filter(r => !r.paid)
+    if (filter === 'paid') return all.filter(r => r.paid)
+    return all
+  }, [getReceivables, filter])
+
+  const stats = useMemo(() => {
+    const all = getReceivables()
+    const unpaid = all.filter(r => !r.paid)
+    return {
+      total: all.length,
+      unpaidCount: unpaid.length,
+      unpaidAmount: unpaid.reduce((s, r) => s + r.amount, 0),
+    }
+  }, [getReceivables])
+
+  if (list.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 text-gray-400">
+        <Wallet size={48} className="mb-4 opacity-30" />
+        <p>暂无回款记录</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white rounded-xl p-3 shadow-sm text-center"><div className="text-lg font-bold text-gray-800">{receivableOrders.length}</div><div className="text-[10px] text-gray-400">总订单</div></div>
-        <div className="bg-white rounded-xl p-3 shadow-sm text-center"><div className="text-lg font-bold text-orange-500">{unpaidCount}</div><div className="text-[10px] text-gray-400">未回款</div></div>
-        <div className="bg-white rounded-xl p-3 shadow-sm text-center"><div className="text-lg font-bold text-green-600">{paidCount}</div><div className="text-[10px] text-gray-400">已回款</div></div>
-      </div>
-      {unpaidAmount > 0 && (
-        <div className="bg-orange-50 border border-orange-200 rounded-xl p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2"><DollarSign size={16} className="text-orange-500" /><span className="text-sm font-medium text-orange-700">未回款总额</span></div>
-          <span className="text-lg font-bold text-orange-600">¥{fmt(unpaidAmount)}</span>
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl p-4 shadow-sm">
+        <h3 className="text-sm font-semibold text-gray-700 mb-2">回款概览</h3>
+        <div className="flex justify-between items-center py-2">
+          <span className="text-sm text-gray-400">未回款 {stats.unpaidCount} 笔</span>
+          <span className="text-lg font-bold text-red-500">¥{stats.unpaidAmount.toFixed(2)}</span>
         </div>
-      )}
+      </div>
+
       <div className="flex gap-2">
-        {FILTERS.map((f) => (
-          <button key={f.key} onClick={() => setFilter(f.key)} className={`flex-1 py-2 text-xs rounded-lg font-medium ${filter === f.key ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 border border-gray-200'}`}>{f.label}</button>
+        {(['all', 'unpaid', 'paid'] as FilterType[]).map(f => (
+          <button
+            key={f}
+            className={`flex-1 py-2 text-xs rounded-lg font-medium ${
+              filter === f ? 'bg-blue-500 text-white' : 'bg-white text-gray-600 border border-gray-200'
+            }`}
+            onClick={() => setFilter(f)}
+          >
+            {f === 'all' ? '全部' : f === 'unpaid' ? '未回款' : '已回款'}
+          </button>
         ))}
       </div>
+
       <div className="space-y-2">
-        {filtered.length === 0 && <div className="text-center text-gray-400 py-8 text-sm">暂无订单</div>}
-        {filtered.map((order) => (
-          <div key={order.id} className={`bg-white rounded-xl p-3 shadow-sm border ${order.paid ? 'border-green-200' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-medium text-gray-800 truncate">{order.customerName}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{order.platform} · ¥{fmt(order.revenue)}</div>
-              </div>
-              <button onClick={() => togglePaymentStatus(order.id)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${order.paid ? 'bg-green-50 text-green-600' : 'bg-orange-50 text-orange-600'}`}>
-                {order.paid ? <CheckCircle size={14} /> : <Circle size={14} />}{order.paid ? '已回款' : '未回款'}
+        {list.map(item => (
+          <div key={item.id} className="bg-white rounded-xl p-3 shadow-sm flex items-center justify-between">
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-gray-800">{item.customerName}</div>
+              <div className="text-xs text-gray-400">{item.completeDate || '无日期'}</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-lg font-bold text-gray-800">¥{item.amount.toFixed(2)}</span>
+              <button
+                className={`px-3 py-1.5 text-xs rounded-lg font-medium border ${
+                  item.paid
+                    ? 'bg-green-50 text-green-600 border-green-200'
+                    : 'bg-orange-50 text-orange-600 border-orange-200'
+                }`}
+                onClick={() => togglePaid(item.id)}
+              >
+                {item.paid ? (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle size={14} /> 已回款
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1">
+                    <Circle size={14} /> 标记回款
+                  </span>
+                )}
               </button>
             </div>
           </div>
