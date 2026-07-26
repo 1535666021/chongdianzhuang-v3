@@ -1,6 +1,7 @@
 import type { Order } from '@/types'
+import ProfitBadge from './ProfitBadge'
 import { STATUS_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt } from 'lucide-react'
 
 interface OrderCardProps {
   order: Order
@@ -90,21 +91,45 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
         )}
       </div>
 
-      {/* 第五行：预约日期 + 价格（仅已完成显示） */}
-      <div className="flex justify-between items-center text-sm">
-        <div className="flex items-center gap-2 text-gray-500">
-          <Calendar size={14} />
-          <span>{order.appointmentDate || '未预约'}</span>
-        </div>
-        {isCompleted && (
-          <div className="text-right">
-            <span className="text-xs text-gray-400">{order.platform}</span>
-            <div className="font-semibold text-blue-600">
-              ¥{order.actualProfit?.toFixed(2) || '0.00'}
-            </div>
-          </div>
-        )}
+      {/* 第五行：预约日期 */}
+      <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
+        <Calendar size={14} />
+        <span>{order.appointmentDate || '未预约'}</span>
       </div>
+
+      {/* 第六行：利润区（仅已完成显示） */}
+      {isCompleted ? (
+        <div className="bg-gray-50 rounded-lg p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1 text-gray-500">
+              <Package size={12} />材料
+            </div>
+            <span className="text-gray-700">¥{(order.materialCost || 0).toFixed(0)}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1 text-gray-500">
+              <Wrench size={12} />人工
+            </div>
+            <span className="text-gray-700">¥{(order.laborCost || 0).toFixed(0)}</span>
+          </div>
+          <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-1 text-gray-500">
+              <Receipt size={12} />扣点
+            </div>
+            <span className="text-red-400">-¥{(order.platformFee || 0).toFixed(0)}</span>
+          </div>
+          <div className="border-t border-gray-200 pt-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1 text-xs text-gray-500">
+              <DollarSign size={12} />利润
+            </div>
+            <ProfitBadge profit={order.actualProfit || 0} />
+          </div>
+        </div>
+      ) : (
+        <div className="bg-amber-50 rounded-lg p-2 text-center">
+          <span className="text-xs text-amber-600 font-medium">待完成</span>
+        </div>
+      )}
     </div>
   )
 }
