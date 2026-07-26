@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
+import { usePackageMeters } from './usePackageMeters'
+import { DEFAULT_PACKAGE_METERS } from '@/constants/package'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
@@ -30,6 +32,8 @@ export function useCompletion(orderId: string) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
+
+  const [packageMeters, setPackageMeters] = useState(DEFAULT_PACKAGE_METERS)
 
   const [form, setForm] = useState<CompletionFormData>({
     completeDate: new Date().toISOString().slice(0, 10),
@@ -110,9 +114,11 @@ export function useCompletion(orderId: string) {
     }))
   }, [])
 
+  const packageBreakdown = usePackageMeters(form.materials, packageMeters)
+
   const profit = useMemo<ProfitPreview>(() => {
-    // 客户增项费 = Σ(settlementPrice × quantity)
-    const customerReceivable = form.materials.reduce((s, m) => s + m.customerSubtotal, 0)
+    // 客户应收 = 套餐扣除免费额后的金额
+    const customerReceivable = packageBreakdown.totalCustomerReceivable
 
     // 固定辅材成本
     const cable = findCostMaterial('电缆')
@@ -141,6 +147,7 @@ export function useCompletion(orderId: string) {
 
     return {
       customerReceivable: Math.round(customerReceivable * 100) / 100,
+      freeAmount: Math.round(packageBreakdown.freeAmount * 100) / 100,
       platformFee,
       materialCost,
       laborCost: order?.laborCost || 0,
@@ -176,6 +183,9 @@ export function useCompletion(orderId: string) {
     order,
     form,
     profit,
+    packageMeters,
+    setPackageMeters,
+    packageBreakdown,
     updateForm,
     addMaterial,
     updateMaterial,
