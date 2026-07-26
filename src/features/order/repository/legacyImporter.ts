@@ -1,11 +1,13 @@
 import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器（R8金额宽兼容版）
- * R7：四桶遍历 + 状态翻正
- * R8：金额字段宽兼容（profitData/finance/settlement嵌套+别名），
- *     补 customerPrice / completeDate 映射，
- *     应收缺失时按官方公式反推：revenue = 利润+材料+人工+扣点
+ * v7 老备份 → v3 Order 转换器（R9精准对齐版）
+ * R8：金额宽兼容
+ * R9：依据老备份真实字段结构精准对齐——
+ *   应收   = profitData.customerPaid（客户实付，第一优先）
+ *   扣点   = 老系统不存此字段 → 按官方公式补算（京东/天猫10%，其他20%）
+ *   完成日 = completedAt（时间戳自动转YYYY-MM-DD）
+ *   利润   = profitData.profit（快照原值，不重算）
  * ------------------------------------------------------------ */
 
 /** v7 状态 → v3 中文状态映射（含历史别名） */
@@ -72,6 +74,23 @@ function round2(n: number): number {
   return Math.round(n * 100) / 100
 }
 
+/** 日期兼容转换：时间戳（秒/毫秒）→ YYYY-MM-DD；字符串原样 */
+function asDateStr(v: unknown): string {
+  if (v === undefined || v === null || v === '') return ''
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const ms = v < 1e12 ? v * 1000 : v
+    const d = new Date(ms)
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${day}`
+    }
+    return ''
+  }
+  return asStr(v)
+}
+
 /** 从phone字段提取手机号 */
 function extractPhone(raw: unknown): string {
   const text = asStr(raw)
@@ -111,6 +130,11 @@ function getMoneyContainer(raw: Record<string, unknown>): Record<string, unknown
   return {}
 }
 
+/** 平台扣点率（官方公式：京东/天猫10%，其他20%） */
+function platformRate(platform: Platform): number {
+  return platform === '京东' || platform === '天猫' ? 0.1 : 0.2
+}
+
 /** 单条 v7 订单 → v3 Order */
 function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus): Order | null {
   try {
@@ -119,51 +143,70 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
     const createdAt = typeof raw.createdAt === 'number' ? raw.createdAt : now
     const updatedAt = typeof raw.updatedAt === 'number' ? raw.updatedAt : now
 
-    // ===== R8：金额宽兼容提取 =====
+    // ===== R9：金额精准对齐 =====
     const pd = getMoneyContainer(raw)
 
     const materialCost = pickNum(
-      raw.materialCost, raw.material, raw.materialFee, raw.materialsCost,
-      pd.materialCost, pd.material, pd.materialFee, pd.materialsCost
+      pd.materialCost, pd.material, pd.materialFee, pd.materialsCost,
+      raw.materialCost, raw.material, raw.materialFee, raw.materialsCost
     )
     const laborCost = pickNum(
-      raw.laborCost, raw.labor, raw.laborFee, raw.installFee,
-      pd.laborCost, pd.labor, pd.laborFee, pd.installFee
-    )
-    const platformFee = pickNum(
-      raw.platformFee, raw.platformDeduction, raw.deduction, raw.fee,
-      pd.platformFee, pd.platformDeduction, pd.deduction, pd.fee
+      pd.laborCost, pd.labor, pd.laborFee, pd.installFee,
+      raw.laborCost, raw.labor, raw.laborFee, raw.installFee
     )
     const actualProfit = pickNum(
-      raw.actualProfit, raw.profit, raw.netProfit,
-      pd.actualProfit, pd.profit, pd.netProfit
+      pd.profit, pd.actualProfit, pd.netProfit,
+      raw.actualProfit, raw.profit, raw.netProfit
     )
+    // 应收：老系统真实字段 customerPaid 第一优先（客户实付）
     let customerPrice = pickNum(
-      raw.customerPrice, raw.receivable, raw.revenue, raw.totalAmount, raw.amount, raw.price, raw.total,
-      pd.customerPrice, pd.receivable, pd.revenue, pd.totalAmount, pd.amount, pd.price
+      pd.customerPaid, raw.customerPaid,
+      pd.customerPrice, raw.customerPrice,
+      pd.receivable, raw.receivable,
+      pd.revenue, raw.revenue,
+      pd.totalAmount, raw.totalAmount,
+      pd.amount, raw.amount,
+      pd.price, raw.price,
+      raw.total
     )
 
-    // 应收兜底：官方反推公式 revenue = actualProfit + materialCost + laborCost + platformFee
-    // （仅字段间互相推导，不重算利润，不引入外部参数，老单快照原值不动）
+    const platform = mapPlatform(raw.platform)
+
+    // 平台扣点：优先快照原值；老系统不存此字段 → 按官方公式补算
+    let platformFee = pickNum(
+      pd.platformFee, pd.platformDeduction, pd.deduction, pd.fee,
+      raw.platformFee, raw.platformDeduction, raw.deduction, raw.fee
+    )
+    if (!platformFee && customerPrice > 0) {
+      platformFee = round2(customerPrice * platformRate(platform))
+    }
+
+    // 应收兜底：仍无应收但有利润/成本快照时按官方公式反推
     if (!customerPrice && (actualProfit || materialCost || laborCost || platformFee)) {
       customerPrice = round2(actualProfit + materialCost + laborCost + platformFee)
     }
 
-    // 完成日期宽兼容（对账月份口径：completeDate || appointmentDate）
+    // 完成日期：completedAt（老系统真实字段，时间戳自动转日期）第一优先
     const completeDate =
-      asStr(raw.completeDate || raw.finishDate || raw.completedDate || raw.doneDate || raw.finishTime ||
-            pd.completeDate || pd.finishDate) || undefined
+      asDateStr(raw.completedAt) ||
+      asDateStr(raw.completeDate) ||
+      asDateStr(raw.finishDate) ||
+      asDateStr(raw.completedDate) ||
+      asDateStr(raw.doneDate) ||
+      asDateStr(pd.completeDate) ||
+      asDateStr(pd.finishDate) ||
+      undefined
 
     const order: Order = {
       id,
       customerName: asStr(raw.name).trim() || '未知客户',
       phone: extractPhone(raw.phone),
       address: asStr(raw.addr).trim() || '地址未填写',
-      platform: mapPlatform(raw.platform),
+      platform,
       status: finalStatus,
       region: mapRegion(raw.region),
       appointmentDate: asStr(raw.appointmentDate) || undefined,
-      appointmentTime: asStr(raw.appointmentTime || raw.timeSlot) || undefined,
+      appointmentTime: asStr(raw.appointmentTime || raw.appointmentPeriod || raw.timeSlot) || undefined,
       materialCost,
       laborCost,
       platformFee,
