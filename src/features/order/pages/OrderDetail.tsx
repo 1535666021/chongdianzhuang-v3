@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import { STATUS_COLORS } from '@/constants/order'
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2 } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2, CheckCircle } from 'lucide-react'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -29,6 +29,10 @@ export default function OrderDetail() {
 
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
 
+  const handleComplete = () => {
+    navigate(`/order/complete/${id}`)
+  }
+
   const handleDelete = () => {
     if (window.confirm('确定要删除该订单吗？')) {
       deleteOrder(id!)
@@ -54,6 +58,15 @@ export default function OrderDetail() {
 
       {/* 操作按钮 */}
       <div className="flex gap-2 p-3">
+        {order.status !== '已完成' && (
+          <button
+            onClick={handleComplete}
+            className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white py-2 rounded-lg text-sm"
+          >
+            <CheckCircle size={16} />
+            标记完成
+          </button>
+        )}
         <button
           onClick={() => navigate(`/order/edit/${id}`)}
           className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
