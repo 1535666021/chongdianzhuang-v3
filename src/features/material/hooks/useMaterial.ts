@@ -1,10 +1,10 @@
 import { useCallback, useMemo } from 'react'
 import type { Material } from '@/types'
 import { useMaterialStore } from '@/stores/materialStore'
-import { COST_MATERIALS, ALL_ADDON_MATERIALS } from '@/constants/materialData'
+import { costMaterials, addonMaterialsData } from '@/constants/materialData'
 
-const FIXED_COST_MATERIALS: Material[] = COST_MATERIALS
-const FIXED_ADDON_MATERIALS: Material[] = ALL_ADDON_MATERIALS
+const FIXED_costMaterials: Material[] = costMaterials
+const FIXED_ADDON_MATERIALS: Material[] = addonMaterialsData
 
 export function useMaterial() {
   const {
@@ -13,7 +13,7 @@ export function useMaterial() {
   } = useMaterialStore()
 
   const costMaterials = useMemo(() => {
-    return FIXED_COST_MATERIALS.map((m) => {
+    return FIXED_costMaterials.map((m) => {
       const stored = storedMaterials.find((s) => s.id === m.id)
       if (stored) {
         return {
@@ -46,7 +46,7 @@ export function useMaterial() {
 
   const updateCostPrice = useCallback(
     (id: string, price: number) => {
-      const target = FIXED_COST_MATERIALS.find((m) => m.id === id)
+      const target = FIXED_costMaterials.find((m) => m.id === id)
       if (!target) return
       const updated: Partial<Material> = {
         id,
