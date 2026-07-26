@@ -1,8 +1,11 @@
 import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器（R7修复版）
- * 修复：增加第4组桶（appointmentOrders/appointedOrders/scheduledOrders）
+ * v7 老备份 → v3 Order 转换器（R8金额宽兼容版）
+ * R7：四桶遍历 + 状态翻正
+ * R8：金额字段宽兼容（profitData/finance/settlement嵌套+别名），
+ *     补 customerPrice / completeDate 映射，
+ *     应收缺失时按官方公式反推：revenue = 利润+材料+人工+扣点
  * ------------------------------------------------------------ */
 
 /** v7 状态 → v3 中文状态映射（含历史别名） */
@@ -54,10 +57,19 @@ function asStr(v: unknown): string {
   return typeof v === 'string' ? v : String(v)
 }
 
-/** 脏值 → 数字 */
-function asNum(v: unknown, fallback = 0): number {
-  const n = Number(v)
-  return Number.isFinite(n) ? n : fallback
+/** 多候选取第一个有效数字（undefined/null/空串/NaN跳过，0是合法值） */
+function pickNum(...candidates: unknown[]): number {
+  for (const c of candidates) {
+    if (c === undefined || c === null || c === '') continue
+    const n = Number(c)
+    if (Number.isFinite(n)) return n
+  }
+  return 0
+}
+
+/** 保留两位小数 */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100
 }
 
 /** 从phone字段提取手机号 */
@@ -90,6 +102,15 @@ function shouldFlipToAppointed(
   return finalStatus
 }
 
+/** 金额快照候选容器：老系统混乱命名全兼容（只读，不改原始数据） */
+function getMoneyContainer(raw: Record<string, unknown>): Record<string, unknown> {
+  const candidates = [raw.profitData, raw.finance, raw.settlement, raw.costData, raw.money]
+  for (const c of candidates) {
+    if (c && typeof c === 'object' && !Array.isArray(c)) return c as Record<string, unknown>
+  }
+  return {}
+}
+
 /** 单条 v7 订单 → v3 Order */
 function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus): Order | null {
   try {
@@ -97,6 +118,41 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
     const now = Date.now()
     const createdAt = typeof raw.createdAt === 'number' ? raw.createdAt : now
     const updatedAt = typeof raw.updatedAt === 'number' ? raw.updatedAt : now
+
+    // ===== R8：金额宽兼容提取 =====
+    const pd = getMoneyContainer(raw)
+
+    const materialCost = pickNum(
+      raw.materialCost, raw.material, raw.materialFee, raw.materialsCost,
+      pd.materialCost, pd.material, pd.materialFee, pd.materialsCost
+    )
+    const laborCost = pickNum(
+      raw.laborCost, raw.labor, raw.laborFee, raw.installFee,
+      pd.laborCost, pd.labor, pd.laborFee, pd.installFee
+    )
+    const platformFee = pickNum(
+      raw.platformFee, raw.platformDeduction, raw.deduction, raw.fee,
+      pd.platformFee, pd.platformDeduction, pd.deduction, pd.fee
+    )
+    const actualProfit = pickNum(
+      raw.actualProfit, raw.profit, raw.netProfit,
+      pd.actualProfit, pd.profit, pd.netProfit
+    )
+    let customerPrice = pickNum(
+      raw.customerPrice, raw.receivable, raw.revenue, raw.totalAmount, raw.amount, raw.price, raw.total,
+      pd.customerPrice, pd.receivable, pd.revenue, pd.totalAmount, pd.amount, pd.price
+    )
+
+    // 应收兜底：官方反推公式 revenue = actualProfit + materialCost + laborCost + platformFee
+    // （仅字段间互相推导，不重算利润，不引入外部参数，老单快照原值不动）
+    if (!customerPrice && (actualProfit || materialCost || laborCost || platformFee)) {
+      customerPrice = round2(actualProfit + materialCost + laborCost + platformFee)
+    }
+
+    // 完成日期宽兼容（对账月份口径：completeDate || appointmentDate）
+    const completeDate =
+      asStr(raw.completeDate || raw.finishDate || raw.completedDate || raw.doneDate || raw.finishTime ||
+            pd.completeDate || pd.finishDate) || undefined
 
     const order: Order = {
       id,
@@ -108,10 +164,12 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       region: mapRegion(raw.region),
       appointmentDate: asStr(raw.appointmentDate) || undefined,
       appointmentTime: asStr(raw.appointmentTime || raw.timeSlot) || undefined,
-      materialCost: asNum(raw.materialCost),
-      laborCost: asNum(raw.laborCost),
-      platformFee: asNum(raw.platformFee),
-      actualProfit: asNum(raw.actualProfit),
+      materialCost,
+      laborCost,
+      platformFee,
+      actualProfit,
+      customerPrice: customerPrice || undefined,
+      completeDate,
       notes: asStr(raw.notes || raw.remark).trim(),
       meterStatus: raw.meterStatus === '已安装' ? '已安装' : '未安装',
       meterNumber: asStr(raw.meterNumber) || undefined,
