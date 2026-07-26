@@ -43,3 +43,5 @@ export const brandList = [
   '捷途', '支付宝598', '领克', '阿维塔', '长城', '西安领充',
   '广汽埃安', '理想'
 ]
+
+export { costMaterials }
