@@ -2,6 +2,30 @@ import { create } from 'zustand'
 import { DEFAULT_ENGINEER, STORAGE_KEY_PREFIX } from '@/constants/common'
 import { LocalStorageAdapter } from '@/shared/storage'
 
+export interface PlatformFeeConfig {
+  platform: string
+  rate: number
+}
+
+export interface FormPreset {
+  parkingPosition: string
+  distributionRoom: string
+  wiringMethod: string
+  cableType: string
+  meterLength: string
+}
+
+export interface WatermarkConfig {
+  text: string
+  enabled: boolean
+}
+
+export interface LingpaoItem {
+  name: string
+  price: number
+  unit: string
+}
+
 interface PersistedSettings {
   engineerName: string
   engineerPhone: string
@@ -9,6 +33,11 @@ interface PersistedSettings {
   costPriceOverrides: Record<string, number>
   addonPriceOverrides: Record<string, number>
   packageConfig: { name: string; meterLength: number; basePrice: number }[]
+  platformFeeRates: Record<string, number>
+  formPresets: FormPreset
+  brandTemplates: Record<string, string>
+  watermark: WatermarkConfig
+  lingpaoTemplate: LingpaoItem[]
 }
 
 interface SettingsState extends PersistedSettings {
@@ -17,11 +46,34 @@ interface SettingsState extends PersistedSettings {
   setAddonPrice: (materialId: string, price: number) => void
   getCostPrice: (materialId: string, defaultPrice: number) => number
   getAddonPrice: (materialId: string, defaultPrice: number) => number
+  setPlatformFeeRate: (platform: string, rate: number) => void
+  getPlatformFeeRate: (platform: string) => number
+  setFormPresets: (presets: Partial<FormPreset>) => void
+  setBrandTemplate: (brand: string, template: string) => void
+  setWatermark: (config: Partial<WatermarkConfig>) => void
+  setLingpaoTemplate: (items: LingpaoItem[]) => void
   resetToFactory: () => void
 }
 
 const storage = new LocalStorageAdapter<PersistedSettings>(STORAGE_KEY_PREFIX)
 const saved = storage.get('settings')
+
+const defaultPlatformRates: Record<string, number> = {
+  京东: 0.1,
+  天猫: 0.1,
+  淘宝: 0.2,
+  拼多多: 0.2,
+  抖音: 0.2,
+  其他: 0.2,
+}
+
+const defaultFormPresets: FormPreset = {
+  parkingPosition: '地下车库',
+  distributionRoom: '负一层配电室',
+  wiringMethod: '桥架+穿管',
+  cableType: 'YJV3*6',
+  meterLength: '30',
+}
 
 const defaults: PersistedSettings = {
   engineerName: DEFAULT_ENGINEER.name,
@@ -30,11 +82,21 @@ const defaults: PersistedSettings = {
   costPriceOverrides: {},
   addonPriceOverrides: {},
   packageConfig: [],
+  platformFeeRates: { ...defaultPlatformRates },
+  formPresets: { ...defaultFormPresets },
+  brandTemplates: {},
+  watermark: { text: '', enabled: false },
+  lingpaoTemplate: [],
 }
 
 const initial: PersistedSettings = {
   ...defaults,
   ...saved,
+  platformFeeRates: { ...defaultPlatformRates, ...(saved?.platformFeeRates || {}) },
+  formPresets: { ...defaultFormPresets, ...(saved?.formPresets || {}) },
+  brandTemplates: { ...(saved?.brandTemplates || {}) },
+  watermark: { ...defaults.watermark, ...(saved?.watermark || {}) },
+  lingpaoTemplate: saved?.lingpaoTemplate || [],
 }
 
 function persist(state: PersistedSettings) {
@@ -65,6 +127,36 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   getAddonPrice: (materialId, defaultPrice) => {
     return get().addonPriceOverrides[materialId] ?? defaultPrice
+  },
+  setPlatformFeeRate: (platform, rate) => {
+    const rates = { ...get().platformFeeRates, [platform]: rate }
+    const next = { ...get(), platformFeeRates: rates }
+    set(next)
+    persist(next)
+  },
+  getPlatformFeeRate: (platform) => {
+    return get().platformFeeRates[platform] ?? 0.2
+  },
+  setFormPresets: (presets) => {
+    const next = { ...get(), formPresets: { ...get().formPresets, ...presets } }
+    set(next)
+    persist(next)
+  },
+  setBrandTemplate: (brand, template) => {
+    const templates = { ...get().brandTemplates, [brand]: template }
+    const next = { ...get(), brandTemplates: templates }
+    set(next)
+    persist(next)
+  },
+  setWatermark: (config) => {
+    const next = { ...get(), watermark: { ...get().watermark, ...config } }
+    set(next)
+    persist(next)
+  },
+  setLingpaoTemplate: (items) => {
+    const next = { ...get(), lingpaoTemplate: items }
+    set(next)
+    persist(next)
   },
   resetToFactory: () => {
     set(defaults)
