@@ -16,6 +16,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<string>(fixedStatus ?? '全部')
   const [searchKw, setSearchKw] = useState('')
+  const [showCount, setShowCount] = useState(50)
 
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
   const { orders, stats } = useOrderList(filter)
@@ -108,7 +109,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
         ))}
       </div>
 
-      {/* 订单列表 */}
+      {/* 订单列表（分页渲染：首屏50条防卡顿） */}
       <div className="p-3">
         {displayOrders.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
@@ -124,13 +125,23 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
             )}
           </div>
         ) : (
-          displayOrders.map((order: any) => (
-            <OrderCard
-              key={order.id}
-              order={order}
-              onClick={() => navigate(`/orders/${order.id}`)}
-            />
-          ))
+          <>
+            {displayOrders.slice(0, showCount).map((order: any) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                onClick={() => navigate(`/orders/${order.id}`)}
+              />
+            ))}
+            {displayOrders.length > showCount && (
+              <button
+                onClick={() => setShowCount((n) => n + 50)}
+                className="w-full py-3 text-sm text-blue-600 bg-white rounded-lg border border-gray-200"
+              >
+                加载更多（剩余 {displayOrders.length - showCount} 条）
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

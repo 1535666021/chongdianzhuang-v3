@@ -1,4 +1,5 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useOrderStore } from '@/stores/orderStore'
 import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
@@ -17,6 +18,12 @@ export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const { hasUpdate, handleUpdate } = useVersionCheck()
+  const orders = useOrderStore((s) => s.orders)
+  // 底部气泡：首页=待办数，已预约=已预约数（老系统同款红点提示）
+  const badgeMap: Record<string, number> = {
+    '待办': orders.filter((o) => o.status === '待办').length,
+    '已预约': orders.filter((o) => o.status === '已预约').length,
+  }
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -61,7 +68,14 @@ export default function App() {
                   : 'text-gray-500'
               }`}
             >
-              {iconMap[route.icon]}
+              <span className="relative">
+                {iconMap[route.icon]}
+                {route.status && badgeMap[route.status] > 0 && (
+                  <span className="absolute -top-1.5 -right-2.5 min-w-[16px] h-4 px-0.5 bg-red-500 text-white text-[10px] leading-4 text-center rounded-full">
+                    {badgeMap[route.status] > 99 ? '99+' : badgeMap[route.status]}
+                  </span>
+                )}
+              </span>
               <span className="mt-1">{route.label}</span>
             </button>
           ))}
