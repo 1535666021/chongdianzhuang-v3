@@ -1,10 +1,12 @@
-const CACHE_NAME = 'cdz-v3-cache-v1'
+// 缓存版本号：修改本文件内容时必须递增，旧缓存才会被清理
+const CACHE_NAME = 'cdz-v3-cache-v2'
+// 注意：全部使用相对路径，GitHub Pages子目录部署下根路径'/'会缓存到错误位置
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
+  './',
+  './index.html',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png',
 ]
 
 // 安装时缓存静态资源
