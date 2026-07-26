@@ -73,7 +73,7 @@ function getOrderPlatformFee(order: Order): number {
 
 function calcMonthStats(orders: Order[], year: number, month: number): MonthlyStats {
   const filtered = orders.filter((o) => {
-    const d = new Date(o.createdAt || o.date || Date.now())
+    const d = new Date(o.createdAt || Date.now())
     return d.getFullYear() === year && d.getMonth() + 1 === month
   })
 
