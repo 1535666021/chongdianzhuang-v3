@@ -23,7 +23,13 @@ export function useSurvey(orderId: string) {
         meterLocation: order.survey.meterLocation,
         cableRoute: order.survey.cableRoute,
         difficulty: order.survey.difficulty,
-        estimatedMaterials: order.survey.estimatedMaterials || [],
+        estimatedMaterials: (order.survey.estimatedMaterials || []).map((m) => ({
+          name: m.name,
+          spec: m.spec || '',
+          quantity: m.quantity || 1,
+          unit: m.unit || '米',
+          unitPrice: (m as any).unitPrice || 0,
+        })),
         photosDesc: order.survey.photosDesc,
         notes: order.survey.notes,
       })
@@ -39,7 +45,7 @@ export function useSurvey(orderId: string) {
       ...prev,
       estimatedMaterials: [
         ...prev.estimatedMaterials,
-        { name: '', spec: '', quantity: 1, unit: '米' },
+        { name: '', spec: '', quantity: 1, unit: '米', unitPrice: 0 },
       ],
     }))
   }, [])
