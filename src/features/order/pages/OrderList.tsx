@@ -5,7 +5,14 @@ import { useState } from 'react'
 import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Filter, Plus, FileText } from 'lucide-react'
 
-export default function OrderList({ fixedStatus }: { fixedStatus?: string }) {
+interface Props {
+  /** 固定状态：传入后页面锁定该状态（首页=待办/已预约页/已完成页） */
+  fixedStatus?: string
+  /** 锁定状态下是否附带回收站入口（仅首页待办页使用） */
+  allowTrash?: boolean
+}
+
+export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<string>(fixedStatus ?? '全部')
   const [searchKw, setSearchKw] = useState('')
@@ -21,9 +28,16 @@ export default function OrderList({ fixedStatus }: { fixedStatus?: string }) {
       )
     : orders
 
+  // 状态筛选选项：锁定页面只显示固定状态（首页待办页附带回收站），未锁定页面显示全部
+  const filterOptions = fixedStatus
+    ? [fixedStatus, ...(allowTrash ? ['回收站'] : [])]
+    : ['全部', ...ORDER_STATUSES]
+
+  const emptyText = activeFilter === '全部' ? '暂无订单' : `暂无${activeFilter}订单`
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      {/* 统计栏 */}
+      {/* 统计栏（全局数据，便于一眼看全盘） */}
       <div className="bg-white p-4 border-b border-gray-200">
         <div className="flex justify-around text-center">
           <div>
@@ -77,9 +91,9 @@ export default function OrderList({ fixedStatus }: { fixedStatus?: string }) {
         </div>
       </div>
 
-      {/* 状态筛选 */}
+      {/* 状态筛选：锁定页面只显示锁定项（首页待办附回收站） */}
       <div className="flex gap-2 p-3 overflow-x-auto bg-white border-b border-gray-200">
-        {['全部', ...ORDER_STATUSES].map((s) => (
+        {filterOptions.map((s) => (
           <button
             key={s}
             onClick={() => setActiveFilter(s)}
@@ -99,13 +113,15 @@ export default function OrderList({ fixedStatus }: { fixedStatus?: string }) {
         {displayOrders.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <Filter size={48} className="mx-auto mb-4 opacity-30" />
-            <p>暂无订单</p>
-            <button
-              onClick={() => navigate('/order/new')}
-              className="mt-4 text-blue-600 text-sm"
-            >
-              点击新增订单
-            </button>
+            <p>{emptyText}</p>
+            {activeFilter !== '回收站' && (
+              <button
+                onClick={() => navigate('/order/new')}
+                className="mt-4 text-blue-600 text-sm"
+              >
+                点击新增订单
+              </button>
+            )}
           </div>
         ) : (
           displayOrders.map((order: any) => (
