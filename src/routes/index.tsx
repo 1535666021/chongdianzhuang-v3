@@ -11,6 +11,7 @@ const MaterialList = lazy(() => import('@/features/material/pages/MaterialList')
 const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'))
 const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
+const OrderComplete = lazy(() => import('@/features/order/pages/OrderComplete'))
 const BackupImport = lazy(() => import('@/features/settings/components/BackupImport'))
 
 function LoadingFallback() {
@@ -28,6 +29,14 @@ export default function AppRoutes() {
           <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="order/new" element={<OrderForm />} />
           <Route path="order/edit/:id" element={<OrderForm />} />
+          <Route
+            path="order/complete/:id"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <OrderComplete />
+              </Suspense>
+            }
+          />
           <Route path="batch-parser" element={<BatchParser />} />
           <Route
             path={RoutePath.MATERIALS}
