@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
+import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 
 const iconMap: Record<string, React.ReactNode> = {
   Home: <Home size={20} />,
@@ -26,6 +27,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* 离线状态提示 */}
+      <OfflineIndicator />
+
       {/* 版本更新提示 */}
       {hasUpdate && (
         <div className="bg-blue-600 text-white px-4 py-2 text-center text-sm flex items-center justify-center gap-2 sticky top-0 z-50">
