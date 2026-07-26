@@ -43,10 +43,11 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
   setFilter: (filter) => set({ filter }),
   /**
-   * 导入（含补全更新）：
+   * 导入（含金额对齐更新）：
    * - 新id → 直接追加（added）
-   * - 已存在且旧单金额全空、新数据有值 → 只补金额字段+completeDate（updated），
-   *   姓名/状态/备注等其他字段一律不动，保护用户在v3里的后续操作
+   * - 已存在id 且新数据金额有值 → 5个金额字段以老备份快照为准直接覆盖
+   *   + completeDate缺失时补齐（updated）；
+   *   姓名/状态/备注/回款标记等其他字段一律不动，保护用户在v3里的后续操作
    * - 其余已存在 → 跳过（skipped）
    */
   importOrders: (incoming) => {
@@ -66,9 +67,8 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       }
       const idx = merged.findIndex((o) => (o as any).id === oid)
       const oldOrder = merged[idx] as any
-      const oldAllEmpty = MONEY_KEYS.every((k) => !Number(oldOrder[k]))
       const newHasValue = MONEY_KEYS.some((k) => Number((order as any)[k]))
-      if (oldAllEmpty && newHasValue) {
+      if (newHasValue) {
         merged[idx] = {
           ...oldOrder,
           materialCost: (order as any).materialCost,
