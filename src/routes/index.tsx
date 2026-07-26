@@ -12,6 +12,7 @@ const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'))
 const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
 const OrderComplete = lazy(() => import('@/features/order/pages/OrderComplete'))
+const OrderSurvey = lazy(() => import('@/features/order/pages/OrderSurvey'))
 const BackupImport = lazy(() => import('@/features/settings/components/BackupImport'))
 
 function LoadingFallback() {
@@ -34,6 +35,14 @@ export default function AppRoutes() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <OrderComplete />
+              </Suspense>
+            }
+          />
+          <Route
+            path="order/survey/:id"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <OrderSurvey />
               </Suspense>
             }
           />
