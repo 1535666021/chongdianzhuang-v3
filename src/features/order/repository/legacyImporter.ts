@@ -2,6 +2,7 @@ import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /* ------------------------------------------------------------
  * v7 老备份 → v3 Order 转换器（R9精准对齐版）
+ * R9c：兼容v3导出格式（customerName/address标准字段名）
  * R9b：翻正逻辑补appointmentPeriod（老系统预约时段真实字段名）
  * R9：依据老备份真实字段结构精准对齐——
  *   应收   = profitData.customerPaid（客户实付，第一优先）
@@ -199,9 +200,9 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
 
     const order: Order = {
       id,
-      customerName: asStr(raw.name).trim() || '未知客户',
+      customerName: (asStr(raw.name) || asStr(raw.customerName)).trim() || '未知客户',
       phone: extractPhone(raw.phone),
-      address: asStr(raw.addr).trim() || '地址未填写',
+      address: (asStr(raw.addr) || asStr(raw.address)).trim() || '地址未填写',
       platform,
       status: finalStatus,
       region: mapRegion(raw.region),
