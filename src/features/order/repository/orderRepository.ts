@@ -7,7 +7,7 @@ export class OrderRepository {
   }
 
   static getById(id: string): Order | undefined {
-    return useOrderStore.getState().orders.find((o: any) => o.id === id)
+    return useOrderStore.getState().orders.find((o: Order) => o.id === id)
   }
 
   static add(order: Order): void {
@@ -23,6 +23,6 @@ export class OrderRepository {
   }
 
   static filterByStatus(status: string): Order[] {
-    return this.getAll().filter((o: any) => o.status === status)
+    return this.getAll().filter((o: Order) => o.status === status)
   }
 }
