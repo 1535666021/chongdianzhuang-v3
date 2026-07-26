@@ -1,7 +1,8 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import PlatformBreakdown from '../components/PlatformBreakdown'
-import { BarChart3, TrendingUp, Package, Wrench, Receipt, Wallet } from 'lucide-react'
+import { BarChart3, TrendingUp, Package, Wrench, Receipt, Wallet, FileText } from 'lucide-react'
 
 interface MonthStats {
   month: string
@@ -14,6 +15,7 @@ interface MonthStats {
 
 export default function Statistics() {
   const orders = useOrderStore((s) => s.orders)
+  const navigate = useNavigate()
 
   const monthlyStats = useMemo(() => {
     const map = new Map<string, MonthStats>()
@@ -66,6 +68,23 @@ export default function Statistics() {
       </header>
 
       <main className="p-3 space-y-4">
+        {/* 财务对账入口 */}
+        <button
+          onClick={() => navigate('/finance')}
+          className="w-full bg-white rounded-lg border border-gray-200 p-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+              <FileText size={16} className="text-blue-600" />
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-medium text-gray-800">查看财务对账</div>
+              <div className="text-xs text-gray-400">回款管理、成本明细、月度对账</div>
+            </div>
+          </div>
+          <span className="text-xs text-blue-600 font-medium">进入 →</span>
+        </button>
+
         {/* 总计卡片 */}
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-white rounded-lg border border-gray-200 p-3">
