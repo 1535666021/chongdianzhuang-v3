@@ -13,6 +13,7 @@ export interface SurveyMaterialItem {
   spec?: string
   quantity: number
   unit: string
+  unitPrice: number
 }
 
 export interface SurveyFormData {
