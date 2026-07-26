@@ -12,6 +12,7 @@ interface OrderState {
   setFilter: (filter: OrderFilter) => void
   importOrders: (orders: Order[]) => { added: number; skipped: number }
   importFromLegacy: (legacyOrders: any[]) => void
+  togglePaymentStatus: (id: string) => void
 }
 
 const storage = new LocalStorageAdapter<Order[]>('cdz_v3_orders_')
@@ -60,5 +61,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
   importFromLegacy: (legacyOrders) => {
     console.log('Import legacy orders:', legacyOrders.length)
+  },
+  togglePaymentStatus: (id) => {
+    const newOrders = get().orders.map((o) => {
+      if ((o as any).id === id) {
+        return { ...o, paid: !o.paid }
+      }
+      return o
+    })
+    storage.set('list', newOrders)
+    set({ orders: newOrders })
   },
 }))
