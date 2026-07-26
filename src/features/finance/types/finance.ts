@@ -1,35 +1,37 @@
-import type { Order } from '@/types'
-
-export interface FinanceOrder extends Order {
-  revenue: number
-  materialCostDetail: number
-  laborCostDetail: number
-  platformFeeDetail: number
-  actualProfitDetail: number
-}
-
 export interface MonthlyReconciliation {
-  year: number
-  month: number
-  label: string
+  month: string
   orderCount: number
-  totalRevenue: number
-  totalPlatformFee: number
-  totalActualIncome: number
-  totalMaterialCost: number
-  totalLaborCost: number
-  totalActualProfit: number
+  totalReceivable: number
+  totalDeduction: number
+  totalActual: number
+  totalMaterial: number
+  totalLabor: number
+  totalProfit: number
 }
 
-export interface CostBreakdown {
+export interface ReceivableOrder {
+  id: string
+  customerName: string
+  amount: number
+  paid: boolean
+  completeDate?: string
+}
+
+export interface OrderMaterialDetail {
+  name: string
+  spec?: string
+  quantity: number
+  unit: string
+  unitPrice: number
+  subtotal: number
+}
+
+export interface OrderCostDetail {
   orderId: string
   customerName: string
-  platform: string
-  materials: { name: string; quantity: number; unitPrice: number; subtotal: number }[]
-  materialTotal: number
+  materials: OrderMaterialDetail[]
+  materialCost: number
   laborCost: number
-  platformFee: number
+  platformDeduction: number
   actualProfit: number
 }
-
-export type ReceivableFilter = 'all' | 'unpaid' | 'paid'
