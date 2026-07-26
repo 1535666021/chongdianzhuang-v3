@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { HashRouter, Routes, Route } from 'react-router-dom'
 import { RoutePath } from './route'
 import App from '@/App'
 import OrderList from '@/features/order/pages/OrderList'
@@ -22,7 +22,7 @@ function LoadingFallback() {
 
 export default function AppRoutes() {
   return (
-    <BrowserRouter basename="/">
+    <HashRouter>
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<OrderList />} />
@@ -98,6 +98,6 @@ export default function AppRoutes() {
           />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
