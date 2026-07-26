@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Type,
   List,
+  Sparkles,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION } from '@/constants/common'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -27,6 +28,7 @@ import FormPresets from '../components/FormPresets'
 import BrandTemplates from '../components/BrandTemplates'
 import WatermarkTemplate from '../components/WatermarkTemplate'
 import LingpaoTemplate from '../components/LingpaoTemplate'
+import { ScriptEditor } from '../components/ScriptEditor'
 
 type SettingSection =
   | 'cost'
@@ -40,6 +42,7 @@ type SettingSection =
   | 'brand'
   | 'watermark'
   | 'lingpao'
+  | 'scripts'
   | null
 
 export default function SettingsPage() {
@@ -56,6 +59,7 @@ export default function SettingsPage() {
     { id: 'brand' as const, label: '品牌话术', icon: MessageSquare, desc: '各品牌专用话术模板' },
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
+    { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
     { id: 'reset' as const, label: '恢复出厂设置', icon: RotateCcw, desc: '清空所有本地数据' },
     { id: 'about' as const, label: '关于', icon: Info, desc: `${APP_NAME} v${APP_VERSION}` },
   ] as const
@@ -90,6 +94,8 @@ export default function SettingsPage() {
         return <WatermarkTemplate />
       case 'lingpao':
         return <LingpaoTemplate />
+      case 'scripts':
+        return <ScriptEditor />
       case 'reset':
         return <RestoreFactory />
       case 'about':
