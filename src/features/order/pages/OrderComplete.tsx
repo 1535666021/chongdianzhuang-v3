@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, User, Calendar, FileText } from 'lucide-react'
+import { ArrowLeft, CheckCircle, User, Calendar, FileText, Ruler } from 'lucide-react'
 import { useCompletion } from '../hooks/useCompletion'
 import { MaterialPicker } from '../components/MaterialPicker'
 import { ProfitPreview } from '../components/ProfitPreview'
@@ -7,7 +7,7 @@ import { ProfitPreview } from '../components/ProfitPreview'
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { order, form, profit, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, save } = useCompletion(id || '')
+  const { order, form, profit, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, save } = useCompletion(id || '')
 
   if (!order) {
     return (
@@ -59,6 +59,18 @@ export default function OrderComplete() {
           </div>
 
           <div>
+            <label className="flex items-center gap-1 text-xs text-gray-500 mb-1.5"><Ruler size={12} />套餐米数（电缆/PVC免费额）</label>
+            <input
+              type="number"
+              value={packageMeters}
+              onChange={(e) => setPackageMeters(parseFloat(e.target.value) || 0)}
+              placeholder="默认30米"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">电缆和PVC在{packageMeters}米内不计费</p>
+          </div>
+
+          <div>
             <label className="flex items-center gap-1 text-xs text-gray-500 mb-1.5"><FileText size={12} />备注</label>
             <textarea value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} placeholder="完工备注..." rows={2} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm resize-none" />
           </div>
@@ -75,6 +87,27 @@ export default function OrderComplete() {
             onUpdateFixedAux={updateFixedAux}
           />
         </div>
+
+        {/* 套餐明细 */}
+        {packageBreakdown.freeAmount > 0 && (
+          <div className="bg-green-50 rounded-xl border border-green-100 p-4">
+            <h3 className="text-sm font-semibold text-green-800 mb-2">套餐优惠</h3>
+            <div className="space-y-1 text-xs">
+              {packageBreakdown.items.filter((i) => i.freeQuantity > 0).map((item) => (
+                <div key={item.materialName} className="flex justify-between">
+                  <span className="text-green-600">{item.materialName}</span>
+                  <span className="text-green-700">
+                    免费{item.freeQuantity}米 / 超{item.overQuantity}米
+                  </span>
+                </div>
+              ))}
+              <div className="border-t border-green-200 pt-1 flex justify-between font-medium">
+                <span className="text-green-700">合计优惠</span>
+                <span className="text-green-800">¥{packageBreakdown.freeAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 利润区 */}
         <ProfitPreview data={profit} />
