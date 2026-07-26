@@ -1,7 +1,7 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
-import { useVersionCheck } from '@/hooks/useVersionCheck'
+import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 
 const iconMap: Record<string, React.ReactNode> = {
   Home: <Home size={20} />,
