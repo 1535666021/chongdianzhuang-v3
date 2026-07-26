@@ -1,8 +1,8 @@
-import { MATERIAL_BRANDS } from '@/constants/materialData'
+import { brandList } from '@/constants/materialData'
 
 interface Props {
   selected: string
-  onChange: (brand: string) => void
+  onChange: (brand: any) => void
 }
 
 export default function AddonBrandFilter({ selected, onChange }: Props) {
@@ -13,8 +13,8 @@ export default function AddonBrandFilter({ selected, onChange }: Props) {
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
       >
-        <option value="全部">全部品牌（{MATERIAL_BRANDS.length}个）</option>
-        {MATERIAL_BRANDS.map((brand) => (
+        <option value="全部">全部品牌（{brandList.length}个）</option>
+        {brandList.map((brand) => (
           <option key={brand} value={brand}>
             {brand}
           </option>
