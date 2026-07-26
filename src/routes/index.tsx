@@ -18,10 +18,12 @@ function LoadingFallback() {
 
 export default function AppRoutes() {
   return (
-    <BrowserRouter basename="/chongdianzhuang-v3/">
+    <BrowserRouter basename="/">
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<OrderList />} />
+          <Route path={RoutePath.SCHEDULED} element={<OrderList fixedStatus="已预约" />} />
+          <Route path={RoutePath.COMPLETED} element={<OrderList fixedStatus="已完成" />} />
           <Route path="orders/:id" element={<OrderDetail />} />
           <Route path="order/new" element={<OrderForm />} />
           <Route path="order/edit/:id" element={<OrderForm />} />
