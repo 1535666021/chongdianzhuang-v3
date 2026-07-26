@@ -15,6 +15,7 @@ export default function BackupImport() {
   const [result, setResult] = useState<{
     added: number
     skipped: number
+    updated: number
     total: number
   } | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -53,6 +54,26 @@ export default function BackupImport() {
             if (arr.length > 3) debug += `  ... 共 ${arr.length} 条\n`
           }
         }
+
+        // ===== R8：字段结构探测（只显示字段名，不显示任何值，隐私合规） =====
+        const allBuckets = [...bucketChecks, 'appointmentOrders', 'appointedOrders', 'scheduledOrders']
+        let probed = 0
+        for (const key of allBuckets) {
+          const arr = rawObj[key]
+          if (Array.isArray(arr) && arr.length > 0 && probed < 2) {
+            const first = arr[0]
+            if (first && typeof first === 'object') {
+              debug += `\n【字段结构·${key}[0]】${Object.keys(first).join(', ')}\n`
+              const moneyObj = first.profitData || first.finance || first.settlement || first.costData
+              if (moneyObj && typeof moneyObj === 'object') {
+                debug += `  └ 金额子对象字段: ${Object.keys(moneyObj).join(', ')}\n`
+              } else {
+                debug += `  └ 无profitData/finance/settlement金额子对象\n`
+              }
+              probed++
+            }
+          }
+        }
       } catch (err) {
         debug = `JSON解析失败: ${err}`
       }
@@ -75,9 +96,9 @@ export default function BackupImport() {
     setImporting(true)
 
     const { importOrders } = useOrderStore.getState()
-    const { added, skipped } = importOrders(preview.orders)
+    const { added, skipped, updated } = importOrders(preview.orders)
 
-    setResult({ added, skipped, total: preview.total })
+    setResult({ added, skipped, updated, total: preview.total })
     setImporting(false)
     setPreview(null)
     setDebugInfo('')
@@ -141,7 +162,7 @@ export default function BackupImport() {
               识别到 <span className="font-semibold text-blue-600">{preview.total}</span> 条订单
               {existingCount > 0 && (
                 <span className="text-orange-500 ml-1">
-                  （当前已有 {existingCount} 条，重复将自动跳过）
+                  （当前已有 {existingCount} 条，重复将自动跳过；金额缺失的老单将自动补全）
                 </span>
               )}
             </div>
@@ -199,6 +220,10 @@ export default function BackupImport() {
               <div className="flex justify-between">
                 <span className="text-gray-500">成功导入</span>
                 <span className="font-semibold text-green-600">{result.added} 条</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">金额补全更新</span>
+                <span className="font-semibold text-blue-600">{result.updated} 条</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-500">重复跳过</span>
