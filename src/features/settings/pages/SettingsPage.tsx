@@ -16,6 +16,7 @@ import {
   Type,
   List,
   Sparkles,
+  MapPin,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION } from '@/constants/common'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -29,6 +30,7 @@ import BrandTemplates from '../components/BrandTemplates'
 import WatermarkTemplate from '../components/WatermarkTemplate'
 import LingpaoTemplate from '../components/LingpaoTemplate'
 import { ScriptEditor } from '../components/ScriptEditor'
+import AmapConfig from '../components/AmapConfig'
 
 type SettingSection =
   | 'cost'
@@ -43,6 +45,7 @@ type SettingSection =
   | 'watermark'
   | 'lingpao'
   | 'scripts'
+  | 'map'
   | null
 
 export default function SettingsPage() {
@@ -51,6 +54,7 @@ export default function SettingsPage() {
 
   const menuItems = [
     { id: 'backup' as const, label: '数据导入', icon: Upload, desc: '从老系统导入订单数据' },
+    { id: 'map' as const, label: '地图配置', icon: MapPin, desc: '高德Key、缩放级别' },
     { id: 'cost' as const, label: '成本表管理', icon: DollarSign, desc: '编辑20项辅材成本价' },
     { id: 'addon' as const, label: '增项表管理', icon: Package, desc: '编辑572项增项材料价格' },
     { id: 'engineer' as const, label: '工程师信息', icon: User, desc: '姓名、电话、收货地址' },
@@ -96,6 +100,8 @@ export default function SettingsPage() {
         return <LingpaoTemplate />
       case 'scripts':
         return <ScriptEditor />
+      case 'map':
+        return <AmapConfig />
       case 'reset':
         return <RestoreFactory />
       case 'about':

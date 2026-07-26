@@ -27,6 +27,8 @@ export interface LingpaoItem {
 }
 
 interface PersistedSettings {
+  amapKey: string
+  amapZoom: number
   engineerName: string
   engineerPhone: string
   engineerAddress: string
@@ -52,6 +54,8 @@ interface SettingsState extends PersistedSettings {
   setBrandTemplate: (brand: string, template: string) => void
   setWatermark: (config: Partial<WatermarkConfig>) => void
   setLingpaoTemplate: (items: LingpaoItem[]) => void
+  setAmapKey: (key: string) => void
+  setAmapZoom: (zoom: number) => void
   resetToFactory: () => void
 }
 
@@ -87,6 +91,8 @@ const defaults: PersistedSettings = {
   brandTemplates: {},
   watermark: { text: '', enabled: false },
   lingpaoTemplate: [],
+  amapKey: '',
+  amapZoom: 15,
 }
 
 const initial: PersistedSettings = {
@@ -155,6 +161,16 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   },
   setLingpaoTemplate: (items) => {
     const next = { ...get(), lingpaoTemplate: items }
+    set(next)
+    persist(next)
+  },
+  setAmapKey: (key) => {
+    const next = { ...get(), amapKey: key }
+    set(next)
+    persist(next)
+  },
+  setAmapZoom: (zoom) => {
+    const next = { ...get(), amapZoom: zoom }
     set(next)
     persist(next)
   },

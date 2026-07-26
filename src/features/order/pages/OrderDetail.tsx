@@ -1,7 +1,12 @@
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { STATUS_COLORS } from '@/constants/order'
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2, CheckCircle, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2, CheckCircle, ClipboardList, Map as MapIcon, X } from 'lucide-react'
+import { useGeocode } from '../hooks/useGeocode'
+import OrderMap from '../components/OrderMap'
+import NavigateButton from '../components/NavigateButton'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -10,6 +15,12 @@ export default function OrderDetail() {
     state.orders.find((o) => o.id === id)
   )
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
+  const amapKey = useSettingsStore((s) => s.amapKey)
+  const amapZoom = useSettingsStore((s) => s.amapZoom ?? 15)
+
+  const { geocode, loading: geoLoading, error: geoError } = useGeocode()
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [showMap, setShowMap] = useState(false)
 
   if (!order) {
     return (
@@ -42,6 +53,20 @@ export default function OrderDetail() {
       deleteOrder(id!)
       navigate('/')
     }
+  }
+
+  const handleToggleMap = async () => {
+    if (showMap) {
+      setShowMap(false)
+      return
+    }
+    if (!location && order.address) {
+      const res = await geocode(order.address, amapKey)
+      if (res) {
+        setLocation({ lat: res.lat, lng: res.lng })
+      }
+    }
+    setShowMap(true)
   }
 
   return (
@@ -110,7 +135,56 @@ export default function OrderDetail() {
           </div>
           <div className="flex items-center gap-2">
             <MapPin size={14} className="text-gray-400" />
-            <span className="text-sm text-gray-600">{order.address}</span>
+            <span className="text-sm text-gray-600 flex-1">{order.address}</span>
+          </div>
+
+          {/* 地图/导航区域 */}
+          <div className="pt-2 space-y-2">
+            <div className="flex gap-2">
+              <button
+                onClick={handleToggleMap}
+                className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-sm border transition-colors ${
+                  showMap
+                    ? 'bg-blue-50 border-blue-200 text-blue-600'
+                    : 'bg-white border-gray-200 text-gray-600 active:bg-gray-50'
+                }`}
+              >
+                {showMap ? <X size={14} /> : <MapIcon size={14} />}
+                {showMap ? '收起地图' : '查看地图'}
+              </button>
+              {location && (
+                <NavigateButton
+                  lat={location.lat}
+                  lng={location.lng}
+                  address={order.address}
+                />
+              )}
+            </div>
+
+            {geoLoading && (
+              <div className="text-xs text-gray-400 flex items-center gap-1 py-1">
+                <div className="w-3 h-3 border border-blue-500 border-t-transparent rounded-full animate-spin" />
+                正在解析地址...
+              </div>
+            )}
+            {geoError && (
+              <div className="text-xs text-amber-600 bg-amber-50 rounded px-2 py-1">
+                {geoError}
+              </div>
+            )}
+
+            {showMap && location && (
+              <OrderMap
+                location={{ ...location, address: order.address }}
+                amapKey={amapKey}
+                zoom={amapZoom}
+              />
+            )}
+            {showMap && !location && !geoLoading && (
+              <div className="h-24 bg-gray-100 rounded-xl flex items-center justify-center text-xs text-gray-400">
+                暂无地图位置，请先配置高德Key或检查地址
+              </div>
+            )}
           </div>
         </div>
       </div>
