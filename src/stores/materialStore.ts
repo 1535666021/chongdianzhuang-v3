@@ -7,7 +7,7 @@ interface MaterialState {
   addMaterial: (material: Material) => void
   updateMaterial: (id: string, updates: Partial<Material>) => void
   deleteMaterial: (id: string) => void
-  importFromLegacy: (legacyMaterials: any[]) => void
+  importFromLegacy: (legacyMaterials: Material[]) => void
 }
 
 const storage = new LocalStorageAdapter<Material[]>('cdz_v3_materials_')
@@ -20,12 +20,12 @@ export const useMaterialStore = create<MaterialState>((set, get) => ({
     set({ materials: newMaterials })
   },
   updateMaterial: (id, updates) => {
-    const newMaterials = get().materials.map((m) => (m as any).id === id ? { ...m, ...updates, updatedAt: Date.now() } : m)
+    const newMaterials = get().materials.map((m) => m.id === id ? { ...m, ...updates, updatedAt: Date.now() } : m)
     storage.set('list', newMaterials)
     set({ materials: newMaterials })
   },
   deleteMaterial: (id) => {
-    const newMaterials = get().materials.filter((m) => (m as any).id !== id)
+    const newMaterials = get().materials.filter((m) => m.id !== id)
     storage.set('list', newMaterials)
     set({ materials: newMaterials })
   },
