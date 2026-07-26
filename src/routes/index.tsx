@@ -10,6 +10,7 @@ import BatchParser from '@/features/batchParser/pages/BatchParser'
 const MaterialList = lazy(() => import('@/features/material/pages/MaterialList'))
 const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'))
+const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
 const BackupImport = lazy(() => import('@/features/settings/components/BackupImport'))
 
 function LoadingFallback() {
@@ -41,6 +42,14 @@ export default function AppRoutes() {
             element={
               <Suspense fallback={<LoadingFallback />}>
                 <Statistics />
+              </Suspense>
+            }
+          />
+          <Route
+            path="/finance"
+            element={
+              <Suspense fallback={<LoadingFallback />}>
+                <FinancePage />
               </Suspense>
             }
           />
