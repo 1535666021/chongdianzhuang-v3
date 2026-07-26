@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
+import { isFreeQuotaMaterial } from '@/constants/package'
 import { Plus, Trash2, Search } from 'lucide-react'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
 
@@ -111,9 +112,15 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
                 className="w-14 text-right border border-gray-200 rounded px-1 py-0.5"
               />
               <span className="text-gray-400">{m.unit}</span>
-              <span className="ml-auto font-medium text-gray-700">
-                应收¥{m.customerSubtotal.toFixed(2)}
-              </span>
+              {isFreeQuotaMaterial(m.name) && m.quantity > 0 ? (
+                <span className="ml-auto font-medium text-green-600">
+                  免费额内 / 应收¥{Math.max(0, m.quantity - 30) * m.settlementPrice > 0 ? `¥${(Math.max(0, m.quantity - 30) * m.settlementPrice).toFixed(2)}` : '¥0'}
+                </span>
+              ) : (
+                <span className="ml-auto font-medium text-gray-700">
+                  应收¥{m.customerSubtotal.toFixed(2)}
+                </span>
+              )}
             </div>
           </div>
         ))}
