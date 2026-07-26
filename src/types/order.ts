@@ -13,6 +13,16 @@ export interface OrderPayment {
   paidDate?: string
 }
 
+export interface OrderSurvey {
+  surveyDate: string
+  meterLocation: '楼道' | '车库' | '户外' | '其他'
+  cableRoute: string
+  difficulty: '简单' | '一般' | '复杂' | '极难'
+  estimatedMaterials?: OrderMaterialItem[]
+  photosDesc: string
+  notes: string
+}
+
 export interface Order extends BaseEntity {
   customerName: string
   phone: string
@@ -29,12 +39,12 @@ export interface Order extends BaseEntity {
   notes: string
   meterStatus: '已安装' | '未安装'
   meterNumber?: string
-  // 批次7新增：财务对账所需（全部可选，兼容旧数据）
   completeDate?: string
   customerPrice?: number
   installer?: string
   materials?: OrderMaterialItem[]
   payment?: OrderPayment
+  survey?: OrderSurvey
 }
 
 export interface OrderFilter {
