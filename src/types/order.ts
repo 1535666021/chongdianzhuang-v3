@@ -16,6 +16,7 @@ export interface Order extends BaseEntity {
   notes: string
   meterStatus: '已安装' | '未安装'
   meterNumber?: string
+  paid?: boolean
 }
 
 export interface OrderFilter {
