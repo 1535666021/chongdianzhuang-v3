@@ -27,7 +27,7 @@ export default function AppRoutes() {
       <ErrorBoundary>
         <Routes>
           <Route path="/" element={<App />}>
-            <Route index element={<OrderList />} />
+            <Route index element={<OrderList fixedStatus="待办" allowTrash />} />
             <Route path={RoutePath.SCHEDULED} element={<OrderList fixedStatus="已预约" />} />
             <Route path={RoutePath.COMPLETED} element={<OrderList fixedStatus="已完成" />} />
             <Route path="orders/:id" element={<OrderDetail />} />
