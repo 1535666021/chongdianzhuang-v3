@@ -43,11 +43,12 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
   setFilter: (filter) => set({ filter }),
   /**
-   * 导入（含金额对齐更新）：
+   * 导入（含金额对齐更新 + 状态单方向放行）：
    * - 新id → 直接追加（added）
    * - 已存在id 且新数据金额有值 → 5个金额字段以老备份快照为准直接覆盖
    *   + completeDate缺失时补齐（updated）；
-   *   姓名/状态/备注/回款标记等其他字段一律不动，保护用户在v3里的后续操作
+   * - 状态单方向放行：仅 待办→已预约 允许导入翻正，其他状态一律不动；
+   *   姓名/备注/回款标记等其他字段一律不动，保护用户在v3里的后续操作
    * - 其余已存在 → 跳过（skipped）
    */
   importOrders: (incoming) => {
@@ -77,6 +78,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           actualProfit: (order as any).actualProfit,
           customerPrice: (order as any).customerPrice ?? oldOrder.customerPrice,
           completeDate: oldOrder.completeDate ?? (order as any).completeDate,
+          // 状态单方向放行：待办→已预约（导入翻正），其他状态一律不动
+          status: (oldOrder.status === '待办' && (order as any).status === '已预约') ? '已预约' : oldOrder.status,
+          appointmentDate: oldOrder.appointmentDate ?? (order as any).appointmentDate,
+          appointmentTime: oldOrder.appointmentTime ?? (order as any).appointmentTime,
           updatedAt: Date.now(),
         }
         updated++
