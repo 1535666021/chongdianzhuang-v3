@@ -121,7 +121,7 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
     }
     if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(line) || /^\d{1,2}:\d{2}$/.test(line)) continue;
     if (line.length <= 4 && /^(kw|千瓦|米|套|包|安装|维修|勘察|服务)$/i.test(line)) continue;
-    if (line.length <= 2) continue;
+    if (line.length < 2) continue;
     if (line.length >= 2 && line.length <= 6 && !NAME_EXCLUDE_RE.test(line) && !/\d/.test(line)) {
       if (!nameCandidates.includes(line)) nameCandidates.push(line);
     }
