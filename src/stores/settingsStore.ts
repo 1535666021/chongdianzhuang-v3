@@ -40,6 +40,7 @@ interface PersistedSettings {
   brandTemplates: Record<string, string>
   watermark: WatermarkConfig
   lingpaoTemplate: LingpaoItem[]
+  materialUsageCount: Record<string, number>
 }
 
 interface SettingsState extends PersistedSettings {
@@ -57,6 +58,9 @@ interface SettingsState extends PersistedSettings {
   setAmapKey: (key: string) => void
   setAmapZoom: (zoom: number) => void
   resetToFactory: () => void
+  materialUsageCount: Record<string, number>
+  recordMaterialUsage: (materialNames: string[]) => void
+  getMaterialUsageCount: (name: string) => number
 }
 
 const storage = new LocalStorageAdapter<PersistedSettings>(STORAGE_KEY_PREFIX)
@@ -91,6 +95,7 @@ const defaults: PersistedSettings = {
   brandTemplates: {},
   watermark: { text: '', enabled: false },
   lingpaoTemplate: [],
+  materialUsageCount: {},
   amapKey: '',
   amapZoom: 15,
 }
@@ -103,6 +108,7 @@ const initial: PersistedSettings = {
   brandTemplates: { ...(saved?.brandTemplates || {}) },
   watermark: { ...defaults.watermark, ...(saved?.watermark || {}) },
   lingpaoTemplate: saved?.lingpaoTemplate || [],
+  materialUsageCount: { ...(saved?.materialUsageCount || {}) },
 }
 
 function persist(state: PersistedSettings) {
@@ -173,6 +179,20 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
     const next = { ...get(), amapZoom: zoom }
     set(next)
     persist(next)
+  },
+  recordMaterialUsage: (materialNames) => {
+    const usage = { ...get().materialUsageCount }
+    const unique = new Set(materialNames)
+    for (const name of unique) {
+      if (!name) continue
+      usage[name] = (usage[name] || 0) + 1
+    }
+    const next = { ...get(), materialUsageCount: usage }
+    set(next)
+    persist(next)
+  },
+  getMaterialUsageCount: (name) => {
+    return get().materialUsageCount[name] || 0
   },
   resetToFactory: () => {
     set(defaults)
