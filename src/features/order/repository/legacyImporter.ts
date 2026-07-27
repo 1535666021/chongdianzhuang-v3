@@ -1,7 +1,8 @@
-import type { Order, OrderStatus, Platform, Region } from '@/types'
+import type { Order, OrderStatus, Platform, Region, OrderMaterialItem, OrderSurvey, InstallType } from '@/types'
 
 /* ------------------------------------------------------------
- * v7 老备份 → v3 Order 转换器（R9精准对齐版）
+ * v7 老备份 → v3 Order 转换器（R10：13字段补全版）
+ * R10：补全老备份导入缺失的13个字段
  * R9c：兼容v3导出格式（customerName/address标准字段名）
  * R9b：翻正逻辑补appointmentPeriod（老系统预约时段真实字段名）
  * R9：依据老备份真实字段结构精准对齐——
@@ -13,7 +14,6 @@ import type { Order, OrderStatus, Platform, Region } from '@/types'
 
 /** v7 状态 → v3 中文状态映射（含历史别名） */
 const STATUS_MAP: Record<string, OrderStatus> = {
-  // 标准英文
   'pending':    '待办',
   'surveyed':   '待办',
   'appointed':  '已预约',
@@ -26,7 +26,6 @@ const STATUS_MAP: Record<string, OrderStatus> = {
   'cancelled':  '待办',
   'trash':      '回收站',
   'deleted':    '回收站',
-  // 中文
   '待办':       '待办',
   '已勘测':     '待办',
   '已预约':     '已预约',
@@ -136,6 +135,85 @@ function platformRate(platform: Platform): number {
   return platform === '京东' || platform === '天猫' ? 0.1 : 0.2
 }
 
+/** P0-008：从serviceType/remark推断InstallType（老系统无此字段时用） */
+function inferInstallType(serviceType: string, remark: string): InstallType | undefined {
+  const st = serviceType.toLowerCase()
+  const rm = remark.toLowerCase()
+  if (st.includes('带桩') || rm.includes('带桩上门')) return '带桩上门'
+  if (st.includes('维修')) return '维修'
+  if (/勘察|勘测/.test(st)) return '勘察'
+  if (st.includes('检测')) return '检测'
+  if (st.includes('拆桩')) return '拆桩'
+  if (st.includes('移机')) return '移机'
+  if (st.includes('安装')) return '仅安装'
+  return undefined
+}
+
+/** P0-008：安全读取材料清单（格式不匹配返回[]） */
+function safeMaterials(raw: unknown): OrderMaterialItem[] {
+  if (!raw || !Array.isArray(raw)) return []
+  const result: OrderMaterialItem[] = []
+  for (const item of raw as unknown[]) {
+    if (!item || typeof item !== 'object') continue
+    const m = item as Record<string, unknown>
+    result.push({
+      name: asStr(m.name || m.materialName || m.title),
+      spec: asStr(m.spec || m.specification || m.model) || undefined,
+      quantity: pickNum(m.quantity, m.count, m.qty, m.num) || 1,
+      unit: asStr(m.unit || m.unitText) || '个',
+      unitPrice: pickNum(m.unitPrice, m.price, m.settlementPrice, m.costPrice),
+    })
+  }
+  return result
+}
+
+/** P0-008：安全读取勘测记录（格式不匹配返回undefined） */
+function safeSurvey(raw: unknown): OrderSurvey | undefined {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return undefined
+  const s = raw as Record<string, unknown>
+  const hasAnyField =
+    asStr(s.powerSource || s.cableSpec || s.installMethod || s.meterStatus || s.surveyResult).trim() !== ''
+    || (s.cableDistance !== undefined && Number(s.cableDistance) > 0)
+    || (s.estimatedCableCost !== undefined && Number(s.estimatedCableCost) > 0)
+  if (!hasAnyField) return undefined
+
+  return {
+    estimatedMaterials: safeMaterials(s.estimatedMaterials || s.materials || s.items),
+    powerSource: validatePowerSource(asStr(s.powerSource)),
+    cableSpec: asStr(s.cableSpec) || undefined,
+    cableDistance: pickNum(s.cableDistance) || undefined,
+    estimatedCableCost: pickNum(s.estimatedCableCost) || undefined,
+    installMethod: validateInstallMethod(asStr(s.installMethod)),
+    meterStatus: validateMeterStatus(asStr(s.meterStatus)),
+    needBlueprint: validateBlueprint(asStr(s.needBlueprint)),
+    surveyResult: validateSurveyResult(asStr(s.surveyResult)),
+    locationInfo: asStr(s.locationInfo) || undefined,
+  }
+}
+
+function validatePowerSource(v: string): OrderSurvey['powerSource'] {
+  if (v === '物业配电' || v === '自家电表' || v === '其他') return v
+  return '国网取电'
+}
+
+function validateInstallMethod(v: string): OrderSurvey['installMethod'] {
+  if (v === '立柱安装' || v === '吊装' || v === '其他') return v
+  return '壁挂安装'
+}
+
+function validateMeterStatus(v: string): OrderSurvey['meterStatus'] {
+  return v === '未安装' ? '未安装' : '已安装'
+}
+
+function validateBlueprint(v: string): OrderSurvey['needBlueprint'] {
+  return v === '是' ? '是' : '否'
+}
+
+function validateSurveyResult(v: string): OrderSurvey['surveyResult'] {
+  const valid = ['勘测完成', '符合安装', '不符合安装', '需整改', '待定'] as const
+  return valid.includes(v as any) ? (v as any) : '勘测完成'
+}
+
 /** 单条 v7 订单 → v3 Order */
 function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus): Order | null {
   try {
@@ -159,7 +237,6 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       pd.profit, pd.actualProfit, pd.netProfit,
       raw.actualProfit, raw.profit, raw.netProfit
     )
-    // 应收：老系统真实字段 customerPaid 第一优先（客户实付）
     let customerPrice = pickNum(
       pd.customerPaid, raw.customerPaid,
       pd.customerPrice, raw.customerPrice,
@@ -173,7 +250,6 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
 
     const platform = mapPlatform(raw.platform)
 
-    // 平台扣点：优先快照原值；老系统不存此字段 → 按官方公式补算
     let platformFee = pickNum(
       pd.platformFee, pd.platformDeduction, pd.deduction, pd.fee,
       raw.platformFee, raw.platformDeduction, raw.deduction, raw.fee
@@ -182,12 +258,10 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       platformFee = round2(customerPrice * platformRate(platform))
     }
 
-    // 应收兜底：仍无应收但有利润/成本快照时按官方公式反推
     if (!customerPrice && (actualProfit || materialCost || laborCost || platformFee)) {
       customerPrice = round2(actualProfit + materialCost + laborCost + platformFee)
     }
 
-    // 完成日期：completedAt（老系统真实字段，时间戳自动转日期）第一优先
     const completeDate =
       asDateStr(raw.completedAt) ||
       asDateStr(raw.completeDate) ||
@@ -198,12 +272,69 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       asDateStr(pd.finishDate) ||
       undefined
 
+    const notes = asStr(raw.notes || raw.remark).trim()
+
+    // ===== P0-008：13个缺失字段映射 =====
+    const platformName = asStr(
+      raw.platformName || raw.operator || raw.运营商 || raw.platform
+    ).trim() || undefined
+
+    const remark = asStr(raw.remark || raw.remarks || raw.comment || raw.备注).trim() || undefined
+
+    const orderNo = asStr(
+      raw.orderNo || raw.orderNumber || raw.order_id || raw.orderId || raw.订单号
+    ).trim() || undefined
+
+    const vin = asStr(
+      raw.vin || raw.vinNo || raw.frameNo || raw.frameNumber || raw.车架号
+    ).trim() || undefined
+
+    const brandName = asStr(
+      raw.brandName || raw.brand || raw.serviceBrand || raw.品牌
+    ).trim() || undefined
+
+    const powerKw = asStr(
+      raw.powerKw || raw.power || raw.kw || raw.powerKW || raw.功率
+    ).trim() || undefined
+
+    const packageMeters = asStr(
+      raw.packageMeters || raw.meters || raw.meterCount || raw.packageMeter || raw.套包米数 || raw.米数
+    ).trim() || undefined
+
+    const serviceType = asStr(
+      raw.serviceType || raw.service || raw.type || raw.serviceTypeText || raw.服务类型
+    ).trim() || undefined
+
+    let installType: InstallType | undefined
+    const rawInstall = asStr(
+      raw.installType || raw.install || raw.installationType || raw.安装类型
+    ).trim()
+    if (rawInstall) {
+      const validTypes: InstallType[] = ['带桩上门', '仅安装', '维修', '勘察', '检测', '拆桩', '移机', '其他']
+      installType = validTypes.includes(rawInstall as InstallType) ? (rawInstall as InstallType) : undefined
+    }
+    if (!installType) {
+      installType = inferInstallType(serviceType || '', remark || '')
+    }
+
+    const rawText = asStr(
+      raw.rawText || raw.text || raw.content || raw.source || raw.original || raw.orderText
+    ).trim() || undefined
+
+    const installer = asStr(
+      raw.installer || raw.engineer || raw.worker || raw.工程师 || raw.installerName || raw.安装工
+    ).trim() || undefined
+
+    const materials = safeMaterials(raw.materials || raw.materialList || raw.items || raw.materialItems)
+    const survey = safeSurvey(raw.survey || raw.surveyData || raw.investigation || raw.勘测)
+
     const order: Order = {
       id,
       customerName: (asStr(raw.name) || asStr(raw.customerName)).trim() || '未知客户',
       phone: extractPhone(raw.phone),
       address: (asStr(raw.addr) || asStr(raw.address)).trim() || '地址未填写',
       platform,
+      platformName,
       status: finalStatus,
       region: mapRegion(raw.region),
       appointmentDate: asStr(raw.appointmentDate) || undefined,
@@ -214,9 +345,21 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       actualProfit,
       customerPrice: customerPrice || undefined,
       completeDate,
-      notes: asStr(raw.notes || raw.remark).trim(),
+      notes,
+      remark,
       meterStatus: raw.meterStatus === '已安装' ? '已安装' : '未安装',
       meterNumber: asStr(raw.meterNumber) || undefined,
+      orderNo,
+      vin,
+      brandName,
+      powerKw,
+      packageMeters,
+      serviceType,
+      installType,
+      rawText,
+      installer,
+      materials: materials.length > 0 ? materials : undefined,
+      survey,
       createdAt,
       updatedAt,
     }
@@ -248,7 +391,6 @@ export function parseV7Backup(jsonText: string): {
   const success: Order[] = []
   const failed: { reason: string; index: number }[] = []
 
-  // 四桶遍历（新增第2组：已预约桶）
   const bucketDefs: { keys: string[]; bucketDefaultStatus: OrderStatus; useStatusMap: boolean }[] = [
     { keys: ['orders', 'pendingOrders', 'orderList', 'cdz_orders', 'cp_orders'], bucketDefaultStatus: '待办', useStatusMap: true },
     { keys: ['appointmentOrders', 'appointedOrders', 'scheduledOrders'], bucketDefaultStatus: '已预约', useStatusMap: true },
@@ -281,7 +423,6 @@ export function parseV7Backup(jsonText: string): {
       const rawRecord = raw as Record<string, unknown>
       const rawStatus = asStr(rawRecord.status)
 
-      // 是否使用STATUS_MAP
       let finalStatus: OrderStatus
       if (useStatusMap) {
         finalStatus = STATUS_MAP[rawStatus] || bucketDefaultStatus
@@ -289,7 +430,6 @@ export function parseV7Backup(jsonText: string): {
         finalStatus = bucketDefaultStatus
       }
 
-      // 翻正逻辑：仅对主待办桶生效
       const isMainBucket = ['orders', 'pendingOrders', 'orderList', 'cdz_orders', 'cp_orders'].includes(usedKey)
       if (isMainBucket) {
         finalStatus = shouldFlipToAppointed(rawStatus, finalStatus, rawRecord)
