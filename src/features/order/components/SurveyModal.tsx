@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Order } from '@/types'
 import { useSurvey } from '../hooks/useSurvey'
 import { getShortName } from '../utils/surveyUtils'
+import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { Save, X } from 'lucide-react'
 
 interface SurveyModalProps {
@@ -25,6 +26,14 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const [showDropdown, setShowDropdown] = useState(false)
   const needsBrandSelect = !order.brandName && !selectedBrand
+
+  const getDisplayPrice = (name: string, fallback: number) => {
+    const addon = addonMaterialsData.find((m) => m.name === name)
+    if (addon) return addon.settlementPrice
+    const cost = costMaterials.find((m) => m.name === name)
+    if (cost) return cost.settlementPrice
+    return fallback
+  }
 
   const handleSave = () => {
     save()
@@ -122,7 +131,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                         key={m.name}
                         className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
                       >
-                        {m.name || '未命名'} {m.unitPrice}元
+                        {m.name || '未命名'} {getDisplayPrice(m.name, m.unitPrice)}元
                         × <input
                           type="number"
                           min={1}
