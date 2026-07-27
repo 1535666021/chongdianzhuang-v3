@@ -78,6 +78,15 @@ export function useSurvey(order: Order) {
     }))
   }, [])
 
+  const updateQuantity = useCallback((name: string, quantity: number) => {
+    setForm((prev) => ({
+      ...prev,
+      estimatedMaterials: prev.estimatedMaterials.map((m) =>
+        m.name === name ? { ...m, quantity: Math.max(1, quantity) } : m
+      ),
+    }))
+  }, [])
+
   const save = useCallback(() => {
     updateOrder(order.id, { survey: { ...form } } as any)
     return true
@@ -93,6 +102,7 @@ export function useSurvey(order: Order) {
     updateForm,
     toggleAddon,
     removeAddon,
+    updateQuantity,
     save,
   }
 }
