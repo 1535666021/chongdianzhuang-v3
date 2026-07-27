@@ -89,39 +89,8 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
           </span>
         </div>
 
-        {/* 第二行：电话 */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-          <Phone size={14} className="text-gray-400 shrink-0" />
-          <span
-            onClick={handleCopyPhone}
-            className="cursor-pointer hover:text-blue-600 transition-colors select-none"
-          >
-            {copiedPhone ? '已复制' : order.phone}
-          </span>
-        </div>
-
-        {/* 第三行：地址 */}
-        <div className="flex items-start gap-2 text-base text-gray-600 mb-2">
-          <MapPin size={16} className="text-gray-400 shrink-0 mt-0.5" />
-          <span
-            onClick={handleCopyAddress}
-            className="break-words cursor-pointer hover:text-blue-600 transition-colors select-none"
-          >
-            {copiedAddress ? '已复制' : order.address}
-          </span>
-        </div>
-
-        {/* 第四行：标签（安装类型 / 平台 / 品牌 / 功率 / 米数） */}
+        {/* 标签行：平台 → 品牌 → 功率 → 米数 → 安装类型 */}
         <div className="flex flex-wrap gap-1.5 mb-2">
-          {installType !== '其他' && (
-            <span
-              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded font-medium"
-              style={{ backgroundColor: typeColors.bg, color: typeColors.text }}
-            >
-              <Tag size={10} />
-              {installType}
-            </span>
-          )}
           {order.platformName && (
             <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
               <ShoppingCart size={10} />
@@ -146,6 +115,37 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
               {order.packageMeters}米
             </span>
           )}
+          {installType !== '其他' && (
+            <span
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded font-medium"
+              style={{ backgroundColor: typeColors.bg, color: typeColors.text }}
+            >
+              <Tag size={10} />
+              {installType}
+            </span>
+          )}
+        </div>
+
+        {/* 第二行：电话 */}
+        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+          <Phone size={14} className="text-gray-400 shrink-0" />
+          <span
+            onClick={handleCopyPhone}
+            className="cursor-pointer hover:text-blue-600 transition-colors select-none"
+          >
+            {copiedPhone ? '已复制' : order.phone}
+          </span>
+        </div>
+
+        {/* 第三行：地址 */}
+        <div className="flex items-start gap-2 text-base text-gray-600 mb-2">
+          <MapPin size={16} className="text-gray-400 shrink-0 mt-0.5" />
+          <span
+            onClick={handleCopyAddress}
+            className="break-words cursor-pointer hover:text-blue-600 transition-colors select-none"
+          >
+            {copiedAddress ? '已复制' : order.address}
+          </span>
         </div>
 
         {/* 第五行：预约日期（点击弹框编辑原文） */}
