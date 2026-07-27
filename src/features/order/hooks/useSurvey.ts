@@ -31,7 +31,11 @@ export function useSurvey(order: Order) {
     if (!effectiveBrand) return []
     const usageCount = materialUsageCount
     return addonMaterialsData
-      .filter((m) => m.brand === effectiveBrand)
+      .filter((m) => {
+        const b = m.brand || ''
+        const target = effectiveBrand || ''
+        return b.includes(target) || target.includes(b)
+      })
       .sort((a, b) => {
         const countA = usageCount[a.name] || 0
         const countB = usageCount[b.name] || 0
