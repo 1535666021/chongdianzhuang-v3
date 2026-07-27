@@ -82,6 +82,20 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           status: (oldOrder.status === '待办' && (order as any).status === '已预约') ? '已预约' : oldOrder.status,
           appointmentDate: oldOrder.appointmentDate ?? (order as any).appointmentDate,
           appointmentTime: oldOrder.appointmentTime ?? (order as any).appointmentTime,
+          // P0-008-R1：合并13个缺失字段
+          rawText: (order as any).rawText || oldOrder.rawText || undefined,
+          brandName: (order as any).brandName || oldOrder.brandName || undefined,
+          platformName: (order as any).platformName || oldOrder.platformName || undefined,
+          orderNo: (order as any).orderNo || oldOrder.orderNo || undefined,
+          vin: (order as any).vin || oldOrder.vin || undefined,
+          powerKw: (order as any).powerKw || oldOrder.powerKw || undefined,
+          packageMeters: (order as any).packageMeters || oldOrder.packageMeters || undefined,
+          serviceType: (order as any).serviceType || oldOrder.serviceType || undefined,
+          installType: (order as any).installType || oldOrder.installType || undefined,
+          remark: (order as any).remark || oldOrder.remark || undefined,
+          installer: (order as any).installer || oldOrder.installer || undefined,
+          materials: (order as any).materials || oldOrder.materials || undefined,
+          survey: (order as any).survey || oldOrder.survey || undefined,
           updatedAt: Date.now(),
         }
         updated++
