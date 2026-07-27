@@ -11,4 +11,6 @@ export type Platform = '京东' | '天猫' | '淘宝' | '拼多多' | '抖音' |
 
 export type OrderStatus = '待办' | '已预约' | '已完成' | '回收站'
 
+export type InstallType = '带桩上门' | '仅安装' | '维修' | '勘察' | '检测' | '拆桩' | '移机' | '其他'
+
 export type Region = '巢湖' | '合肥' | '芜湖' | '马鞍山' | '滁州' | '宣城' | '安庆' | '其他'

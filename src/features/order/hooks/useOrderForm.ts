@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import type { Order, Platform, OrderStatus } from '@/types'
+import type { Order, Platform, OrderStatus, InstallType } from '@/types'
 
 export interface FormData {
   customerName: string
@@ -8,6 +8,7 @@ export interface FormData {
   address: string
   platform: Platform
   status: OrderStatus
+  installType: InstallType
   appointmentDate: string
   appointmentTime: string
   materialCost: number
@@ -25,6 +26,7 @@ const DEFAULT_FORM: FormData = {
   address: '',
   platform: '其他',
   status: '待办',
+  installType: '其他',
   appointmentDate: '',
   appointmentTime: '',
   materialCost: 0,
@@ -55,6 +57,7 @@ export function useOrderForm(orderId?: string) {
         address: existingOrder.address || '',
         platform: existingOrder.platform || '其他',
         status: existingOrder.status || '待办',
+        installType: existingOrder.installType || '其他',
         appointmentDate: existingOrder.appointmentDate || '',
         appointmentTime: existingOrder.appointmentTime || '',
         materialCost: existingOrder.materialCost || 0,

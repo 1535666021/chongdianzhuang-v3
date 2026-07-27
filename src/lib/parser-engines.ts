@@ -177,10 +177,25 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
  * 七、分发器
  * -------------------------------------------------------------- */
 
+function inferInstallType(item: ParsedOrderItem): void {
+  const st = (item.serviceType || '').toLowerCase();
+  const rm = (item.remark || '').toLowerCase();
+  const text = st + ' ' + rm;
+  if (st.includes('带桩') || rm.includes('带桩上门')) { item.installType = '带桩上门'; return; }
+  if (st.includes('维修')) { item.installType = '维修'; return; }
+  if (/勘察|勘测/.test(st)) { item.installType = '勘察'; return; }
+  if (st.includes('检测')) { item.installType = '检测'; return; }
+  if (st.includes('拆桩')) { item.installType = '拆桩'; return; }
+  if (st.includes('移机')) { item.installType = '移机'; return; }
+  if (st.includes('安装')) { item.installType = '仅安装'; return; }
+  item.installType = '其他';
+}
+
 export function parseBlock(block: string): ParsedOrderItem {
   const kvLineCount = block.split('\n').filter((l) => KEY_VALUE_RE.test(l.trim())).length;
-  if (kvLineCount >= 2) return parseKeyValueBlock(block);
-  return parseFlowBlock(block);
+  const item = kvLineCount >= 2 ? parseKeyValueBlock(block) : parseFlowBlock(block);
+  inferInstallType(item);
+  return item;
 }
 
 export function hasAnyField(item: ParsedOrderItem): boolean {

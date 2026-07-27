@@ -1,4 +1,4 @@
-import type { BaseEntity, Platform, OrderStatus, Region } from './common'
+import type { BaseEntity, Platform, OrderStatus, Region, InstallType } from './common'
 
 export interface OrderMaterialItem {
   name: string
@@ -55,6 +55,7 @@ export interface Order extends BaseEntity {
   platformName?: string
   remark?: string
   rawText?: string
+  installType?: InstallType
 }
 
 export interface OrderFilter {

@@ -2,7 +2,7 @@
  * 解析层入口：对外 API + 转换 + 去重
  * ============================================================ */
 
-import type { Order, Platform, OrderStatus, Region } from '@/types';
+import type { Order, Platform, OrderStatus, Region, InstallType } from '@/types';
 import type { ParsedOrderItem, ParseTextResult } from './parser-core';
 import { splitOrderBlocks, emptyItem } from './parser-core';
 import { parseBlock, hasAnyField } from './parser-engines';
@@ -61,6 +61,7 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     region: '巢湖' as Region,
     notes: '',
     meterStatus: '未安装' as '未安装',
+    installType: (it.installType as InstallType) || '其他',
   }));
 }
 

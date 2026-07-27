@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useOrderForm } from '../hooks/useOrderForm'
-import { PLATFORMS, ORDER_STATUSES } from '@/constants/order'
+import { PLATFORMS, ORDER_STATUSES, INSTALL_TYPES } from '@/constants/order'
 import { ArrowLeft, Save, User, Phone, MapPin, Calendar, FileText, DollarSign, Zap } from 'lucide-react'
 
 export default function OrderForm() {
@@ -111,6 +111,18 @@ export default function OrderForm() {
                 ))}
               </select>
             </div>
+          </div>
+          <div className="mt-3">
+            <label className="text-sm text-gray-600 mb-1 block">安装类型</label>
+            <select
+              value={form.installType}
+              onChange={(e) => updateField('installType', e.target.value as any)}
+              className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm outline-none"
+            >
+              {INSTALL_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
           </div>
         </div>
 

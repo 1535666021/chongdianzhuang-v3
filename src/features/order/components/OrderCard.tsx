@@ -1,6 +1,6 @@
 import type { Order } from '@/types'
 import ProfitBadge from './ProfitBadge'
-import { STATUS_COLORS } from '@/constants/order'
+import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt } from 'lucide-react'
 
 interface OrderCardProps {
@@ -8,29 +8,11 @@ interface OrderCardProps {
   onClick?: () => void
 }
 
-/** 从 notes 中提取标签信息 */
-function extractTags(notes: string): { platform?: string; brand?: string; power?: string; meters?: string } {
-  const tags: { platform?: string; brand?: string; power?: string; meters?: string } = {}
-
-  const platformMatch = notes.match(/平台[:：]([^|]+)/)
-  if (platformMatch) tags.platform = platformMatch[1].trim()
-
-  const brandMatch = notes.match(/品牌[:：]([^|]+)/)
-  if (brandMatch) tags.brand = brandMatch[1].trim()
-
-  const powerMatch = notes.match(/功率[:：]([^|]+)/)
-  if (powerMatch) tags.power = powerMatch[1].trim()
-
-  const metersMatch = notes.match(/米数[:：]([^|]+)/)
-  if (metersMatch) tags.meters = metersMatch[1].trim()
-
-  return tags
-}
-
 export default function OrderCard({ order, onClick }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
-  const tags = extractTags(order.notes || '')
   const isCompleted = order.status === '已完成'
+  const installType = order.installType || '其他'
+  const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
 
   return (
     <div
@@ -63,30 +45,39 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
         <span className="truncate">{order.address}</span>
       </div>
 
-      {/* 第四行：标签（平台/品牌/功率/米数） */}
+      {/* 第四行：标签（安装类型 / 平台 / 品牌 / 功率 / 米数） */}
       <div className="flex flex-wrap gap-1.5 mb-2">
-        {tags.platform && (
+        {installType !== '其他' && (
+          <span
+            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded font-medium"
+            style={{ backgroundColor: typeColors.bg, color: typeColors.text }}
+          >
+            <Tag size={10} />
+            {installType}
+          </span>
+        )}
+        {order.platformName && (
           <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
             <ShoppingCart size={10} />
-            {tags.platform}
+            {order.platformName}
           </span>
         )}
-        {tags.brand && (
+        {order.brandName && (
           <span className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded">
             <Tag size={10} />
-            {tags.brand}
+            {order.brandName}
           </span>
         )}
-        {tags.power && (
+        {order.powerKw && (
           <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded">
             <Zap size={10} />
-            {tags.power}
+            {order.powerKw}kW
           </span>
         )}
-        {tags.meters && (
+        {order.packageMeters && (
           <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">
             <Ruler size={10} />
-            {tags.meters}
+            {order.packageMeters}米
           </span>
         )}
       </div>

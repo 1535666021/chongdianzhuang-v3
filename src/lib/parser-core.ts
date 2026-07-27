@@ -32,6 +32,8 @@ export interface ParsedOrderItem {
   platformName: string;
   /** 备注 */
   remark: string;
+  /** 安装类型 */
+  installType: string;
   /** 原始报单块文本 */
   rawText?: string;
 }
@@ -140,6 +142,7 @@ export function emptyItem(): ParsedOrderItem {
     serviceType: '',
     platformName: '',
     remark: '',
+    installType: '',
   };
 }
 
