@@ -1,94 +1,85 @@
-import { useState, useCallback } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import type { OrderSurvey, SurveyFormData, SurveyMaterialItem } from '../types/survey'
+import { addonMaterialsData, brandList } from '@/constants/materialData'
+import type { Material } from '@/types/material'
+import type { Order } from '@/types'
+import type { SurveyFormData, SurveyMaterialItem } from '../types/survey'
 
-export function useSurvey(orderId: string) {
-  const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
+export function useSurvey(order: Order) {
   const updateOrder = useOrderStore((s) => s.updateOrder)
 
+  const [selectedBrand, setSelectedBrand] = useState('')
   const [form, setForm] = useState<SurveyFormData>({
-    surveyDate: new Date().toISOString().slice(0, 10),
-    meterLocation: '楼道',
-    cableRoute: '',
-    difficulty: '一般',
     estimatedMaterials: [],
-    photosDesc: '',
-    notes: '',
+    powerSource: '国网取电',
+    cableSpec: '',
+    cableDistance: 0,
+    estimatedCableCost: 0,
+    installMethod: '壁挂安装',
+    meterStatus: '已安装',
+    needBlueprint: '否',
+    surveyResult: '勘测完成',
+    locationInfo: '',
   })
 
-  const initFromOrder = useCallback(() => {
-    if (order?.survey) {
-      setForm({
-        surveyDate: order.survey.surveyDate,
-        meterLocation: order.survey.meterLocation,
-        cableRoute: order.survey.cableRoute,
-        difficulty: order.survey.difficulty,
-        estimatedMaterials: (order.survey.estimatedMaterials || []).map((m) => ({
-          name: m.name,
-          spec: m.spec || '',
-          quantity: m.quantity || 1,
-          unit: m.unit || '米',
-          unitPrice: (m as any).unitPrice || 0,
-        })),
-        photosDesc: order.survey.photosDesc,
-        notes: order.survey.notes,
-      })
-    }
-  }, [order])
+  const effectiveBrand = order.brandName || selectedBrand
+
+  const brandAddons = useMemo<Material[]>(() => {
+    if (!effectiveBrand) return []
+    return addonMaterialsData
+      .filter((m) => m.brand === effectiveBrand)
+      .sort((a, b) => a.settlementPrice - b.settlementPrice)
+  }, [effectiveBrand])
 
   const updateForm = useCallback((updates: Partial<SurveyFormData>) => {
     setForm((prev) => ({ ...prev, ...updates }))
   }, [])
 
-  const addMaterial = useCallback(() => {
-    setForm((prev) => ({
-      ...prev,
-      estimatedMaterials: [
-        ...prev.estimatedMaterials,
-        { name: '', spec: '', quantity: 1, unit: '米', unitPrice: 0 },
-      ],
-    }))
-  }, [])
-
-  const updateMaterial = useCallback((index: number, updates: Partial<SurveyMaterialItem>) => {
+  const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
-      const next = [...prev.estimatedMaterials]
-      next[index] = { ...next[index], ...updates }
-      return { ...prev, estimatedMaterials: next }
+      const exists = prev.estimatedMaterials.find((m) => m.name === mat.name)
+      if (exists) {
+        return {
+          ...prev,
+          estimatedMaterials: prev.estimatedMaterials.filter((m) => m.name !== mat.name),
+        }
+      }
+      const item: SurveyMaterialItem = {
+        name: mat.name,
+        spec: '',
+        quantity: 1,
+        unit: mat.unit,
+        unitPrice: mat.settlementPrice,
+      }
+      return {
+        ...prev,
+        estimatedMaterials: [...prev.estimatedMaterials, item],
+      }
     })
   }, [])
 
-  const removeMaterial = useCallback((index: number) => {
+  const removeAddon = useCallback((name: string) => {
     setForm((prev) => ({
       ...prev,
-      estimatedMaterials: prev.estimatedMaterials.filter((_, i) => i !== index),
+      estimatedMaterials: prev.estimatedMaterials.filter((m) => m.name !== name),
     }))
   }, [])
 
   const save = useCallback(() => {
-    if (!order) return false
-    updateOrder(orderId, {
-      survey: {
-        surveyDate: form.surveyDate,
-        meterLocation: form.meterLocation,
-        cableRoute: form.cableRoute,
-        difficulty: form.difficulty,
-        estimatedMaterials: form.estimatedMaterials,
-        photosDesc: form.photosDesc,
-        notes: form.notes,
-      },
-    })
+    updateOrder(order.id, { survey: { ...form } } as any)
     return true
-  }, [order, orderId, form, updateOrder])
+  }, [order.id, form, updateOrder])
 
   return {
-    order,
     form,
-    initFromOrder,
+    effectiveBrand,
+    brandList,
+    brandAddons,
+    selectedBrand,
+    setSelectedBrand,
     updateForm,
-    addMaterial,
-    updateMaterial,
-    removeMaterial,
+    toggleAddon,
+    removeAddon,
     save,
   }
 }

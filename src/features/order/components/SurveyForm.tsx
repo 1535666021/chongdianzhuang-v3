@@ -9,8 +9,12 @@ interface SurveyFormProps {
   onRemoveMaterial: (index: number) => void
 }
 
-const METER_LOCATIONS = ['楼道', '车库', '户外', '其他'] as const
-const DIFFICULTIES = ['简单', '一般', '复杂', '极难'] as const
+const POWER_OPTIONS = ['国网取电', '物业配电', '自家电表', '其他'] as const
+const CABLE_SPECS = ['3*6', '3*10', '4*6', '4*10', '5*6', '5*10', '2*4', '2*6', '其他']
+const INSTALL_OPTIONS = ['壁挂安装', '立柱安装', '吊装', '其他'] as const
+const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
+const BLUEPRINT_OPTIONS = ['是', '否'] as const
+const RESULT_OPTIONS = ['勘测完成', '符合安装', '不符合安装', '需整改', '待定'] as const
 
 export function SurveyForm({
   form,
@@ -21,59 +25,102 @@ export function SurveyForm({
 }: SurveyFormProps) {
   return (
     <div className="space-y-4">
-      <div>
-        <label className="block text-sm text-secondary mb-1">勘察日期</label>
-        <input
-          type="date"
-          className="input w-full"
-          value={form.surveyDate}
-          onChange={(e) => onUpdate({ surveyDate: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-secondary mb-1">电表位置</label>
-        <div className="flex flex-wrap gap-2">
-          {METER_LOCATIONS.map((loc) => (
-            <button
-              key={loc}
-              type="button"
-              className={`btn btn--sm ${form.meterLocation === loc ? 'btn--primary' : 'btn--outline'}`}
-              onClick={() => onUpdate({ meterLocation: loc })}
+      {/* 🔌 线缆信息 */}
+      <div className="card">
+        <div className="card__title">🔌 线缆信息</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-sm text-secondary mb-1">取电方式</label>
+            <select
+              className="input w-full"
+              value={form.powerSource}
+              onChange={(e) => onUpdate({ powerSource: e.target.value as any })}
             >
-              {loc}
-            </button>
-          ))}
+              {POWER_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-secondary mb-1">线缆规格</label>
+            <select
+              className="input w-full"
+              value={form.cableSpec}
+              onChange={(e) => onUpdate({ cableSpec: e.target.value })}
+            >
+              <option value="">请选择</option>
+              {CABLE_SPECS.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-secondary mb-1">电缆距离(米)</label>
+            <input
+              type="number"
+              className="input w-full"
+              value={form.cableDistance || ''}
+              onChange={(e) => onUpdate({ cableDistance: Number(e.target.value) })}
+              min={0}
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-secondary mb-1">预估费用(元)</label>
+            <input
+              type="number"
+              className="input w-full"
+              value={form.estimatedCableCost || ''}
+              onChange={(e) => onUpdate({ estimatedCableCost: Number(e.target.value) })}
+              min={0}
+            />
+          </div>
         </div>
       </div>
 
-      <div>
-        <label className="block text-sm text-secondary mb-1">线路走向</label>
-        <input
-          type="text"
-          className="input w-full"
-          placeholder="如：从电表箱沿墙面走线至车位"
-          value={form.cableRoute}
-          onChange={(e) => onUpdate({ cableRoute: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-secondary mb-1">施工难度</label>
-        <div className="flex flex-wrap gap-2">
-          {DIFFICULTIES.map((d) => (
-            <button
-              key={d}
-              type="button"
-              className={`btn btn--sm ${form.difficulty === d ? 'btn--primary' : 'btn--outline'}`}
-              onClick={() => onUpdate({ difficulty: d })}
+      {/* 🔧 勘测详情 */}
+      <div className="card">
+        <div className="card__title">🔧 勘测详情</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-sm text-secondary mb-1">安装方式</label>
+            <select
+              className="input w-full"
+              value={form.installMethod}
+              onChange={(e) => onUpdate({ installMethod: e.target.value as any })}
             >
-              {d}
-            </button>
-          ))}
+              {INSTALL_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-secondary mb-1">电表状态</label>
+            <select
+              className="input w-full"
+              value={form.meterStatus}
+              onChange={(e) => onUpdate({ meterStatus: e.target.value as any })}
+            >
+              {METER_STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-secondary mb-1">物业需要方案图</label>
+            <select
+              className="input w-full"
+              value={form.needBlueprint}
+              onChange={(e) => onUpdate({ needBlueprint: e.target.value as any })}
+            >
+              {BLUEPRINT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-secondary mb-1">勘测结果</label>
+            <select
+              className="input w-full"
+              value={form.surveyResult}
+              onChange={(e) => onUpdate({ surveyResult: e.target.value as any })}
+            >
+              {RESULT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          </div>
         </div>
       </div>
 
+      {/* 📦 预估材料 */}
       <div className="card">
         <div className="card__title flex items-center gap-2">
           <ClipboardList size={16} />
@@ -124,24 +171,14 @@ export function SurveyForm({
         </div>
       </div>
 
+      {/* 📍 位置信息 */}
       <div>
-        <label className="block text-sm text-secondary mb-1">现场照片描述</label>
-        <input
-          type="text"
-          className="input w-full"
-          placeholder="如：电表箱位置、走线路径、障碍物等"
-          value={form.photosDesc}
-          onChange={(e) => onUpdate({ photosDesc: e.target.value })}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm text-secondary mb-1">勘察备注</label>
+        <label className="block text-sm text-secondary mb-1">📍 位置信息</label>
         <textarea
           className="input w-full h-24 resize-none"
-          placeholder="其他需要注意的事项..."
-          value={form.notes}
-          onChange={(e) => onUpdate({ notes: e.target.value })}
+          placeholder="输入位置描述..."
+          value={form.locationInfo}
+          onChange={(e) => onUpdate({ locationInfo: e.target.value })}
         />
       </div>
     </div>

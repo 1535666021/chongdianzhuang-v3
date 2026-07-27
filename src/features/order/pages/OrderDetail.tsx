@@ -7,6 +7,7 @@ import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2,
 import { useGeocode } from '../hooks/useGeocode'
 import OrderMap from '../components/OrderMap'
 import NavigateButton from '../components/NavigateButton'
+import SurveyModal from '../components/SurveyModal'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -21,6 +22,7 @@ export default function OrderDetail() {
   const { geocode, loading: geoLoading, error: geoError } = useGeocode()
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [showMap, setShowMap] = useState(false)
+  const [showSurvey, setShowSurvey] = useState(false)
 
   if (!order) {
     return (
@@ -45,7 +47,7 @@ export default function OrderDetail() {
   }
 
   const handleSurvey = () => {
-    navigate(`/order/survey/${id}`)
+    setShowSurvey(true)
   }
 
   const handleDelete = () => {
@@ -211,10 +213,19 @@ export default function OrderDetail() {
             勘察记录
           </h2>
           <div className="space-y-2 text-sm">
-            <div>勘察日期: {order.survey.surveyDate}</div>
-            <div>电表位置: {order.survey.meterLocation}</div>
-            <div>线路走向: {order.survey.cableRoute}</div>
-            <div>施工难度: {order.survey.difficulty}</div>
+            {order.survey.powerSource && <div>取电方式: {order.survey.powerSource}</div>}
+            {order.survey.cableSpec && <div>线缆规格: {order.survey.cableSpec}</div>}
+            {order.survey.cableDistance !== undefined && order.survey.cableDistance > 0 && (
+              <div>电缆距离: {order.survey.cableDistance}米</div>
+            )}
+            {order.survey.estimatedCableCost !== undefined && order.survey.estimatedCableCost > 0 && (
+              <div>预估线缆费: ¥{order.survey.estimatedCableCost.toFixed(2)}</div>
+            )}
+            {order.survey.installMethod && <div>安装方式: {order.survey.installMethod}</div>}
+            {order.survey.meterStatus && <div>电表状态: {order.survey.meterStatus}</div>}
+            {order.survey.needBlueprint && <div>物业方案图: {order.survey.needBlueprint}</div>}
+            {order.survey.surveyResult && <div>勘测结果: {order.survey.surveyResult}</div>}
+            {order.survey.locationInfo && <div>位置信息: {order.survey.locationInfo}</div>}
             {order.survey.estimatedMaterials && order.survey.estimatedMaterials.length > 0 && (
               <div>
                 预估材料:
@@ -227,8 +238,6 @@ export default function OrderDetail() {
                 </div>
               </div>
             )}
-            {order.survey.photosDesc && <div>照片描述: {order.survey.photosDesc}</div>}
-            {order.survey.notes && <div>备注: {order.survey.notes}</div>}
           </div>
         </div>
       )}
@@ -271,6 +280,7 @@ export default function OrderDetail() {
           <p className="text-sm text-gray-600 whitespace-pre-wrap">{order.notes}</p>
         </div>
       )}
+      {showSurvey && <SurveyModal order={order} onClose={() => setShowSurvey(false)} />}
     </div>
   )
 }

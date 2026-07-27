@@ -14,13 +14,16 @@ export interface OrderPayment {
 }
 
 export interface OrderSurvey {
-  surveyDate: string
-  meterLocation: '楼道' | '车库' | '户外' | '其他'
-  cableRoute: string
-  difficulty: '简单' | '一般' | '复杂' | '极难'
   estimatedMaterials?: OrderMaterialItem[]
-  photosDesc: string
-  notes: string
+  powerSource?: '国网取电' | '物业配电' | '自家电表' | '其他'
+  cableSpec?: string
+  cableDistance?: number
+  estimatedCableCost?: number
+  installMethod?: '壁挂安装' | '立柱安装' | '吊装' | '其他'
+  meterStatus?: '已安装' | '未安装'
+  needBlueprint?: '是' | '否'
+  surveyResult?: '勘测完成' | '符合安装' | '不符合安装' | '需整改' | '待定'
+  locationInfo?: string
 }
 
 export interface Order extends BaseEntity {

@@ -1,26 +1,13 @@
-import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save } from 'lucide-react'
+import { useOrderStore } from '@/stores/orderStore'
 import { useSurvey } from '../hooks/useSurvey'
 import { SurveyForm } from '../components/SurveyForm'
 
 export default function OrderSurvey() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const {
-    order,
-    form,
-    initFromOrder,
-    updateForm,
-    addMaterial,
-    updateMaterial,
-    removeMaterial,
-    save,
-  } = useSurvey(id!)
-
-  useEffect(() => {
-    initFromOrder()
-  }, [initFromOrder])
+  const order = useOrderStore((s) => s.orders.find((o) => o.id === id))
 
   if (!order) {
     return (
@@ -35,10 +22,22 @@ export default function OrderSurvey() {
     )
   }
 
+  return <OrderSurveyContent order={order} />
+}
+
+function OrderSurveyContent({ order }: { order: NonNullable<ReturnType<typeof useOrderStore.getState>['orders'][number]> }) {
+  const navigate = useNavigate()
+  const {
+    form,
+    updateForm,
+    toggleAddon,
+    removeAddon,
+    save,
+  } = useSurvey(order)
+
   const handleSave = () => {
-    if (save()) {
-      navigate(`/orders/${id}`)
-    }
+    save()
+    navigate('/')
   }
 
   return (
@@ -60,9 +59,9 @@ export default function OrderSurvey() {
         <SurveyForm
           form={form}
           onUpdate={updateForm}
-          onAddMaterial={addMaterial}
-          onUpdateMaterial={updateMaterial}
-          onRemoveMaterial={removeMaterial}
+          onAddMaterial={toggleAddon as any}
+          onUpdateMaterial={() => {}}
+          onRemoveMaterial={removeAddon as any}
         />
       </div>
 
