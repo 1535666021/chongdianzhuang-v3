@@ -2,7 +2,7 @@
  * 解析层入口：对外 API + 转换 + 去重
  * ============================================================ */
 
-import type { Order } from '@/types';
+import type { Order, Platform, OrderStatus, Region } from '@/types';
 import type { ParsedOrderItem, ParseTextResult } from './parser-core';
 import { splitOrderBlocks, emptyItem } from './parser-core';
 import { parseBlock, hasAnyField } from './parser-engines';
@@ -47,16 +47,20 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     platformName: it.platformName || '',
     remark: it.remark || '',
     orderNo: it.orderNo || '',
-    status: 'todo',
+    status: '待办' as OrderStatus,
     createdAt: now,
     updatedAt: now,
-    totalAmount: 0,
     actualProfit: 0,
     materialCost: 0,
     laborCost: 0,
     platformFee: 0,
     materials: [],
     rawText: it.rawText || '',
+    /* ---- 必填字段默认值 ---- */
+    platform: '其他' as Platform,
+    region: '巢湖' as Region,
+    notes: '',
+    meterStatus: '未安装' as '未安装',
   }));
 }
 

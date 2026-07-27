@@ -45,6 +45,16 @@ export interface Order extends BaseEntity {
   materials?: OrderMaterialItem[]
   payment?: OrderPayment
   survey?: OrderSurvey
+  /* ---- 解析原始字段（可选） ---- */
+  orderNo?: string
+  vin?: string
+  brandName?: string
+  powerKw?: string
+  packageMeters?: string
+  serviceType?: string
+  platformName?: string
+  remark?: string
+  rawText?: string
 }
 
 export interface OrderFilter {
