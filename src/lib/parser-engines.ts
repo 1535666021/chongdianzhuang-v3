@@ -32,6 +32,24 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
       if (KV_DISCARD_KEYS.has(key)) continue;
       if (key === '用户信息' || key === '真实号码') {
         userInfo = value;
+        const phoneInInfo = extractPhone(value);
+        if (phoneInInfo) {
+          const namePart = value.replace(phoneInInfo, '').trim();
+          if (namePart) {
+            const isChineseOnly = /^[\u4e00-\u9fa5]+$/.test(namePart);
+            if (!isChineseOnly || !NAME_EXCLUDE_RE.test(namePart)) {
+              kv.set('_userinfo_name', namePart);
+            }
+          }
+        } else {
+          const trimmed = value.trim();
+          if (trimmed) {
+            const isChineseOnly = /^[\u4e00-\u9fa5]+$/.test(trimmed);
+            if (!isChineseOnly || !NAME_EXCLUDE_RE.test(trimmed)) {
+              kv.set('_userinfo_name', trimmed);
+            }
+          }
+        }
         continue;
       }
       if (STANDALONE_DISCARD.has(key) && value.length <= 3) continue;
@@ -62,6 +80,9 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   }
   item.orderNo = pickKv(kv, KV_FIELD_KEYS.orderNo);
   item.customerName = pickKv(kv, KV_FIELD_KEYS.customerName);
+  if (!item.customerName && kv.has('_userinfo_name')) {
+    item.customerName = kv.get('_userinfo_name')!;
+  }
   item.phone = pickKv(kv, KV_FIELD_KEYS.phone);
   item.address = cleanAddressText(pickKv(kv, KV_FIELD_KEYS.address));
   item.brandName = pickKv(kv, KV_FIELD_KEYS.brandName);
