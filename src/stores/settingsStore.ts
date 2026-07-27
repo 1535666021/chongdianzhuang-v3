@@ -66,6 +66,28 @@ interface SettingsState extends PersistedSettings {
 const storage = new LocalStorageAdapter<PersistedSettings>(STORAGE_KEY_PREFIX)
 const saved = storage.get('settings')
 
+function scanHistoryOrders(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem('cdz_v3_orders_')
+    if (!raw) return {}
+    const data = JSON.parse(raw)
+    const list = Array.isArray(data?.list) ? data.list : Array.isArray(data) ? data : []
+    const count: Record<string, number> = {}
+    for (const order of list) {
+      if (order?.status !== '已完成') continue
+      const materials = Array.isArray(order?.materials) ? order.materials : []
+      for (const m of materials) {
+        const name = m?.name
+        if (!name) continue
+        count[name] = (count[name] || 0) + 1
+      }
+    }
+    return count
+  } catch {
+    return {}
+  }
+}
+
 const defaultPlatformRates: Record<string, number> = {
   京东: 0.1,
   天猫: 0.1,
@@ -109,6 +131,12 @@ const initial: PersistedSettings = {
   watermark: { ...defaults.watermark, ...(saved?.watermark || {}) },
   lingpaoTemplate: saved?.lingpaoTemplate || [],
   materialUsageCount: { ...(saved?.materialUsageCount || {}) },
+}
+
+// P0-010-R1：冷启动时若无频率缓存，自动扫描历史已完成订单初始化
+if (!Object.keys(saved?.materialUsageCount || {}).length) {
+  initial.materialUsageCount = scanHistoryOrders()
+  storage.set('settings', { ...initial })
 }
 
 function persist(state: PersistedSettings) {
