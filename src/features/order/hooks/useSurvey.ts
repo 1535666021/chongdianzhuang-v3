@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import type { Material } from '@/types/material'
 import type { Order } from '@/types'
@@ -24,12 +25,20 @@ export function useSurvey(order: Order) {
 
   const effectiveBrand = order.brandName || selectedBrand
 
+  const materialUsageCount = useSettingsStore((s) => s.materialUsageCount)
+
   const brandAddons = useMemo<Material[]>(() => {
     if (!effectiveBrand) return []
+    const usageCount = materialUsageCount
     return addonMaterialsData
       .filter((m) => m.brand === effectiveBrand)
-      .sort((a, b) => a.settlementPrice - b.settlementPrice)
-  }, [effectiveBrand])
+      .sort((a, b) => {
+        const countA = usageCount[a.name] || 0
+        const countB = usageCount[b.name] || 0
+        if (countB !== countA) return countB - countA
+        return a.name.localeCompare(b.name)
+      })
+  }, [effectiveBrand, materialUsageCount])
 
   const updateForm = useCallback((updates: Partial<SurveyFormData>) => {
     setForm((prev) => ({ ...prev, ...updates }))
