@@ -34,6 +34,7 @@ export function useCompletion(orderId: string) {
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
   const stockOut = useInventoryStore((s) => s.stockOut)
+  const recordMaterialUsage = useSettingsStore((s) => s.recordMaterialUsage)
 
   const [packageMeters, setPackageMeters] = useState(DEFAULT_PACKAGE_METERS)
 
@@ -207,6 +208,8 @@ export function useCompletion(orderId: string) {
       customerPrice: profit.customerReceivable,
       notes: form.notes,
     })
+
+    recordMaterialUsage(form.materials.map((m) => m.name))
     return true
   }, [order, orderId, form, profit, updateOrder, stockOut])
 
