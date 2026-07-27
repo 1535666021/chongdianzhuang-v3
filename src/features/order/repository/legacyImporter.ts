@@ -1,4 +1,5 @@
 import type { Order, OrderStatus, Platform, Region, OrderMaterialItem, OrderSurvey, InstallType } from '@/types'
+import { extractBrandName, extractPlatformName, POWER_RE, METERS_RE } from '@/lib/parser-core'
 
 /* ------------------------------------------------------------
  * v7 老备份 → v3 Order 转换器（R10：13字段补全版）
@@ -275,7 +276,7 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
     const notes = asStr(raw.notes || raw.remark).trim()
 
     // ===== P0-008：13个缺失字段映射 =====
-    const platformName = asStr(
+    let platformName = asStr(
       raw.platformName || raw.operator || raw.运营商 || raw.platform
     ).trim() || undefined
 
@@ -289,19 +290,19 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
       raw.vin || raw.vinNo || raw.frameNo || raw.frameNumber || raw.车架号
     ).trim() || undefined
 
-    const brandName = asStr(
+    let brandName = asStr(
       raw.brandName || raw.brand || raw.serviceBrand || raw.品牌
     ).trim() || undefined
 
-    const powerKw = asStr(
+    let powerKw = asStr(
       raw.powerKw || raw.power || raw.kw || raw.powerKW || raw.功率
     ).trim() || undefined
 
-    const packageMeters = asStr(
+    let packageMeters = asStr(
       raw.packageMeters || raw.meters || raw.meterCount || raw.packageMeter || raw.套包米数 || raw.米数
     ).trim() || undefined
 
-    const serviceType = asStr(
+    let serviceType = asStr(
       raw.serviceType || raw.service || raw.type || raw.serviceTypeText || raw.服务类型
     ).trim() || undefined
 
@@ -320,6 +321,32 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
     const rawText = asStr(
       raw.rawText || raw.text || raw.content || raw.source || raw.original || raw.orderText
     ).trim() || undefined
+
+    // P0-009：从 rawText 做 fallback 提取（仅在原字段为空时）
+    if (!brandName && rawText) {
+      brandName = extractBrandName(rawText) || undefined
+    }
+    if (!platformName && rawText) {
+      platformName = extractPlatformName(rawText) || undefined
+    }
+    if (!powerKw && rawText) {
+      const pm = rawText.match(POWER_RE)
+      if (pm) powerKw = pm[1]
+    }
+    if (!packageMeters && rawText) {
+      const mm = rawText.match(METERS_RE)
+      if (mm) packageMeters = mm[1]
+    }
+    if (!serviceType && rawText) {
+      const st = rawText
+      if (st.includes('带桩上门') || st.includes('带桩')) serviceType = '带桩上门'
+      else if (st.includes('维修')) serviceType = '维修'
+      else if (st.includes('勘察') || st.includes('勘测')) serviceType = '勘察'
+      else if (st.includes('检测')) serviceType = '检测'
+      else if (st.includes('拆桩')) serviceType = '拆桩'
+      else if (st.includes('移机')) serviceType = '移机'
+      else if (st.includes('安装')) serviceType = '仅安装'
+    }
 
     const installer = asStr(
       raw.installer || raw.engineer || raw.worker || raw.工程师 || raw.installerName || raw.安装工
