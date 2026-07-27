@@ -95,7 +95,7 @@ export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申�
 /** 键值块字段映射 */
 export const KV_FIELD_KEYS = {
   orderNo: ['订单号', '安装订单号', '安装工单号', '服务编号', '服务单号', '外联单号'],
-  customerName: ['订单姓名', '客户姓名', '联系人', '车主姓名'],
+  customerName: ['订单姓名', '客户姓名', '联系人', '车主姓名', '姓名', '用户姓名', '车主', '客户', '姓名信息', '联系人姓名'],
   phone: ['真实号码', '客户手机', '用户电话', '联系电话', '联系人电话', '车主电话'],
   address: ['安装地址', '用户地址', '收件地址', '详细地址'],
   brandName: ['服务品牌'],
@@ -198,6 +198,25 @@ export function stripWordFromText(text: string, word: string): string {
 
 export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
   if (!item.phone) item.phone = extractPhone(blockText);
+  /* ---- 姓名后补：从备注或原始文本中提取 ---- */
+  if (!item.customerName) {
+    // 尝试从键值对格式的原始文本中提取姓名
+    const nameKv = blockText.match(/(?:客户姓名|联系人|车主姓名|姓名|用户姓名|车主|客户|姓名信息|联系人姓名)[:：]\s*([^\n\r]{2,6})/);
+    if (nameKv && nameKv[1]) {
+      const name = nameKv[1].trim();
+      if (name.length >= 2 && name.length <= 6 && !/\d/.test(name) && !NAME_EXCLUDE_RE.test(name)) {
+        item.customerName = name;
+      }
+    }
+  }
+  if (!item.customerName) {
+    // 尝试从备注中提取可能的姓名（2-4个汉字，不含数字和排除词）
+    const remark = item.remark || '';
+    const nameMatch = remark.match(/([\u4e00-\u9fa5]{2,4})(?:先生|女士|小姐|师傅)?/);
+    if (nameMatch && nameMatch[1] && !NAME_EXCLUDE_RE.test(nameMatch[1]) && !/\d/.test(nameMatch[1])) {
+      item.customerName = nameMatch[1];
+    }
+  }
   if (!item.vin) {
     const all = blockText.match(VIN_SEARCH_RE) ?? [];
     const found = all.find((v) => v !== item.orderNo);
