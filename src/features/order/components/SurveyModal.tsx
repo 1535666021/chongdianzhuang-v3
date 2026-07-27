@@ -20,7 +20,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const {
     form, effectiveBrand, brandList, brandAddons,
     selectedBrand, setSelectedBrand,
-    updateForm, toggleAddon, removeAddon, save,
+    updateForm, toggleAddon, removeAddon, updateQuantity, save,
   } = useSurvey(order)
 
   const [showDropdown, setShowDropdown] = useState(false)
@@ -99,7 +99,11 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                               <input
                                 type="checkbox"
                                 checked={checked}
-                                onChange={() => toggleAddon(mat)}
+                                 onChange={() => {
+                                    const isAdding = !form.estimatedMaterials.some((em) => em.name === mat.name)
+                                    toggleAddon(mat)
+                                    if (isAdding) setShowDropdown(false)
+                                  }}
                                 className="w-4 h-4 rounded accent-blue-600"
                               />
                               <span className="text-gray-700">{getShortName(mat.name, mat.category)}</span>
@@ -118,7 +122,14 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                         key={m.name}
                         className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
                       >
-                        {m.name || '未命名'} x{m.quantity}
+                        {m.name || '未命名'} {m.unitPrice}元
+                        × <input
+                          type="number"
+                          min={1}
+                          value={m.quantity}
+                          onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
+                          className="w-10 text-center text-xs bg-white border rounded mx-1"
+                        />
                         <button
                           type="button"
                           onClick={() => removeAddon(m.name)}
