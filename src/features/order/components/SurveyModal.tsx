@@ -118,7 +118,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                         key={m.name}
                         className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
                       >
-                        {getShortName(m.name, '其他')} x{m.quantity}
+                        {m.name || '未命名'} x{m.quantity}
                         <button
                           type="button"
                           onClick={() => removeAddon(m.name)}
