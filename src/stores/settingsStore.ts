@@ -75,8 +75,11 @@ function scanHistoryOrders(): Record<string, number> {
     const count: Record<string, number> = {}
     for (const order of list) {
       if (order?.status !== '已完成') continue
-      const materials = Array.isArray(order?.survey?.estimatedMaterials) ? order.survey.estimatedMaterials : []
-      for (const m of materials) {
+      const mats = [
+        ...(Array.isArray(order?.survey?.estimatedMaterials) ? order.survey.estimatedMaterials : []),
+        ...(Array.isArray(order?.materials) ? order.materials : []),
+      ]
+      for (const m of mats) {
         const name = m?.name
         if (!name) continue
         count[name] = (count[name] || 0) + 1
