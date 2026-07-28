@@ -44,6 +44,18 @@ export function useSurvey(order: Order) {
       })
   }, [effectiveBrand, materialUsageCount])
 
+  const totalEstimatedCost = useMemo(() => {
+    return form.estimatedMaterials.reduce((sum, m) => {
+      const mat = addonMaterialsData.find((a) => a.name === m.name)
+      if (!mat) return sum
+      if (mat.categoryCode === 'CABLE' || m.name.includes('线缆敷设')) {
+        const over = Math.max(0, m.quantity - (mat.freeQuota || 0))
+        return sum + over * mat.settlementPrice
+      }
+      return sum + m.quantity * mat.settlementPrice
+    }, 0)
+  }, [form.estimatedMaterials])
+
   const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
       const exists = prev.estimatedMaterials.find((m) => m.name === mat.name)
@@ -147,6 +159,7 @@ export function useSurvey(order: Order) {
     toggleAddon,
     removeAddon,
     updateQuantity,
+    totalEstimatedCost,
     save,
   }
 }
