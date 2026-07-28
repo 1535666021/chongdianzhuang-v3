@@ -37,7 +37,6 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
   const cable = costMaterials.find((m) => m.name === '电缆')
   const pvc = costMaterials.find((m) => m.name === 'PVC')
   const breaker = costMaterials.find((m) => m.name === '漏保盒')
-  const groundRod = costMaterials.find((m) => m.name.includes('接地'))
 
   return (
     <div className="space-y-4">
@@ -134,7 +133,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
             <label className="text-xs text-gray-500">电缆(米)</label>
             <input
               type="number"
-              value={fixedAux.cableMeters}
+              value={Number(fixedAux.cableMeters) || ''}
               onChange={(e) => onUpdateFixedAux({ cableMeters: parseFloat(e.target.value) || 0 })}
               className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
             />
@@ -144,7 +143,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
             <label className="text-xs text-gray-500">PVC(米)</label>
             <input
               type="number"
-              value={fixedAux.pvcMeters}
+              value={Number(fixedAux.pvcMeters) || ''}
               onChange={(e) => onUpdateFixedAux({ pvcMeters: parseFloat(e.target.value) || 0 })}
               className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
             />
@@ -161,14 +160,17 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
             <span className="text-[10px] text-gray-400">成本¥{breaker?.costPrice || 5}/个</span>
           </div>
           <div>
-            <label className="text-xs text-gray-500">接地棒(个)</label>
-            <input
-              type="number"
-              value={fixedAux.groundRodCount}
-              onChange={(e) => onUpdateFixedAux({ groundRodCount: parseFloat(e.target.value) || 0 })}
+            <label className="text-xs text-gray-500">漏保</label>
+            <select
+              value={fixedAux.breakerType}
+              onChange={(e) => onUpdateFixedAux({ breakerType: e.target.value as 'C25' | 'C40' | 'C40A' | '' })}
               className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
-            />
-            <span className="text-[10px] text-gray-400">成本¥{groundRod?.costPrice || 0}/个</span>
+            >
+              <option value="">无</option>
+              <option value="C25">C25 (¥26.8)</option>
+              <option value="C40">C40 (¥26.8)</option>
+              <option value="C40A">C40A (¥46.5)</option>
+            </select>
           </div>
         </div>
       </div>
