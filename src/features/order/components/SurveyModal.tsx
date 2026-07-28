@@ -46,26 +46,29 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const reportText = useMemo(() => {
     const lines: string[] = []
-    lines.push(`勘测报告`)
-    lines.push(`勘测完成时间：${new Date().toLocaleDateString('zh-CN')}`)
+    lines.push(`勘测完成时间：${new Date().toISOString().slice(0, 10)}`)
     lines.push(`勘测详情：${form.installMethod}`)
-    if (engineerName) lines.push(`工程师：${engineerName}${engineerPhone ? ` ${engineerPhone}` : ''}`)
+    lines.push(`勘测工程师及电话：${engineerName || ''} / ${engineerPhone || ''}`)
     lines.push(`用电方式：${form.powerSource}`)
     lines.push(`电表状态：${form.meterStatus}`)
-    lines.push(`布线距离：${form.cableDistance || 0}米`)
-    if (form.cableSpec) lines.push(`线缆规格：${form.cableSpec}`)
+    lines.push(`布线距离：${form.cableDistance || 0} 米`)
     if (form.estimatedMaterials.length > 0) {
+      lines.push('')
       lines.push(`预计增项辅材明细：`)
       for (const m of form.estimatedMaterials) {
         const mat = addonMaterialsData.find((a) => a.name === m.name)
         const short = mat ? getShortName(mat.name, mat.category) : m.name
-        lines.push(`  ${short} × ${m.quantity}${m.unit} ${m.unitPrice}元`)
+        const subtotal = m.unitPrice * m.quantity
+        lines.push(`${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`)
       }
-      lines.push(`预计增项合计：¥${totalEstimatedCost.toFixed(2)}`)
+      lines.push('')
+      lines.push(`预计增项合计：¥${totalEstimatedCost.toFixed(2)}元（以实际使用为准）`)
     }
     lines.push(`物业需要施工方案图：${form.needBlueprint}`)
     lines.push(`勘测结果：${form.surveyResult}`)
-    if (form.locationInfo) lines.push(`勘测备注：${form.locationInfo}`)
+    lines.push(`（电缆上有准确的米标刻度）`)
+    lines.push(`勘测备注：${form.locationInfo || ''}`)
+    lines.push(`以上勘测情况请您回复"确认"，谢谢`)
     return lines.join('\n')
   }, [form, engineerName, engineerPhone, totalEstimatedCost])
 
