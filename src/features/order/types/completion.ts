@@ -19,13 +19,29 @@ export interface FixedAuxInput {
   breakerType: 'C25' | 'C40' | 'C40A' | ''
 }
 
+export interface ProfitBreakdownItem {
+  name: string
+  calc: string
+  amount: number
+}
+
+export interface ProfitBreakdown {
+  receivableItems: ProfitBreakdownItem[]
+  platformRate: number
+  serviceFeeLabel: string
+  materialItems: ProfitBreakdownItem[]
+  laborLabel: string
+}
+
 export interface ProfitPreview {
   customerReceivable: number
+  freeAmount?: number
   platformFee: number
   materialCost: number
   laborCost: number
   serviceFee: number
   actualProfit: number
+  breakdown: ProfitBreakdown
 }
 
 export interface CompletionFormData {
