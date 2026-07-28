@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react'
-import type { Material } from '@/types'
+import type { Material, MaterialUsageRecord } from '@/types'
 import { useMaterialStore } from '@/stores/materialStore'
 import { costMaterials, addonMaterialsData } from '@/constants/materialData'
 
@@ -10,6 +10,10 @@ export function useMaterial() {
   const {
     materials: storedMaterials,
     updateMaterial: storeUpdate,
+    usageRecords,
+    addUsageRecord: storeAddUsage,
+    updateUsageRecord: storeUpdateUsage,
+    deleteUsageRecord: storeDeleteUsage,
   } = useMaterialStore()
 
   const costMaterials = useMemo(() => {
@@ -122,6 +126,29 @@ export function useMaterial() {
     [storeUpdate]
   )
 
+  const addUsageRecord = useCallback((record: Omit<MaterialUsageRecord, 'id' | 'total'>) => {
+    const total = Math.round(record.costPrice * record.quantity * 100) / 100
+    const newRecord: MaterialUsageRecord = {
+      ...record,
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+      total,
+    }
+    storeAddUsage(newRecord)
+  }, [storeAddUsage])
+
+  const updateUsageRecord = useCallback((id: string, updates: Partial<Omit<MaterialUsageRecord, 'id' | 'total'>>) => {
+    const record = usageRecords.find((r) => r.id === id)
+    if (!record) return
+    const costPrice = updates.costPrice ?? record.costPrice
+    const quantity = updates.quantity ?? record.quantity
+    const total = Math.round(costPrice * quantity * 100) / 100
+    storeUpdateUsage(id, { ...updates, total })
+  }, [usageRecords, storeUpdateUsage])
+
+  const deleteUsageRecord = useCallback((id: string) => {
+    storeDeleteUsage(id)
+  }, [storeDeleteUsage])
+
   return {
     costMaterials,
     addonMaterials,
@@ -129,5 +156,9 @@ export function useMaterial() {
     updateCostPrice,
     updateAddonCostPrice,
     updateAddonFreeQuota,
+    usageRecords,
+    addUsageRecord,
+    updateUsageRecord,
+    deleteUsageRecord,
   }
 }
