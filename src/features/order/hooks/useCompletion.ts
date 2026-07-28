@@ -36,7 +36,20 @@ export function useCompletion(orderId: string) {
   const stockOut = useInventoryStore((s) => s.stockOut)
   const recordMaterialUsage = useSettingsStore((s) => s.recordMaterialUsage)
 
-  const [packageMeters, setPackageMeters] = useState(DEFAULT_PACKAGE_METERS)
+  const [packageMeters, setPackageMeters] = useState(() => {
+    if (order?.packageMeters) {
+      const pm = parseFloat(order.packageMeters)
+      if (!isNaN(pm) && pm > 0) return pm
+    }
+    const brandDefaults: Record<string, number> = {
+      '零跑': 30,
+      '空灵零跑': 30,
+    }
+    if (order?.brandName && brandDefaults[order.brandName]) {
+      return brandDefaults[order.brandName]
+    }
+    return DEFAULT_PACKAGE_METERS
+  })
 
   const [form, setForm] = useState<CompletionFormData>({
     completeDate: new Date().toISOString().slice(0, 10),
@@ -61,7 +74,7 @@ export function useCompletion(orderId: string) {
       cableMeters: 0,
       pvcMeters: 0,
       breakerCount: 0,
-      groundRodCount: 0,
+      breakerType: '',
     },
     notes: order?.notes || '',
   })
@@ -120,19 +133,33 @@ export function useCompletion(orderId: string) {
   const packageBreakdown = usePackageMeters(form.materials, packageMeters)
 
   const profit = useMemo<ProfitPreview>(() => {
-    // 客户应收 = 套餐扣除免费额后的金额
-    const customerReceivable = packageBreakdown.totalCustomerReceivable
+    const cableOver = Math.max(0, form.fixedAux.cableMeters - packageMeters)
+    let cableOverPrice = 0
+    if (cableOver > 0 && order?.brandName) {
+      const brandName = order.brandName
+      const cableAddon = addonMaterialsData.find((m) => {
+        const isCable = m.name.includes('线缆敷设')
+        const brandMatch = m.brand?.includes(brandName) || brandName.includes(m.brand || '')
+        return isCable && brandMatch
+      })
+      cableOverPrice = cableAddon?.settlementPrice || 40
+    }
+    const cableOverReceivable = cableOver * cableOverPrice
 
-    // 固定辅材成本
+    const customerReceivable = packageBreakdown.totalCustomerReceivable + cableOverReceivable
+
     const cable = findCostMaterial('电缆')
     const pvc = findCostMaterial('PVC')
     const breaker = findCostMaterial('漏保盒')
-    const groundRod = findCostMaterial('接地棒') || findCostMaterial('接地')
+    const breakerCostPrice: Record<string, number> = {
+      'C25': 26.8, 'C40': 26.8, 'C40A': 46.5, '': 0,
+    }
+    const breakerTypeCost = breakerCostPrice[form.fixedAux.breakerType] || 0
     const fixedCost =
       (form.fixedAux.cableMeters * (cable?.costPrice || 16)) +
       (form.fixedAux.pvcMeters * (pvc?.costPrice || 1)) +
       (form.fixedAux.breakerCount * (breaker?.costPrice || 5)) +
-      (form.fixedAux.groundRodCount * (groundRod?.costPrice || 0))
+      breakerTypeCost
 
     // 材料成本 = 增项材料成本 + 固定辅材成本
     const addonCost = form.materials.reduce((s, m) => s + m.costSubtotal, 0)
@@ -157,7 +184,7 @@ export function useCompletion(orderId: string) {
       serviceFee,
       actualProfit,
     }
-  }, [form, order, getPlatformFeeRate])
+  }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown])
 
   const save = useCallback(() => {
     if (!order) return false
@@ -185,9 +212,10 @@ export function useCompletion(orderId: string) {
       const breaker = findCostMaterial('漏保盒')
       if (breaker) stockOut(breaker.id, breaker.name, form.fixedAux.breakerCount, `订单完成: ${order.customerName}`)
     }
-    if (form.fixedAux.groundRodCount > 0) {
-      const ground = findCostMaterial('接地棒') || findCostMaterial('接地')
-      if (ground) stockOut(ground.id, ground.name, form.fixedAux.groundRodCount, `订单完成: ${order.customerName}`)
+    if (form.fixedAux.breakerType) {
+      const breakerTypes: Record<string, string> = { 'C25': '漏保C25', 'C40': '漏保C40', 'C40A': '漏保C40A' }
+      const btName = breakerTypes[form.fixedAux.breakerType]
+      if (btName) stockOut('breaker-' + form.fixedAux.breakerType, btName, 1, `订单完成: ${order.customerName}`)
     }
 
     updateOrder(orderId, {
