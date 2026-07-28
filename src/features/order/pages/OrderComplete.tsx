@@ -97,6 +97,21 @@ export default function OrderComplete() {
           </div>
         </div>
 
+        {/* 勘测信息 */}
+        {order.survey && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">勘测信息</h3>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><span className="text-gray-500 text-xs">取电方式</span><p className="text-gray-800 mt-0.5">{order.survey.powerSource || '-'}</p></div>
+              <div><span className="text-gray-500 text-xs">线缆规格</span><p className="text-gray-800 mt-0.5">{order.survey.cableSpec || '-'}</p></div>
+              <div><span className="text-gray-500 text-xs">电缆距离</span><p className="text-gray-800 mt-0.5">{order.survey.cableDistance || 0}米</p></div>
+              <div><span className="text-gray-500 text-xs">安装方式</span><p className="text-gray-800 mt-0.5">{order.survey.installMethod || '-'}</p></div>
+              <div><span className="text-gray-500 text-xs">电表状态</span><p className="text-gray-800 mt-0.5">{order.survey.meterStatus || '-'}</p></div>
+              <div><span className="text-gray-500 text-xs">勘测结果</span><p className="text-gray-800 mt-0.5">{order.survey.surveyResult || '-'}</p></div>
+            </div>
+          </div>
+        )}
+
         {/* 材料区 */}
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <MaterialPicker
