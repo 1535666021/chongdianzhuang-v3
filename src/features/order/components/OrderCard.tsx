@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import ProfitBadge from './ProfitBadge'
+import AppointmentModal from './AppointmentModal'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt, Copy, X, Save } from 'lucide-react'
 
@@ -23,6 +24,7 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
   const [showModal, setShowModal] = useState(false)
   const [editRawText, setEditRawText] = useState('')
   const [copiedRaw, setCopiedRaw] = useState(false)
+  const [showAppointment, setShowAppointment] = useState(false)
 
   const copyToClipboard = async (text: string, setter: (v: boolean) => void) => {
     try {
@@ -148,13 +150,22 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
           </span>
         </div>
 
-        {/* 第五行：预约日期（点击弹框编辑原文） */}
-        <div
-          onClick={openRawModal}
-          className="flex items-center gap-2 text-sm text-gray-500 mb-2 cursor-pointer hover:text-blue-600 transition-colors"
-        >
-          <Calendar size={14} />
-          <span>{order.appointmentDate || '未预约'}</span>
+        {/* 预约信息 */}
+        <div className="mb-2">
+          {order.appointmentDate ? (
+            <div className="flex items-center gap-2 text-sm text-green-700">
+              <Calendar size={14} />
+              <span>{order.appointmentDate} {order.appointmentTime}</span>
+            </div>
+          ) : (
+            <div
+              onClick={openRawModal}
+              className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-blue-600 transition-colors"
+            >
+              <Calendar size={14} />
+              <span>未预约</span>
+            </div>
+          )}
         </div>
 
         {/* 第六行：利润区（仅已完成显示） */}
@@ -186,8 +197,11 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
             </div>
           </div>
         ) : (
-          <div className="bg-amber-50 rounded-lg p-2 text-center">
-            <span className="text-xs text-amber-600 font-medium">待完成</span>
+          <div
+            onClick={(e) => { e.stopPropagation(); setShowAppointment(true) }}
+            className="bg-blue-50 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 transition-colors"
+          >
+            <span className="text-xs text-blue-600 font-medium">预约</span>
           </div>
         )}
       </div>
@@ -243,6 +257,9 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
             </div>
           </div>
         </div>
+      )}
+      {showAppointment && (
+        <AppointmentModal order={order} onClose={() => setShowAppointment(false)} />
       )}
     </>
   )
