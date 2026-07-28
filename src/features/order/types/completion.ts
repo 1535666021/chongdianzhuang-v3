@@ -16,7 +16,7 @@ export interface FixedAuxInput {
   cableMeters: number
   pvcMeters: number
   breakerCount: number
-  groundRodCount: number
+  breakerType: 'C25' | 'C40' | 'C40A' | ''
 }
 
 export interface ProfitPreview {
