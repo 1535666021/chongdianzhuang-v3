@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { useMaterialStore } from '@/stores/materialStore'
 import { parseV7Backup } from '@/features/order/repository/legacyImporter'
 import { Upload, Download, FileJson, AlertCircle, CheckCircle } from 'lucide-react'
 
@@ -9,6 +10,7 @@ export default function BackupImport() {
     summary: Record<string, number>
     failed: { reason: string; index: number }[]
     orders: ReturnType<typeof parseV7Backup>['success']
+    materialUsage: ReturnType<typeof parseV7Backup>['materialUsage']
   } | null>(null)
   const [debugInfo, setDebugInfo] = useState<string>('')
   const [importing, setImporting] = useState(false)
@@ -85,6 +87,7 @@ export default function BackupImport() {
         summary: parsed.summary,
         failed: parsed.failed,
         orders: parsed.success,
+        materialUsage: parsed.materialUsage,
       })
       setResult(null)
     }
@@ -97,6 +100,11 @@ export default function BackupImport() {
 
     const { importOrders } = useOrderStore.getState()
     const { added, skipped, updated } = importOrders(preview.orders)
+
+    if (preview.materialUsage.length > 0) {
+      const { importUsageFromLegacy } = useMaterialStore.getState()
+      importUsageFromLegacy(preview.materialUsage)
+    }
 
     setResult({ added, skipped, updated, total: preview.total })
     setImporting(false)
@@ -186,6 +194,11 @@ export default function BackupImport() {
 
             <div className="text-sm text-gray-700 mb-3">
               识别到 <span className="font-semibold text-blue-600">{preview.total}</span> 条订单
+              {preview.materialUsage.length > 0 && (
+                <span className="ml-1">
+                  及 <span className="font-semibold text-green-600">{preview.materialUsage.length}</span> 条领用记录
+                </span>
+              )}
               {existingCount > 0 && (
                 <span className="text-orange-500 ml-1">
                   （当前已有 {existingCount} 条，重复将自动跳过；金额缺失的老单将自动补全）
