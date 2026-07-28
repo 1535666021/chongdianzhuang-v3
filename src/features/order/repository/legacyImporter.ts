@@ -319,7 +319,7 @@ function convertV7Order(raw: Record<string, unknown>, finalStatus: OrderStatus):
     }
 
     const rawText = asStr(
-      raw.rawText || raw.text || raw.content || raw.source || raw.original || raw.orderText
+      raw.rawText || raw.originalText || raw.text || raw.content || raw.source || raw.original || raw.orderText
     ).trim() || undefined
 
     // P0-009：从 rawText 做 fallback 提取（仅在原字段为空时）
