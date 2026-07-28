@@ -170,6 +170,15 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
             </select>
           </div>
         </div>
+
+        <div className="mt-3 pt-3 border-t border-gray-100">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-500">辅材成本合计</span>
+            <span className="font-medium text-orange-600">
+              ¥{(fixedAux.cableMeters * (cable?.costPrice || 16) + fixedAux.pvcMeters * (pvc?.costPrice || 1) + (breaker?.costPrice || 5) + ({ C25: 26.8, C40: 26.8, C40A: 46.5 } as Record<string,number>)[fixedAux.breakerType] || 0).toFixed(2)}
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   )
