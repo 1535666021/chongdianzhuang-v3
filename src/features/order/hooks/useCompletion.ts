@@ -149,7 +149,7 @@ export function useCompletion(orderId: string) {
   const profit = useMemo<ProfitPreview>(() => {
     let addonReceivable = 0
     for (const m of form.materials) {
-      if (m.name.includes('线缆敷设')) {
+      if (/电缆敷设|线缆敷设/.test(m.name)) {
         const over = Math.max(0, m.quantity - packageMeters)
         addonReceivable += over * m.settlementPrice
       } else {
