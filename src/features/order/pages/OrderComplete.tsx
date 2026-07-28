@@ -37,10 +37,31 @@ export default function OrderComplete() {
         {/* 订单基本信息 */}
         <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
           <h2 className="text-sm font-semibold text-blue-800 mb-2">订单信息</h2>
-          <div className="space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-blue-600">客户</span><span className="font-medium">{order.customerName}</span></div>
-            <div className="flex justify-between"><span className="text-blue-600">平台</span><span>{order.platform}</span></div>
-            <div className="flex justify-between"><span className="text-blue-600">地址</span><span className="text-right max-w-[200px] truncate">{order.address}</span></div>
+          <div className="space-y-1.5 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-blue-600 shrink-0">客户</span>
+              <span className="font-medium text-gray-800">{order.customerName}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-blue-600 shrink-0">平台</span>
+              <span className="text-gray-800">{order.platform}</span>
+              {order.platformName && (
+                <span className="text-xs text-gray-500">({order.platformName})</span>
+              )}
+            </div>
+            {order.brandName && (
+              <div className="flex items-center gap-2">
+                <span className="text-blue-600 shrink-0">品牌</span>
+                <span className="text-gray-800">{order.brandName}</span>
+                {order.powerKw && (
+                  <span className="text-xs text-gray-500">{order.powerKw}kW</span>
+                )}
+              </div>
+            )}
+            <div className="flex items-start gap-2">
+              <span className="text-blue-600 shrink-0">地址</span>
+              <span className="text-gray-800 break-words">{order.address}</span>
+            </div>
           </div>
         </div>
 
