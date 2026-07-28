@@ -44,23 +44,24 @@ export function useSurvey(order: Order) {
       })
   }, [effectiveBrand, materialUsageCount])
 
-  const updateForm = useCallback((updates: Partial<SurveyFormData>) => {
-    setForm((prev) => ({ ...prev, ...updates }))
-  }, [])
-
   const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
       const exists = prev.estimatedMaterials.find((m) => m.name === mat.name)
       if (exists) {
+        const removed = prev.estimatedMaterials.filter((m) => m.name !== mat.name)
+        // 如果移除的是电缆材料，清空相关字段
+        const isCableRemoved = mat.categoryCode === 'CABLE' || mat.name.includes('线缆敷设')
         return {
           ...prev,
-          estimatedMaterials: prev.estimatedMaterials.filter((m) => m.name !== mat.name),
+          estimatedMaterials: removed,
+          ...(isCableRemoved ? { cableDistance: 0, estimatedCableCost: 0 } : {}),
         }
       }
+      const isCable = mat.categoryCode === 'CABLE' || mat.name.includes('线缆敷设')
       const item: SurveyMaterialItem = {
         name: mat.name,
         spec: '',
-        quantity: 1,
+        quantity: isCable ? 0 : 1,
         unit: mat.unit,
         unitPrice: mat.settlementPrice,
       }
@@ -78,13 +79,56 @@ export function useSurvey(order: Order) {
     }))
   }, [])
 
+  const isCableMat = (name: string) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    return mat && (mat.categoryCode === 'CABLE' || mat.name.includes('线缆敷设'))
+  }
+
+  const calcCableCost = (name: string, distance: number) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    if (!mat) return 0
+    const freeQuota = mat.freeQuota || 0
+    return Math.max(0, distance - freeQuota) * mat.settlementPrice
+  }
+
+  const updateForm = useCallback((updates: Partial<SurveyFormData>) => {
+    setForm((prev) => {
+      let next = { ...prev, ...updates }
+      if (updates.cableDistance !== undefined) {
+        const cableItem = prev.estimatedMaterials.find((m) => isCableMat(m.name))
+        if (cableItem) {
+          next = {
+            ...next,
+            estimatedMaterials: prev.estimatedMaterials.map((m) =>
+              m.name === cableItem.name ? { ...m, quantity: Math.max(0, updates.cableDistance!) } : m
+            ),
+            estimatedCableCost: calcCableCost(cableItem.name, Math.max(0, updates.cableDistance!)),
+          }
+        }
+      }
+      return next
+    })
+  }, [])
+
   const updateQuantity = useCallback((name: string, quantity: number) => {
-    setForm((prev) => ({
-      ...prev,
-      estimatedMaterials: prev.estimatedMaterials.map((m) =>
-        m.name === name ? { ...m, quantity: Math.max(1, quantity) } : m
-      ),
-    }))
+    setForm((prev) => {
+      const cable = isCableMat(name)
+      const q = cable ? Math.max(0, quantity) : Math.max(1, quantity)
+      const next = {
+        ...prev,
+        estimatedMaterials: prev.estimatedMaterials.map((m) =>
+          m.name === name ? { ...m, quantity: q } : m
+        ),
+      }
+      if (cable) {
+        return {
+          ...next,
+          cableDistance: q,
+          estimatedCableCost: calcCableCost(name, q),
+        }
+      }
+      return next
+    })
   }, [])
 
   const save = useCallback(() => {
