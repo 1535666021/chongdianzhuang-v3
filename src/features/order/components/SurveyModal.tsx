@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Order } from '@/types'
 import { useSurvey } from '../hooks/useSurvey'
 import { getShortName } from '../utils/surveyUtils'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
-import { Save, X } from 'lucide-react'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { Save, X, Copy, FileText } from 'lucide-react'
 
 interface SurveyModalProps {
   order: Order
@@ -25,6 +26,9 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   } = useSurvey(order)
 
   const [showDropdown, setShowDropdown] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const engineerName = useSettingsStore((s) => s.engineerName)
+  const engineerPhone = useSettingsStore((s) => s.engineerPhone)
   const needsBrandSelect = !order.brandName && !selectedBrand
 
   const getDisplayPrice = (name: string, fallback: number) => {
@@ -38,6 +42,35 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const handleSave = () => {
     save()
     onClose()
+  }
+
+  const reportText = useMemo(() => {
+    const lines: string[] = []
+    lines.push(`勘测报告`)
+    lines.push(`勘测完成时间：${new Date().toLocaleDateString('zh-CN')}`)
+    lines.push(`勘测详情：${form.installMethod}`)
+    if (engineerName) lines.push(`工程师：${engineerName}${engineerPhone ? ` ${engineerPhone}` : ''}`)
+    lines.push(`用电方式：${form.powerSource}`)
+    lines.push(`电表状态：${form.meterStatus}`)
+    lines.push(`布线距离：${form.cableDistance || 0}米`)
+    if (form.cableSpec) lines.push(`线缆规格：${form.cableSpec}`)
+    if (form.estimatedMaterials.length > 0) {
+      lines.push(`预计增项辅材明细：`)
+      for (const m of form.estimatedMaterials) {
+        const mat = addonMaterialsData.find((a) => a.name === m.name)
+        const short = mat ? getShortName(mat.name, mat.category) : m.name
+        lines.push(`  ${short} × ${m.quantity}${m.unit} ${m.unitPrice}元`)
+      }
+      lines.push(`预计增项合计：¥${totalEstimatedCost.toFixed(2)}`)
+    }
+    lines.push(`物业需要施工方案图：${form.needBlueprint}`)
+    lines.push(`勘测结果：${form.surveyResult}`)
+    if (form.locationInfo) lines.push(`勘测备注：${form.locationInfo}`)
+    return lines.join('\n')
+  }, [form, engineerName, engineerPhone, totalEstimatedCost])
+
+  const handleCopyReport = () => {
+    navigator.clipboard.writeText(reportText)
   }
 
   const sectionClass = 'bg-gray-50 rounded-xl p-3'
@@ -137,7 +170,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                         key={m.name}
                         className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded"
                       >
-                        {m.name || '未命名'} {getDisplayPrice(m.name, m.unitPrice)}元
+                        {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')} {getDisplayPrice(m.name, m.unitPrice)}元
                         × <input
                           type="number"
                           min={addonMaterialsData.find((a) => a.name === m.name)?.categoryCode === 'CABLE' ? 0 : 1}
@@ -286,6 +319,14 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
           </button>
           <button
             type="button"
+            onClick={() => setShowReport(true)}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <FileText size={16} />
+            生成报告
+          </button>
+          <button
+            type="button"
             onClick={handleSave}
             className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
           >
@@ -294,6 +335,28 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
           </button>
         </div>
       </div>
+
+      {showReport && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={() => setShowReport(false)}>
+          <div className="bg-white rounded-2xl w-full sm:max-w-md mx-4 p-5 max-h-[80vh] flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-800">勘测报告</h3>
+              <button onClick={() => setShowReport(false)} className="p-1 text-gray-400 hover:text-gray-600">
+                <X size={18} />
+              </button>
+            </div>
+            <pre className="flex-1 overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap font-sans bg-gray-50 rounded-lg p-3 mb-3">
+              {reportText}
+            </pre>
+            <button
+              onClick={handleCopyReport}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-blue-500 text-white rounded-lg text-sm font-medium"
+            >
+              <Copy size={16} /> 一键复制
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
