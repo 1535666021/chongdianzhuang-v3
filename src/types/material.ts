@@ -49,3 +49,13 @@ export interface MaterialUsage {
   quantity: number
   unitPrice: number
 }
+
+export interface MaterialUsageRecord {
+  id: string
+  date: string
+  name: string
+  unit: string
+  costPrice: number
+  quantity: number
+  total: number
+}
