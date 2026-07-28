@@ -172,7 +172,10 @@ export function useCompletion(orderId: string) {
       breakerTypeCost
 
     // 材料成本 = 增项材料成本 + 固定辅材成本
-    const addonCost = form.materials.reduce((s, m) => s + m.costSubtotal, 0)
+    const addonCost = form.materials.reduce((s, m) => {
+      if (/电缆敷设|线缆敷设/.test(m.name)) return s
+      return s + m.costSubtotal
+    }, 0)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
     // 平台扣点
