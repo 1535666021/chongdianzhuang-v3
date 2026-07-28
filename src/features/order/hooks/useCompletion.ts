@@ -68,7 +68,7 @@ export function useCompletion(orderId: string) {
   const [form, setForm] = useState<CompletionFormData>({
     completeDate: new Date().toISOString().slice(0, 10),
     installer: order?.installer || '',
-    materials: (order?.materials || []).map((m) => {
+    materials: (order?.materials?.length ? order.materials : order?.survey?.estimatedMaterials || []).map((m) => {
       const addon = findAddonMaterial(m.name)
       const sp = addon?.settlementPrice || m.unitPrice || 0
       const cp = addon?.costPrice || m.unitPrice || 0
@@ -77,7 +77,7 @@ export function useCompletion(orderId: string) {
         name: m.name,
         spec: m.spec,
         quantity: m.quantity,
-        unit: m.unit,
+        unit: m.unit || addon?.unit || '个',
         settlementPrice: sp,
         costPrice: cp,
         customerSubtotal: sp * m.quantity,
@@ -147,20 +147,16 @@ export function useCompletion(orderId: string) {
   const packageBreakdown = usePackageMeters(form.materials, packageMeters)
 
   const profit = useMemo<ProfitPreview>(() => {
-    const cableOver = Math.max(0, form.fixedAux.cableMeters - packageMeters)
-    let cableOverPrice = 0
-    if (cableOver > 0 && order?.brandName) {
-      const brandName = order.brandName
-      const cableAddon = addonMaterialsData.find((m) => {
-        const isCable = m.name.includes('线缆敷设')
-        const brandMatch = m.brand?.includes(brandName) || brandName.includes(m.brand || '')
-        return isCable && brandMatch
-      })
-      cableOverPrice = cableAddon?.settlementPrice || 40
+    let addonReceivable = 0
+    for (const m of form.materials) {
+      if (m.name.includes('线缆敷设')) {
+        const over = Math.max(0, m.quantity - packageMeters)
+        addonReceivable += over * m.settlementPrice
+      } else {
+        addonReceivable += m.customerSubtotal
+      }
     }
-    const cableOverReceivable = cableOver * cableOverPrice
-
-    const customerReceivable = packageBreakdown.totalCustomerReceivable + cableOverReceivable
+    const customerReceivable = addonReceivable
 
     const cable = findCostMaterial('电缆')
     const pvc = findCostMaterial('PVC')
