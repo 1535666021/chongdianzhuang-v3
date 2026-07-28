@@ -29,6 +29,20 @@ function findCostMaterial(name: string) {
   return costMaterials.find((m) => m.name === name)
 }
 
+function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'] {
+  if (!order) return ''
+  const brand = order.brandName || ''
+  const power = (order.powerKw || '').toString()
+  if (brand.includes('零跑') || brand.includes('苏宁')) return 'C40A'
+  if (brand.includes('比亚迪')) {
+    if (power.includes('3.5')) return 'C25'
+    if (power.includes('7')) return 'C40'
+  }
+  if (power.includes('3.5')) return 'C25'
+  if (power.includes('7')) return 'C40'
+  return ''
+}
+
 export function useCompletion(orderId: string) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
   const updateOrder = useOrderStore((s) => s.updateOrder)
@@ -71,10 +85,10 @@ export function useCompletion(orderId: string) {
       }
     }),
     fixedAux: {
-      cableMeters: 0,
-      pvcMeters: 0,
-      breakerCount: 0,
-      breakerType: '',
+      cableMeters: order?.survey?.cableDistance || 0,
+      pvcMeters: order?.survey?.cableDistance || 0,
+      breakerCount: 1,
+      breakerType: inferBreakerType(order),
     },
     notes: order?.notes || '',
   })
