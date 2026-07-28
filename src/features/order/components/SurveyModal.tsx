@@ -21,7 +21,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const {
     form, effectiveBrand, brandList, brandAddons,
     selectedBrand, setSelectedBrand,
-    updateForm, toggleAddon, removeAddon, updateQuantity, save,
+    updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost, save,
   } = useSurvey(order)
 
   const [showDropdown, setShowDropdown] = useState(false)
@@ -202,7 +202,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                 <div className={labelClass}>预估费用(元)</div>
                 <input
                   type="number"
-                  value={form.estimatedCableCost || ''}
+                  value={totalEstimatedCost || ''}
                   onChange={(e) => updateForm({ estimatedCableCost: Number(e.target.value) })}
                   className={inputClass}
                   min={0}
