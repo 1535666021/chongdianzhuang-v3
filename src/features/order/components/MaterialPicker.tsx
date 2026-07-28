@@ -113,7 +113,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
               <span className="text-gray-400">{m.unit}</span>
               {isFreeQuotaMaterial(m.name) && m.quantity > 0 ? (
                 <span className="ml-auto font-medium text-green-600">
-                  免费额内 / 应收¥{Math.max(0, m.quantity - 30) * m.settlementPrice > 0 ? `¥${(Math.max(0, m.quantity - 30) * m.settlementPrice).toFixed(2)}` : '¥0'}
+                  超出{m.quantity - 30}米 ¥{Math.max(0, m.quantity - 30) * m.settlementPrice > 0 ? (Math.max(0, m.quantity - 30) * m.settlementPrice).toFixed(2) : '0'}
                 </span>
               ) : (
                 <span className="ml-auto font-medium text-gray-700">
