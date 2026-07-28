@@ -188,6 +188,68 @@ export function useCompletion(orderId: string) {
     // 利润
     const actualProfit = Math.round((customerReceivable - platformFee + serviceFee - materialCost - (order?.laborCost || 0)) * 100) / 100
 
+    const receivableItems: { name: string; calc: string; amount: number }[] = []
+    for (const m of form.materials) {
+      if (/电缆敷设|线缆敷设/.test(m.name)) {
+        const over = Math.max(0, m.quantity - packageMeters)
+        if (over > 0) {
+          receivableItems.push({
+            name: m.name,
+            calc: `${m.name} ${over}${m.unit} × ¥${m.settlementPrice}/米`,
+            amount: Math.round(over * m.settlementPrice * 100) / 100,
+          })
+        }
+      } else if (m.customerSubtotal > 0) {
+        receivableItems.push({
+          name: m.name,
+          calc: `${m.name} ${m.quantity}${m.unit} × ¥${m.settlementPrice}`,
+          amount: m.customerSubtotal,
+        })
+      }
+    }
+
+    const fixedCableCost = form.fixedAux.cableMeters * (cable?.costPrice || 16)
+    const fixedPvcCost = form.fixedAux.pvcMeters * (pvc?.costPrice || 1)
+    const fixedBreakerBoxCost = form.fixedAux.breakerCount * (breaker?.costPrice || 5)
+
+    const materialItems: { name: string; calc: string; amount: number }[] = []
+    if (form.fixedAux.cableMeters > 0) {
+      materialItems.push({
+        name: '电缆',
+        calc: `电缆 ${form.fixedAux.cableMeters}米 × ¥${cable?.costPrice || 16}/米`,
+        amount: fixedCableCost,
+      })
+    }
+    if (form.fixedAux.pvcMeters > 0) {
+      materialItems.push({
+        name: 'PVC',
+        calc: `PVC ${form.fixedAux.pvcMeters}米 × ¥${pvc?.costPrice || 1}/米`,
+        amount: fixedPvcCost,
+      })
+    }
+    materialItems.push({
+      name: '漏保盒',
+      calc: `漏保盒 ${form.fixedAux.breakerCount}个 × ¥${breaker?.costPrice || 5}`,
+      amount: fixedBreakerBoxCost,
+    })
+    if (form.fixedAux.breakerType) {
+      materialItems.push({
+        name: '漏保',
+        calc: `漏保 ${form.fixedAux.breakerType} 1个 × ¥${breakerTypeCost}`,
+        amount: breakerTypeCost,
+      })
+    }
+    for (const m of form.materials) {
+      if (/电缆敷设|线缆敷设/.test(m.name)) continue
+      if (m.costSubtotal > 0) {
+        materialItems.push({
+          name: m.name,
+          calc: `${m.name} ${m.quantity}${m.unit} × ¥${m.costPrice}`,
+          amount: m.costSubtotal,
+        })
+      }
+    }
+
     return {
       customerReceivable: Math.round(customerReceivable * 100) / 100,
       freeAmount: Math.round(packageBreakdown.freeAmount * 100) / 100,
@@ -196,6 +258,13 @@ export function useCompletion(orderId: string) {
       laborCost: order?.laborCost || 0,
       serviceFee,
       actualProfit,
+      breakdown: {
+        receivableItems,
+        platformRate,
+        serviceFeeLabel: `固定服务费 = ¥${serviceFee}`,
+        materialItems,
+        laborLabel: `固定人工成本 = ¥${order?.laborCost || 0}`,
+      },
     }
   }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown])
 
