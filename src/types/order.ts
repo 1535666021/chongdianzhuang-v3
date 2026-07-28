@@ -35,6 +35,7 @@ export interface Order extends BaseEntity {
   region: Region
   appointmentDate?: string
   appointmentTime?: string
+  appointmentNote?: string
   materialCost: number
   laborCost: number
   platformFee: number
