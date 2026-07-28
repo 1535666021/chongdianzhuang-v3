@@ -111,7 +111,13 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                                  onChange={() => {
                                     const isAdding = !form.estimatedMaterials.some((em) => em.name === mat.name)
                                     toggleAddon(mat)
-                                    if (isAdding) setShowDropdown(false)
+                                    if (isAdding) {
+                                      setShowDropdown(false)
+                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
+                                      if (cableMatch) {
+                                        updateForm({ cableSpec: cableMatch[0] })
+                                      }
+                                    }
                                   }}
                                 className="w-4 h-4 rounded accent-blue-600"
                               />
@@ -134,7 +140,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                         {m.name || '未命名'} {getDisplayPrice(m.name, m.unitPrice)}元
                         × <input
                           type="number"
-                          min={1}
+                          min={addonMaterialsData.find((a) => a.name === m.name)?.categoryCode === 'CABLE' ? 0 : 1}
                           value={m.quantity}
                           onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
                           className="w-10 text-center text-xs bg-white border rounded mx-1"
