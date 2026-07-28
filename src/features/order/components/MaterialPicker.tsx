@@ -150,13 +150,10 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
             <span className="text-[10px] text-gray-400">成本¥{pvc?.costPrice || 1}/米</span>
           </div>
           <div>
-            <label className="text-xs text-gray-500">漏保(个)</label>
-            <input
-              type="number"
-              value={fixedAux.breakerCount}
-              onChange={(e) => onUpdateFixedAux({ breakerCount: parseFloat(e.target.value) || 0 })}
-              className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
-            />
+            <label className="text-xs text-gray-500">漏保盒</label>
+            <div className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 bg-gray-50 text-gray-700">
+              1个
+            </div>
             <span className="text-[10px] text-gray-400">成本¥{breaker?.costPrice || 5}/个</span>
           </div>
           <div>
