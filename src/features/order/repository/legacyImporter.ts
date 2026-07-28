@@ -402,16 +402,17 @@ export function parseV7Backup(jsonText: string): {
   success: Order[]
   failed: { reason: string; index: number }[]
   summary: Record<string, number>
+  materialUsage: Array<{ id: string; date: string; name: string; unit: string; costPrice: number; quantity: number; total: number }>
 } {
   let payload: unknown
   try {
     payload = JSON.parse(jsonText)
   } catch {
-    return { success: [], failed: [{ reason: '备份文件不是有效的JSON', index: -1 }], summary: {} }
+    return { success: [], failed: [{ reason: '备份文件不是有效的JSON', index: -1 }], summary: {}, materialUsage: [] }
   }
 
   if (typeof payload !== 'object' || payload === null) {
-    return { success: [], failed: [{ reason: '备份内容为空', index: -1 }], summary: {} }
+    return { success: [], failed: [{ reason: '备份内容为空', index: -1 }], summary: {}, materialUsage: [] }
   }
 
   const obj = payload as Record<string, unknown>
@@ -480,7 +481,21 @@ export function parseV7Backup(jsonText: string): {
 
   console.log(`[import] 汇总: ${JSON.stringify(summary)}`)
 
-  return { success, failed, summary }
+  const cpUsage = obj['cp_material_usage']
+  let materialUsage: Array<{ id: string; date: string; name: string; unit: string; costPrice: number; quantity: number; total: number }> = []
+  if (Array.isArray(cpUsage)) {
+    materialUsage = cpUsage.map((r: any, i: number) => ({
+      id: r.id || `cp_usage_${i}_${Date.now()}`,
+      date: r.date || '',
+      name: r.name || '',
+      unit: r.unit || '个',
+      costPrice: parseFloat(r.costPrice) || 0,
+      quantity: parseFloat(r.quantity) || 0,
+      total: parseFloat(r.total) || 0,
+    }))
+  }
+
+  return { success, failed, summary, materialUsage }
 }
 
 /** 去重导入：按id去重，已存在的跳过 */
