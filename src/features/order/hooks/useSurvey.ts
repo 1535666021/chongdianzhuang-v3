@@ -11,16 +11,16 @@ export function useSurvey(order: Order) {
 
   const [selectedBrand, setSelectedBrand] = useState('')
   const [form, setForm] = useState<SurveyFormData>({
-    estimatedMaterials: [],
-    powerSource: '国网取电',
-    cableSpec: '',
-    cableDistance: 0,
-    estimatedCableCost: 0,
-    installMethod: '壁挂安装',
-    meterStatus: '已安装',
-    needBlueprint: '否',
-    surveyResult: '勘测完成',
-    locationInfo: '',
+    estimatedMaterials: order.survey?.estimatedMaterials || [],
+    powerSource: order.survey?.powerSource || '国网取电',
+    cableSpec: order.survey?.cableSpec || '',
+    cableDistance: order.survey?.cableDistance || 0,
+    estimatedCableCost: order.survey?.estimatedCableCost || 0,
+    installMethod: order.survey?.installMethod || '壁挂安装',
+    meterStatus: order.survey?.meterStatus || '已安装',
+    needBlueprint: order.survey?.needBlueprint || '否',
+    surveyResult: order.survey?.surveyResult || '勘测完成',
+    locationInfo: order.survey?.locationInfo || '',
   })
 
   const effectiveBrand = order.brandName || selectedBrand
