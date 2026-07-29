@@ -188,15 +188,6 @@ export default function OrderForm() {
               />
             </div>
             <div>
-              <label className="text-sm text-gray-600 mb-1 block">人工费</label>
-              <input
-                type="number"
-                value={form.laborCost}
-                onChange={(e) => updateField('laborCost', Number(e.target.value))}
-                className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm outline-none"
-              />
-            </div>
-            <div>
               <label className="text-sm text-gray-600 mb-1 block">平台扣点</label>
               <input
                 type="number"
