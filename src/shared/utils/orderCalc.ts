@@ -41,10 +41,9 @@ export function buildAddonItemsText(
 export function calcProfit(
   customerPrice: number,
   materialCost: number,
-  laborCost: number,
   platformFee: number
 ) {
-  return customerPrice - materialCost - laborCost - platformFee
+  return customerPrice - materialCost - platformFee
 }
 
 export function calcPlatformFee(receivable: number, rate: number) {
