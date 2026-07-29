@@ -5,6 +5,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
+import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitPreview, CompletionFormData } from '../types/completion'
 
@@ -304,6 +305,11 @@ export function useCompletion(orderId: string) {
     })
 
     recordMaterialUsage(form.materials.map((m) => m.name))
+    updateMaterialFrequency({
+      ...order,
+      status: '已完成',
+      materials: form.materials.map((m) => ({ name: m.name, quantity: m.quantity, unit: m.unit, unitPrice: m.settlementPrice })),
+    })
     return true
   }, [order, orderId, form, profit, updateOrder, stockOut])
 
