@@ -1,4 +1,4 @@
-export const DEFAULT_PACKAGE_METERS = 30
+export { DEFAULT_PACKAGE_METERS, isFreeQuotaMaterial } from '@/shared/utils/orderCalc'
 
 export const FREE_QUOTA_MATERIALS = ['电缆', 'PVC', 'YJV', 'yjv']
 
@@ -8,10 +8,6 @@ export interface PackageConfig {
 }
 
 export const DEFAULT_PACKAGE_CONFIG: PackageConfig = {
-  packageMeters: DEFAULT_PACKAGE_METERS,
+  packageMeters: 30,
   freeMaterials: FREE_QUOTA_MATERIALS,
-}
-
-export function isFreeQuotaMaterial(name: string): boolean {
-  return FREE_QUOTA_MATERIALS.some((keyword) => name.includes(keyword))
 }
