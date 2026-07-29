@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { calcAddonTotal, calcOverFee } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import type { Material } from '@/types/material'
@@ -44,17 +45,7 @@ export function useSurvey(order: Order) {
       })
   }, [effectiveBrand, materialUsageCount])
 
-  const totalEstimatedCost = useMemo(() => {
-    return form.estimatedMaterials.reduce((sum, m) => {
-      const mat = addonMaterialsData.find((a) => a.name === m.name)
-      if (!mat) return sum
-      if (mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(m.name)) {
-        const over = Math.max(0, m.quantity - (mat.freeQuota || 0))
-        return sum + over * mat.settlementPrice
-      }
-      return sum + m.quantity * mat.settlementPrice
-    }, 0)
-  }, [form.estimatedMaterials])
+  const totalEstimatedCost = useMemo(() => calcAddonTotal(form.estimatedMaterials), [form.estimatedMaterials])
 
   const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
@@ -99,8 +90,8 @@ export function useSurvey(order: Order) {
   const calcCableCost = (name: string, distance: number) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
     if (!mat) return 0
-    const freeQuota = mat.freeQuota || 0
-    return Math.max(0, distance - freeQuota) * mat.settlementPrice
+    const { overFee } = calcOverFee(distance, mat.freeQuota || 0, mat.settlementPrice)
+    return overFee
   }
 
   const updateForm = useCallback((updates: Partial<SurveyFormData>) => {

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { calcMaterialCost, calcPlatformFee, calcProfit } from '@/shared/utils/orderCalc'
 import type { Order } from '@/types'
 
 export interface MonthlyStats {
@@ -47,11 +48,7 @@ function getOrderCost(order: Order): number {
   // 优先使用 materials 数组计算
   const materials = (order as any).materials
   if (Array.isArray(materials) && materials.length > 0) {
-    return materials.reduce((sum: number, m: any) => {
-      const costPrice = m?.costPrice ?? m?.price ?? 0
-      const quantity = m?.quantity ?? 1
-      return sum + costPrice * quantity
-    }, 0)
+    return calcMaterialCost(materials)
   }
   // 否则使用 materialCost + laborCost
   return (order.materialCost || 0) + (order.laborCost || 0)
@@ -63,7 +60,7 @@ function getOrderPlatformFee(order: Order): number {
   }
   const revenue = getOrderRevenue(order)
   const rate = useSettingsStore.getState().getPlatformFeeRate(order.platform)
-  return Math.round(revenue * rate * 100) / 100
+  return calcPlatformFee(revenue, rate)
 }
 
 function calcMonthStats(orders: Order[], year: number, month: number): MonthlyStats {
@@ -85,8 +82,8 @@ function calcMonthStats(orders: Order[], year: number, month: number): MonthlySt
   revenue = Math.round(revenue * 100) / 100
   cost = Math.round(cost * 100) / 100
   platformFee = Math.round(platformFee * 100) / 100
-  const receivableProfit = Math.round((revenue - cost) * 100) / 100
-  const actualProfit = Math.round((receivableProfit - platformFee) * 100) / 100
+  const receivableProfit = calcProfit(revenue, cost, 0)
+  const actualProfit = calcProfit(revenue, cost, platformFee)
 
   return {
     year,
@@ -159,8 +156,8 @@ export function useStatistics() {
       revenue: Math.round(s.revenue * 100) / 100,
       cost: Math.round(s.cost * 100) / 100,
       platformFee: Math.round(s.platformFee * 100) / 100,
-      receivableProfit: Math.round((s.revenue - s.cost) * 100) / 100,
-      actualProfit: Math.round((s.revenue - s.cost - s.platformFee) * 100) / 100,
+      receivableProfit: calcProfit(s.revenue, s.cost, 0),
+      actualProfit: calcProfit(s.revenue, s.cost, s.platformFee),
     }))
   }, [orders])
 
@@ -184,8 +181,8 @@ export function useStatistics() {
       revenue,
       cost,
       platformFee,
-      receivableProfit: Math.round((revenue - cost) * 100) / 100,
-      actualProfit: Math.round((revenue - cost - platformFee) * 100) / 100,
+      receivableProfit: calcProfit(revenue, cost, 0),
+      actualProfit: calcProfit(revenue, cost, platformFee),
     }
   }, [orders])
 

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { calcProfit } from '@/shared/utils/orderCalc'
 import type { Order, Platform, OrderStatus, InstallType } from '@/types'
 
 export interface FormData {
@@ -76,9 +77,7 @@ export function useOrderForm(orderId?: string) {
       const next = { ...prev, [field]: value }
       // 自动计算实际利润
       if (field === 'materialCost' || field === 'platformFee') {
-        const mat = field === 'materialCost' ? (value as number) : next.materialCost
-        const fee = field === 'platformFee' ? (value as number) : next.platformFee
-        next.actualProfit = Math.round((mat - fee) * 100) / 100
+        next.actualProfit = calcProfit(0, next.materialCost, next.platformFee)
       }
       return next
     })
