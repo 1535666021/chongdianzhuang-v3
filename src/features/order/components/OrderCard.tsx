@@ -6,9 +6,8 @@ import ProfitBadge from './ProfitBadge'
 import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
-import ScriptPicker from './ScriptPicker'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt, Copy, X, Save, MoreVertical } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt, Copy, X, Save, MoreVertical, ClipboardList, CheckCircle } from 'lucide-react'
 
 interface OrderCardProps {
   order: Order
@@ -20,6 +19,7 @@ interface OrderCardProps {
 export default function OrderCard({ order, onClick, showMenu = false, isToday = false }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
+  const isScheduled = order.status === '已预约'
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
   const updateOrder = useOrderStore((s) => s.updateOrder)
@@ -39,7 +39,6 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const [showAppointment, setShowAppointment] = useState(false)
   const [showMenuPanel, setShowMenuPanel] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
-  const [showScriptPicker, setShowScriptPicker] = useState(false)
 
   const copyToClipboard = async (text: string, setter: (v: boolean) => void) => {
     try {
@@ -188,8 +187,25 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           )}
         </div>
 
-        {/* 第六行：利润区（仅已完成显示） */}
-        {isCompleted ? (
+        {/* 第六行：底部按钮区 */}
+        {isScheduled ? (
+          <div className="flex gap-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}?survey=true`) }}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+            >
+              <ClipboardList size={14} />
+              勘测
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}/complete`) }}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 text-white py-2 rounded-lg text-xs font-medium hover:bg-green-600 transition-colors"
+            >
+              <CheckCircle size={14} />
+              安装完成
+            </button>
+          </div>
+        ) : isCompleted ? (
           <div className="bg-gray-50 rounded-lg p-2.5 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-1 text-gray-500">
@@ -223,7 +239,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           >
             <span className="text-xs text-blue-600 font-medium">预约</span>
           </div>
-          )}
+        )}
           {showMenu && (
             <button
               onClick={(e) => { e.stopPropagation(); setShowMenuPanel(true) }}
@@ -294,8 +310,6 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           order={order}
           onClose={() => setShowMenuPanel(false)}
           onEditAppointment={() => { setEditRawText(order.rawText || ''); setShowModal(true) }}
-          onComplete={() => navigate(`/orders/${order.id}/complete`)}
-          onScript={() => { setShowMenuPanel(false); setShowScriptPicker(true) }}
           onNavigate={() => { window.open(`https://uri.amap.com/marker?position=${encodeURIComponent(order.address)}`, '_blank') }}
           onDelete={() => { setShowMenuPanel(false); setShowConfirmDelete(true) }}
         />
@@ -309,9 +323,6 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           onConfirm={() => { deleteOrder(order.id); setShowConfirmDelete(false) }}
           onCancel={() => setShowConfirmDelete(false)}
         />
-      )}
-      {showScriptPicker && (
-        <ScriptPicker order={order} onClose={() => setShowScriptPicker(false)} />
       )}
     </>
   )
