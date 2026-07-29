@@ -12,7 +12,6 @@ export interface FormData {
   appointmentDate: string
   appointmentTime: string
   materialCost: number
-  laborCost: number
   platformFee: number
   actualProfit: number
   notes: string
@@ -30,7 +29,6 @@ const DEFAULT_FORM: FormData = {
   appointmentDate: '',
   appointmentTime: '',
   materialCost: 0,
-  laborCost: 0,
   platformFee: 0,
   actualProfit: 0,
   notes: '',
@@ -61,7 +59,6 @@ export function useOrderForm(orderId?: string) {
         appointmentDate: existingOrder.appointmentDate || '',
         appointmentTime: existingOrder.appointmentTime || '',
         materialCost: existingOrder.materialCost || 0,
-        laborCost: existingOrder.laborCost || 0,
         platformFee: existingOrder.platformFee || 0,
         actualProfit: existingOrder.actualProfit || 0,
         notes: existingOrder.notes || '',
@@ -78,11 +75,10 @@ export function useOrderForm(orderId?: string) {
     setForm((prev) => {
       const next = { ...prev, [field]: value }
       // 自动计算实际利润
-      if (field === 'materialCost' || field === 'laborCost' || field === 'platformFee') {
+      if (field === 'materialCost' || field === 'platformFee') {
         const mat = field === 'materialCost' ? (value as number) : next.materialCost
-        const lab = field === 'laborCost' ? (value as number) : next.laborCost
         const fee = field === 'platformFee' ? (value as number) : next.platformFee
-        next.actualProfit = Math.round((mat + lab - fee) * 100) / 100
+        next.actualProfit = Math.round((mat - fee) * 100) / 100
       }
       return next
     })
