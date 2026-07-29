@@ -1,13 +1,21 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, User, Calendar, FileText, Ruler } from 'lucide-react'
+import { ArrowLeft, CheckCircle, User, Calendar, FileText, Ruler, Copy, MessageCircle } from 'lucide-react'
 import { useCompletion } from '../hooks/useCompletion'
 import { MaterialPicker } from '../components/MaterialPicker'
 import { ProfitPreview } from '../components/ProfitPreview'
+import { useOrderStore } from '@/stores/orderStore'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { DEFAULT_SCRIPT_TEMPLATES } from '@/constants/scripts'
+import { buildScriptVarsFromCompletionForm, renderScript } from '../hooks/useScript'
+import { useState } from 'react'
 
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { order, form, profit, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, save } = useCompletion(id || '')
+  const updateOrder = useOrderStore((s) => s.updateOrder)
+  const settings = useSettingsStore()
+  const [copiedScript, setCopiedScript] = useState(false)
 
   if (!order) {
     return (
@@ -21,6 +29,7 @@ export default function OrderComplete() {
   }
 
   const handleSave = () => {
+    updateOrder(order.id, { completionNotes: form.notes })
     if (save()) {
       navigate(`/orders/${id}`)
     }
@@ -93,7 +102,7 @@ export default function OrderComplete() {
 
           <div>
             <label className="flex items-center gap-1 text-xs text-gray-500 mb-1.5"><FileText size={12} />备注</label>
-            <textarea value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} placeholder="完工备注..." rows={2} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm resize-none" />
+            <textarea value={form.notes} onChange={(e) => updateForm({ notes: e.target.value })} placeholder="完工备注（会带入话术，允许为空）" rows={2} className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm resize-none" />
           </div>
         </div>
 
@@ -147,6 +156,32 @@ export default function OrderComplete() {
 
         {/* 利润区 */}
         <ProfitPreview data={profit} />
+
+        {/* 话术生成 */}
+        <button
+          onClick={() => {
+            const brandName = order.brandName || '通用'
+            const template = DEFAULT_SCRIPT_TEMPLATES.find(t => t.brand === brandName && t.scene === '安装完成') || DEFAULT_SCRIPT_TEMPLATES.find(t => t.id === 'default-install-complete')
+            if (template) {
+              const vars = buildScriptVarsFromCompletionForm(form, order, { engineerName: settings.engineerName || '谢责强', engineerPhone: settings.engineerPhone || '' })
+              const text = renderScript(template.content, vars)
+              navigator.clipboard.writeText(text)
+              setCopiedScript(true)
+              setTimeout(() => setCopiedScript(false), 1500)
+            }
+          }}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-green-200 text-green-600 text-sm font-medium bg-white hover:bg-green-50 transition-colors"
+        >
+          {copiedScript ? (
+            <>
+              <CheckCircle size={16} /> 话术已复制
+            </>
+          ) : (
+            <>
+              <MessageCircle size={16} /> 生成完工话术
+            </>
+          )}
+        </button>
 
         {/* 确认按钮 */}
         <button onClick={handleSave} className="w-full bg-green-500 text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-green-600">
