@@ -6,7 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
-import { BRAND_DEFAULTS } from '@/constants/brands'
+import { BRAND_DEFAULTS, BREAKER_NAMES } from '@/constants/brands'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitPreview, CompletionFormData } from '../types/completion'
 
@@ -32,8 +32,9 @@ function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'
       if (cfg.breakerType) return cfg.breakerType as FixedAuxInput['breakerType']
     }
   }
-  if (power.includes('3.5')) return 'C25'
-  if (power.includes('7')) return 'C40'
+  const num = parseFloat(power)
+  if (num === 3.5) return 'C25'
+  if (num === 7) return 'C40'
   return ''
 }
 
@@ -283,8 +284,7 @@ export function useCompletion(orderId: string) {
       if (breaker) stockOut(breaker.id, breaker.name, form.fixedAux.breakerCount, `订单完成: ${order.customerName}`)
     }
     if (form.fixedAux.breakerType) {
-      const breakerTypes: Record<string, string> = { 'C25': '漏保C25', 'C40': '漏保C40', 'C40A': '漏保C40A' }
-      const btName = breakerTypes[form.fixedAux.breakerType]
+      const btName = BREAKER_NAMES[form.fixedAux.breakerType]
       if (btName) stockOut('breaker-' + form.fixedAux.breakerType, btName, 1, `订单完成: ${order.customerName}`)
     }
 

@@ -1,4 +1,5 @@
 import type { Order } from '@/types'
+import { REGIONS } from '@/constants/order'
 import {
   calcOverFee,
   calcAddonTotal,
@@ -7,6 +8,7 @@ import {
   buildPlatformBrand,
   extractCableMeters,
   getServiceFee,
+  DEFAULT_PACKAGE_METERS,
 } from '@/shared/utils/orderCalc'
 
 export function buildScriptVars(
@@ -25,7 +27,7 @@ export function buildScriptVars(
     timeSlot: order.appointmentTime || '',
     amount: String(order.customerPrice || 0),
     notes: order.notes || '',
-    city: order.address?.slice(0, 2) || '',
+    city: (() => { const a = order.address || ''; const m = REGIONS.find(r => a.includes(r)); return m || '' })(),
     platformBrand: buildPlatformBrand(order.platformName || order.platform || '', order.brandName || ''),
   }
 
@@ -48,7 +50,7 @@ export function buildScriptVars(
   vars.completeDate = order.completeDate || ''
   vars.actualCable = String(extractCableMeters(order.materials || []) || vars.cableDistance || '0')
 
-  const pkg = order.packageMeters ? parseInt(order.packageMeters) : 30
+  const pkg = order.packageMeters ? parseInt(order.packageMeters) : DEFAULT_PACKAGE_METERS
   const actual = parseFloat(vars.actualCable) || 0
   const { overMeters, overPrice, overFee } = calcOverFee(actual, pkg)
   vars.overMeters = String(overMeters)
@@ -89,7 +91,7 @@ export function buildScriptVarsFromSurveyForm(
   settings: { engineerName: string; engineerPhone: string }
 ): Record<string, string> {
   const defaults = buildScriptVars(order, '勘测完成', settings)
-  const cableItem = form.estimatedMaterials?.find(m => m.name.includes('电缆') || m.name.includes('YJV'))
+  const cableItem = form.estimatedMaterials?.find(m => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
   defaults.cableDistance = String(form.cableDistance ?? order.survey?.cableDistance ?? 0)
   defaults.powerSource = form.powerSource || defaults.powerSource
   defaults.installType = form.installMethod || defaults.installType
@@ -134,7 +136,7 @@ export function buildScriptVarsFromCompletionForm(
   defaults.addonSummary = buildAddonSummary(custTotal, actProfit)
 
   if (form.materials?.length) {
-    const cable = form.materials.find(m => m.name.includes('电缆') || m.name.includes('YJV'))
+    const cable = form.materials.find(m => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
     if (cable) defaults.actualCable = String(cable.quantity)
   }
   return defaults

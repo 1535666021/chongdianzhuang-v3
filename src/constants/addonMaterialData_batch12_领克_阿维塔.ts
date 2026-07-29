@@ -198,7 +198,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_555",
-    "name": "沥青路面开挖（含修复）",
+    "name": "沥青路面开挖及恢复（含修复）",
     "category": "路面",
     "categoryCode": "ROAD_OPEN",
     "unit": "米",
@@ -363,7 +363,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_566",
-    "name": "线缆铺设 ZR-YJV 3*10mm²",
+    "name": "线缆敷设 ZR-YJV 3*10mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -378,7 +378,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_567",
-    "name": "线缆铺设 ZR-YJV 3*16mm²",
+    "name": "线缆敷设 ZR-YJV 3*16mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -393,7 +393,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_568",
-    "name": "线缆铺设 ZR-YJV 3*6mm²",
+    "name": "线缆敷设 ZR-YJV 3*6mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -408,7 +408,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_569",
-    "name": "线缆铺设 ZR-YJV 5*10mm²",
+    "name": "线缆敷设 ZR-YJV 5*10mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -423,7 +423,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_570",
-    "name": "线缆铺设 ZR-YJV 5*16mm²",
+    "name": "线缆敷设 ZR-YJV 5*16mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -438,7 +438,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_571",
-    "name": "线缆铺设 ZR-YJV 5*6mm²",
+    "name": "线缆敷设 ZR-YJV 5*6mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -528,7 +528,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_485",
-    "name": "拆桩",
+    "name": "充电桩拆除",
     "category": "拆除",
     "categoryCode": "REMOVE",
     "unit": "项",
@@ -543,7 +543,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_486",
-    "name": "挂桩",
+    "name": "充电桩挂装",
     "category": "安装",
     "categoryCode": "INSTALL",
     "unit": "项",
@@ -618,7 +618,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_491",
-    "name": "水泥路面开挖",
+    "name": "水泥路面开挖及恢复",
     "category": "路面",
     "categoryCode": "ROAD_OPEN",
     "unit": "米",
@@ -633,7 +633,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_492",
-    "name": "沥青路面开挖",
+    "name": "沥青路面开挖及恢复",
     "category": "路面",
     "categoryCode": "ROAD_OPEN",
     "unit": "米",
@@ -648,7 +648,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_493",
-    "name": "泥土路面开挖",
+    "name": "泥土路面开挖及恢复",
     "category": "路面",
     "categoryCode": "ROAD_OPEN",
     "unit": "米",
@@ -663,7 +663,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_494",
-    "name": "混凝土基础",
+    "name": "混凝土基础浇筑",
     "category": "基础",
     "categoryCode": "FOUNDATION",
     "unit": "个",
@@ -723,7 +723,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_498",
-    "name": "电缆升级",
+    "name": "线缆升级",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -738,7 +738,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_499",
-    "name": "立柱",
+    "name": "充电桩立柱",
     "category": "立柱",
     "categoryCode": "POLE",
     "unit": "项",
@@ -828,7 +828,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_505",
-    "name": "防护箱",
+    "name": "充电桩保护箱",
     "category": "保护箱",
     "categoryCode": "BOX",
     "unit": "套",

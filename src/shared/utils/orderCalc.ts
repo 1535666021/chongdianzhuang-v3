@@ -75,6 +75,6 @@ export function isFreeQuotaMaterial(name: string) {
 }
 
 export function extractCableMeters(materials: Array<{ name: string; quantity: number }>) {
-  const cable = materials.find((m) => m.name.includes('电缆') || m.name.includes('YJV'))
+  const cable = materials.find((m) => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
   return cable ? cable.quantity : 0
 }

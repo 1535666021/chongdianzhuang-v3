@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { Sliders, Percent, Save } from 'lucide-react'
 
-const PLATFORMS = ['京东', '天猫', '淘宝', '拼多多', '抖音', '其他']
+import { PLATFORMS } from '@/constants/order'
 
 export default function PlatformConfig() {
   const { platformFeeRates, setPlatformFeeRate } = useSettingsStore()

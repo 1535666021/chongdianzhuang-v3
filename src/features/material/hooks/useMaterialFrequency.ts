@@ -55,10 +55,12 @@ export function sortMaterialsByFrequency<T extends { name: string }>(
   for (const f of frequency) {
     freqMap[f.name] = f.count
   }
-  const isCable3x6 = (name: string) => name.includes('3*6') || name.includes('3×6') || name.includes('3x6') || name.includes('3X6')
+  const CABLE_SPEC_RE = /[3452][*×xX][46]|3[*×xX]10|3[*×xX]16|5[*×xX]10|5[*×xX]16/
   return [...materials].sort((a, b) => {
-    if (isCable3x6(a.name)) return -1
-    if (isCable3x6(b.name)) return 1
+    const aSpec = CABLE_SPEC_RE.test(a.name)
+    const bSpec = CABLE_SPEC_RE.test(b.name)
+    if (aSpec && !bSpec) return -1
+    if (!aSpec && bSpec) return 1
     const countA = freqMap[a.name] || 0
     const countB = freqMap[b.name] || 0
     return countB - countA
