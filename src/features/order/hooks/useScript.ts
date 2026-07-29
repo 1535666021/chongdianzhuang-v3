@@ -68,3 +68,58 @@ export function renderScript(template: string, vars: Record<string, string>): st
   result = result.replace(/{{[a-zA-Z]+}}/g, '')
   return result.trim()
 }
+
+interface SurveyFormInput {
+  estimatedMaterials?: Array<{ name: string; quantity: number; unit: string; unitPrice: number }>
+  powerSource?: string
+  cableSpec?: string
+  cableDistance?: number
+  installMethod?: string
+  meterStatus?: string
+  needBlueprint?: string
+  surveyResult?: string
+  locationInfo?: string
+  surveyNote?: string
+}
+
+export function buildScriptVarsFromSurveyForm(
+  form: SurveyFormInput,
+  order: Order,
+  settings: { engineerName: string; engineerPhone: string }
+): Record<string, string> {
+  const defaults = buildScriptVars(order, '勘测完成', settings)
+  const cableItem = form.estimatedMaterials?.find(m => m.name.includes('电缆') || m.name.includes('YJV'))
+  defaults.cableDistance = String(form.cableDistance ?? order.survey?.cableDistance ?? 0)
+  defaults.powerSource = form.powerSource || defaults.powerSource
+  defaults.installType = form.installMethod || defaults.installType
+  defaults.meterStatus = form.meterStatus || defaults.meterStatus
+  defaults.needPlanDoc = form.needBlueprint || defaults.needPlanDoc
+  defaults.surveyResult = form.surveyResult || defaults.surveyResult
+  defaults.surveyNote = form.surveyNote ?? order.surveyNote ?? form.locationInfo ?? ''
+  defaults.addonItems = defaults.addonItems || ''
+  defaults.addonTotal = defaults.addonTotal || '0'
+  return defaults
+}
+
+interface CompletionFormInput {
+  materials?: Array<{ name: string; quantity: number }>
+  notes?: string
+  completeDate?: string
+  installer?: string
+}
+
+export function buildScriptVarsFromCompletionForm(
+  form: CompletionFormInput,
+  order: Order,
+  settings: { engineerName: string; engineerPhone: string }
+): Record<string, string> {
+  const defaults = buildScriptVars({ ...order, notes: form.notes ?? order.completionNotes ?? order.notes ?? '' }, '安装完成', settings)
+  defaults.notes = form.notes ?? order.completionNotes ?? order.notes ?? ''
+  defaults.completeDate = form.completeDate || defaults.completeDate
+  defaults.installer = form.installer || defaults.installer
+  if (form.materials?.length) {
+    const cable = form.materials.find(m => m.name.includes('电缆') || m.name.includes('YJV'))
+    if (cable) defaults.actualCable = String(cable.quantity)
+  }
+  return defaults
+}
