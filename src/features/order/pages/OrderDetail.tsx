@@ -8,6 +8,7 @@ import { useGeocode } from '../hooks/useGeocode'
 import OrderMap from '../components/OrderMap'
 import NavigateButton from '../components/NavigateButton'
 import SurveyModal from '../components/SurveyModal'
+import ConfirmModal from '../components/ConfirmModal'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -23,6 +24,7 @@ export default function OrderDetail() {
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [showMap, setShowMap] = useState(false)
   const [showSurvey, setShowSurvey] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   if (!order) {
     return (
@@ -50,11 +52,12 @@ export default function OrderDetail() {
     setShowSurvey(true)
   }
 
+  const handleSchedule = () => {
+    navigate(`/order/edit/${id}`)
+  }
+
   const handleDelete = () => {
-    if (window.confirm('确定要删除这条订单吗？')) {
-      deleteOrder(id!)
-      navigate('/')
-    }
+    setShowDeleteConfirm(true)
   }
 
   const handleToggleMap = async () => {
@@ -84,41 +87,6 @@ export default function OrderDetail() {
         >
           {order.status}
         </span>
-      </div>
-
-      <div className="flex gap-2 p-3">
-        {order.status === '待办' && (
-          <button
-            onClick={handleSurvey}
-            className="flex-1 flex items-center justify-center gap-1 bg-amber-500 text-white py-2 rounded-lg text-sm"
-          >
-            <ClipboardList size={16} />
-            {order.survey ? '查看勘察' : '勘察'}
-          </button>
-        )}
-        {order.status !== '已完成' && (
-          <button
-            onClick={handleComplete}
-            className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white py-2 rounded-lg text-sm"
-          >
-            <CheckCircle size={16} />
-            标记完成
-          </button>
-        )}
-        <button
-          onClick={() => navigate(`/order/edit/${id}`)}
-          className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
-        >
-          <Edit3 size={16} />
-          编辑
-        </button>
-        <button
-          onClick={handleDelete}
-          className="flex-1 flex items-center justify-center gap-1 bg-red-500 text-white py-2 rounded-lg text-sm"
-        >
-          <Trash2 size={16} />
-          删除
-        </button>
       </div>
 
       <div className="bg-white p-4 border-b border-gray-200">
@@ -281,6 +249,61 @@ export default function OrderDetail() {
         </div>
       )}
       {showSurvey && <SurveyModal order={order} onClose={() => setShowSurvey(false)} />}
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="删除订单"
+          message="确定要删除这条订单吗？"
+          confirmText="删除"
+          danger
+          onConfirm={() => { deleteOrder(id!); navigate('/') }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex gap-2 px-3 py-3 z-20">
+        {order.status === '待办' && (
+          <button
+            onClick={handleSchedule}
+            className="flex-1 flex items-center justify-center gap-1 bg-amber-500 text-white py-2 rounded-lg text-sm"
+          >
+            <Calendar size={16} />
+            预约
+          </button>
+        )}
+        {order.status === '已预约' && (
+          <>
+            <button
+              onClick={handleSurvey}
+              className="flex-1 flex items-center justify-center gap-1 bg-amber-500 text-white py-2 rounded-lg text-sm"
+            >
+              <ClipboardList size={16} />
+              {order.survey ? '查看勘察' : '勘测'}
+            </button>
+            <button
+              onClick={handleComplete}
+              className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white py-2 rounded-lg text-sm"
+            >
+              <CheckCircle size={16} />
+              标记完成
+            </button>
+          </>
+        )}
+        <button
+          onClick={() => navigate(`/order/edit/${id}`)}
+          className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
+        >
+          <Edit3 size={16} />
+          编辑
+        </button>
+        <button
+          onClick={handleDelete}
+          className="flex-1 flex items-center justify-center gap-1 bg-red-500 text-white py-2 rounded-lg text-sm"
+        >
+          <Trash2 size={16} />
+          删除
+        </button>
+      </div>
     </div>
   )
 }
