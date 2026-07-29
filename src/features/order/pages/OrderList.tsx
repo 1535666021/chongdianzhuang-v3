@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Filter, Plus, FileText } from 'lucide-react'
 
@@ -21,13 +21,20 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
   const { orders, stats } = useOrderList(filter)
 
-  const displayOrders = searchKw
-    ? orders.filter((o: any) =>
-        o.customerName?.includes(searchKw) ||
-        o.phone?.includes(searchKw) ||
-        o.address?.includes(searchKw)
-      )
-    : orders
+  const today = new Date().toISOString().slice(0, 10)
+
+  const displayOrders = useMemo(() => {
+    const filtered = searchKw
+      ? orders.filter((o: any) =>
+          o.customerName?.includes(searchKw) ||
+          o.phone?.includes(searchKw) ||
+          o.address?.includes(searchKw)
+        )
+      : orders
+    const todayOrders = filtered.filter((o: any) => o.appointmentDate === today)
+    const otherOrders = filtered.filter((o: any) => o.appointmentDate !== today)
+    return [...todayOrders, ...otherOrders]
+  }, [orders, searchKw])
 
   // 状态筛选选项：锁定页面只显示固定状态（首页待办页附带回收站），未锁定页面显示全部
   const filterOptions = fixedStatus
@@ -130,6 +137,8 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
               <OrderCard
                 key={order.id}
                 order={order}
+                showMenu={fixedStatus === '已预约'}
+                isToday={order.appointmentDate === today}
                 onClick={() => navigate(`/orders/${order.id}`)}
               />
             ))}
