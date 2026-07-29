@@ -179,7 +179,11 @@ export default function OrderComplete() {
             const all = scriptStorage.getAll()
             const template = all.find(t => t.brand === brandName && t.scene === '安装完成') || all.find(t => t.id === 'default-install-complete')
             if (template) {
-              const vars = buildScriptVarsFromCompletionForm(form, order, { engineerName: settings.engineerName || '谢责强', engineerPhone: engineerPhone || '' })
+              const vars = buildScriptVarsFromCompletionForm(
+                { ...form, customerReceivable: profit.customerReceivable, actualProfit: profit.actualProfit },
+                order,
+                { engineerName: settings.engineerName || '谢责强', engineerPhone: engineerPhone || '' }
+              )
               const text = renderScript(template.content, vars)
               navigator.clipboard.writeText(text)
               setCopiedScript(true)
