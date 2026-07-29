@@ -30,6 +30,7 @@ import BrandTemplates from '../components/BrandTemplates'
 import WatermarkTemplate from '../components/WatermarkTemplate'
 import LingpaoTemplate from '../components/LingpaoTemplate'
 import { ScriptEditor } from '../components/ScriptEditor'
+import ScriptManager from '../components/ScriptManager'
 import AmapConfig from '../components/AmapConfig'
 
 type SettingSection =
@@ -99,7 +100,7 @@ export default function SettingsPage() {
       case 'lingpao':
         return <LingpaoTemplate />
       case 'scripts':
-        return <ScriptEditor />
+        return <ScriptManager />
       case 'map':
         return <AmapConfig />
       case 'reset':
