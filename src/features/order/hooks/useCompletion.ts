@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
+import { BRAND_DEFAULTS } from '@/constants/brands'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitPreview, CompletionFormData } from '../types/completion'
 
@@ -21,10 +22,15 @@ function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'
   if (!order) return ''
   const brand = order.brandName || ''
   const power = (order.powerKw || '').toString()
-  if (brand.includes('零跑') || brand.includes('苏宁')) return 'C40A'
-  if (brand.includes('比亚迪')) {
-    if (power.includes('3.5')) return 'C25'
-    if (power.includes('7')) return 'C40'
+  for (const [key, cfg] of Object.entries(BRAND_DEFAULTS)) {
+    if (brand.includes(key)) {
+      if (cfg.powerBreakers) {
+        for (const [p, bt] of Object.entries(cfg.powerBreakers)) {
+          if (power.includes(p)) return bt as FixedAuxInput['breakerType']
+        }
+      }
+      if (cfg.breakerType) return cfg.breakerType as FixedAuxInput['breakerType']
+    }
   }
   if (power.includes('3.5')) return 'C25'
   if (power.includes('7')) return 'C40'
@@ -43,12 +49,8 @@ export function useCompletion(orderId: string) {
       const pm = parseFloat(order.packageMeters)
       if (!isNaN(pm) && pm > 0) return pm
     }
-    const brandDefaults: Record<string, number> = {
-      '零跑': 30,
-      '空灵零跑': 30,
-    }
-    if (order?.brandName && brandDefaults[order.brandName]) {
-      return brandDefaults[order.brandName]
+    if (order?.brandName && BRAND_DEFAULTS[order.brandName]?.packageMeters) {
+      return BRAND_DEFAULTS[order.brandName].packageMeters!
     }
     return DEFAULT_PACKAGE_METERS
   })
