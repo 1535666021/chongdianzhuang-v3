@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -139,7 +139,7 @@ export function useCompletion(orderId: string) {
   const profit = useMemo<ProfitPreview>(() => {
     let addonReceivable = 0
     for (const m of form.materials) {
-      if (/电缆敷设|线缆敷设/.test(m.name)) {
+      if (isFreeQuotaMaterial(m.name)) {
         const { overMeters } = calcOverFee(m.quantity, packageMeters)
         addonReceivable += overMeters * m.settlementPrice
       } else {
@@ -163,7 +163,7 @@ export function useCompletion(orderId: string) {
 
     // 材料成本 = 增项材料成本 + 固定辅材成本
     const addonCost = form.materials.reduce((s, m) => {
-      if (/电缆敷设|线缆敷设/.test(m.name)) return s
+      if (isFreeQuotaMaterial(m.name)) return s
       return s + m.costSubtotal
     }, 0)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
@@ -180,7 +180,7 @@ export function useCompletion(orderId: string) {
 
     const receivableItems: { name: string; calc: string; amount: number }[] = []
     for (const m of form.materials) {
-      if (/电缆敷设|线缆敷设/.test(m.name)) {
+      if (isFreeQuotaMaterial(m.name)) {
         const { overMeters } = calcOverFee(m.quantity, packageMeters)
         if (overMeters > 0) {
           receivableItems.push({
@@ -230,7 +230,7 @@ export function useCompletion(orderId: string) {
       })
     }
     for (const m of form.materials) {
-      if (/电缆敷设|线缆敷设/.test(m.name)) continue
+      if (isFreeQuotaMaterial(m.name)) continue
       if (m.costSubtotal > 0) {
         materialItems.push({
           name: m.name,

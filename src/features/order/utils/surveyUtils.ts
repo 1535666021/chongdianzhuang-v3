@@ -44,9 +44,9 @@ export function getShortName(name: string, category: MaterialCategory): string {
   const n = name || ''
 
   // 线缆
-  if (n.includes('3*6') || n.includes('3×6')) return '电缆3*6'
-  if (n.includes('3*10') || n.includes('3×10')) return '电缆3*10'
-  if (n.includes('3*16') || n.includes('3×16')) return '电缆3*16'
+  if (n.includes('3*6') || n.includes('3×6') || n.includes('3x6') || n.includes('3X6')) return '电缆3*6'
+  if (n.includes('3*10') || n.includes('3×10') || n.includes('3x10') || n.includes('3X10')) return '电缆3*10'
+  if (n.includes('3*16') || n.includes('3×16') || n.includes('3x16') || n.includes('3X16')) return '电缆3*16'
   if (n.includes('升级')) return '线缆升级'
   if (n.includes('桥架')) return '电缆桥架'
   if (n.includes('高空架设')) return '高空电缆'

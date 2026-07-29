@@ -157,7 +157,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                                     toggleAddon(mat)
                                     if (isAdding) {
                                       setShowDropdown(false)
-                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
+                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|3x6|3x10|3x16|3X6|3X10|3X16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
                                       if (cableMatch) {
                                         updateForm({ cableSpec: cableMatch[0] })
                                       }
