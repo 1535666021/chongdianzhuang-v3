@@ -5,8 +5,6 @@ import { getShortName } from '../utils/surveyUtils'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useOrderStore } from '@/stores/orderStore'
-import { scriptStorage } from '@/shared/storage/scriptStorage'
-import { buildScriptVarsFromSurveyForm, renderScript } from '../hooks/useScript'
 import { Save, X, Copy, FileText } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 interface SurveyModalProps {
@@ -328,7 +326,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               value={surveyNote}
               onChange={(e) => setSurveyNote(e.target.value)}
               className="w-full px-3 py-2 bg-white rounded-lg text-sm border border-gray-200 resize-none h-16 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
-              placeholder="勘测备注（会带入话术，允许为空）"
+              placeholder="勘测备注（允许为空）"
             />
           </div>
         </div>
@@ -341,24 +339,6 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
             className="px-3 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
           >
             取消
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              const formData = { ...form, surveyNote }
-              const vars = buildScriptVarsFromSurveyForm(formData, order, { engineerName: engineerName || '谢责强', engineerPhone: engineerPhone || '' })
-              const brandName = order.brandName || '通用'
-              const all = scriptStorage.getAll()
-              const template = all.find(t => t.brand === brandName && t.scene === '勘测完成') || all.find(t => t.id === 'default-survey-complete')
-              if (template) {
-                const text = renderScript(template.content, vars)
-                navigator.clipboard.writeText(text)
-              }
-            }}
-            className="flex items-center justify-center gap-1 px-3 py-2.5 text-sm rounded-xl border border-green-200 text-green-600 hover:bg-green-50 transition-colors"
-          >
-            <Copy size={14} />
-            生成话术
           </button>
           <button
             type="button"
