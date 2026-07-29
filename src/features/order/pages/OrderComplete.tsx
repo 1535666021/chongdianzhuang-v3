@@ -5,7 +5,7 @@ import { MaterialPicker } from '../components/MaterialPicker'
 import { ProfitPreview } from '../components/ProfitPreview'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { DEFAULT_SCRIPT_TEMPLATES } from '@/constants/scripts'
+import { scriptStorage } from '@/shared/storage/scriptStorage'
 import { buildScriptVarsFromCompletionForm, renderScript } from '../hooks/useScript'
 import { useState } from 'react'
 
@@ -161,7 +161,8 @@ export default function OrderComplete() {
         <button
           onClick={() => {
             const brandName = order.brandName || '通用'
-            const template = DEFAULT_SCRIPT_TEMPLATES.find(t => t.brand === brandName && t.scene === '安装完成') || DEFAULT_SCRIPT_TEMPLATES.find(t => t.id === 'default-install-complete')
+            const all = scriptStorage.getAll()
+            const template = all.find(t => t.brand === brandName && t.scene === '安装完成') || all.find(t => t.id === 'default-install-complete')
             if (template) {
               const vars = buildScriptVarsFromCompletionForm(form, order, { engineerName: settings.engineerName || '谢责强', engineerPhone: settings.engineerPhone || '' })
               const text = renderScript(template.content, vars)
