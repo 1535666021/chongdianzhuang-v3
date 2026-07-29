@@ -1,25 +1,12 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS } from '@/constants/package'
+import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitPreview, CompletionFormData } from '../types/completion'
-
-const SERVICE_FEE: Record<string, number> = {
-  安装: 300,
-  维修: 60,
-  勘察: 0,
-}
-
-function getServiceFee(order: Order): number {
-  const notes = order.notes || ''
-  if (notes.includes('维修')) return SERVICE_FEE['维修']
-  if (notes.includes('勘察') || notes.includes('勘测')) return SERVICE_FEE['勘察']
-  return SERVICE_FEE['安装']
-}
 
 function findAddonMaterial(name: string) {
   return addonMaterialsData.find((m) => m.name === name)
@@ -150,8 +137,8 @@ export function useCompletion(orderId: string) {
     let addonReceivable = 0
     for (const m of form.materials) {
       if (/电缆敷设|线缆敷设/.test(m.name)) {
-        const over = Math.max(0, m.quantity - packageMeters)
-        addonReceivable += over * m.settlementPrice
+        const { overMeters } = calcOverFee(m.quantity, packageMeters)
+        addonReceivable += overMeters * m.settlementPrice
       } else {
         addonReceivable += m.customerSubtotal
       }
@@ -180,10 +167,10 @@ export function useCompletion(orderId: string) {
 
     // 平台扣点
     const platformRate = order ? getPlatformFeeRate(order.platform) : 0.2
-    const platformFee = Math.round(customerReceivable * platformRate * 100) / 100
+    const platformFee = Math.round(calcPlatformFee(customerReceivable, platformRate) * 100) / 100
 
     // 服务费
-    const serviceFee = order ? getServiceFee(order) : 300
+    const serviceFee = order ? getServiceFee(order.notes || '') : 300
 
     // 利润
     const actualProfit = Math.round((customerReceivable - platformFee + serviceFee - materialCost - (order?.laborCost || 0)) * 100) / 100
@@ -191,12 +178,12 @@ export function useCompletion(orderId: string) {
     const receivableItems: { name: string; calc: string; amount: number }[] = []
     for (const m of form.materials) {
       if (/电缆敷设|线缆敷设/.test(m.name)) {
-        const over = Math.max(0, m.quantity - packageMeters)
-        if (over > 0) {
+        const { overMeters } = calcOverFee(m.quantity, packageMeters)
+        if (overMeters > 0) {
           receivableItems.push({
             name: m.name,
-            calc: `${m.name} ${over}${m.unit} × ¥${m.settlementPrice}/米`,
-            amount: Math.round(over * m.settlementPrice * 100) / 100,
+            calc: `${m.name} ${overMeters}${m.unit} × ¥${m.settlementPrice}/米`,
+            amount: Math.round(overMeters * m.settlementPrice * 100) / 100,
           })
         }
       } else if (m.customerSubtotal > 0) {
