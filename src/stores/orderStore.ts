@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { Order, OrderFilter } from '@/types'
 import { LocalStorageAdapter } from '@/shared/storage'
+import { initMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
 
 /** 金额字段清单：补全更新时只动这些字段，其他字段一律不覆盖 */
 const MONEY_KEYS = ['materialCost', 'laborCost', 'platformFee', 'actualProfit', 'customerPrice'] as const
@@ -105,6 +106,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     }
     storage.set('list', merged)
     set({ orders: merged })
+    initMaterialFrequency(merged)
     return { added, skipped, updated }
   },
   importFromLegacy: (legacyOrders) => {
