@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { isFreeQuotaMaterial } from '@/constants/package'
+import { DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import { Plus, Trash2, Search } from 'lucide-react'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
 
@@ -37,6 +38,8 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
   const cable = costMaterials.find((m) => m.name === '电缆')
   const pvc = costMaterials.find((m) => m.name === 'PVC')
   const breaker = costMaterials.find((m) => m.name === '漏保盒')
+  const getBreakerCost = (type: string) => costMaterials.find(m => m.name === type)?.costPrice || 0
+  const pkgMeters = DEFAULT_PACKAGE_METERS
 
   return (
     <div className="space-y-4">
@@ -113,7 +116,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
               <span className="text-gray-400">{m.unit}</span>
               {isFreeQuotaMaterial(m.name) && m.quantity > 0 ? (
                 <span className="ml-auto font-medium text-green-600">
-                  超出{m.quantity - 30}米 ¥{Math.max(0, m.quantity - 30) * m.settlementPrice > 0 ? (Math.max(0, m.quantity - 30) * m.settlementPrice).toFixed(2) : '0'}
+                  超出{m.quantity - pkgMeters}米 ¥{Math.max(0, m.quantity - pkgMeters) * m.settlementPrice > 0 ? (Math.max(0, m.quantity - pkgMeters) * m.settlementPrice).toFixed(2) : '0'}
                 </span>
               ) : (
                 <span className="ml-auto font-medium text-gray-700">
@@ -164,9 +167,9 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
               className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
             >
               <option value="">无</option>
-              <option value="C25">C25 (¥26.8)</option>
-              <option value="C40">C40 (¥26.8)</option>
-              <option value="C40A">C40A (¥46.5)</option>
+              <option value="C25">C25 (¥{getBreakerCost('C25')})</option>
+              <option value="C40">C40 (¥{getBreakerCost('C40')})</option>
+              <option value="C40A">C40A (¥{getBreakerCost('C40A')})</option>
             </select>
           </div>
         </div>
@@ -175,7 +178,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
           <div className="flex justify-between text-xs">
             <span className="text-gray-500">辅材成本合计</span>
             <span className="font-medium text-orange-600">
-              ¥{(fixedAux.cableMeters * (cable?.costPrice || 16) + fixedAux.pvcMeters * (pvc?.costPrice || 1) + (breaker?.costPrice || 5) + ({ C25: 26.8, C40: 26.8, C40A: 46.5 } as Record<string,number>)[fixedAux.breakerType] || 0).toFixed(2)}
+              ¥{(fixedAux.cableMeters * (cable?.costPrice || 16) + fixedAux.pvcMeters * (pvc?.costPrice || 1) + (breaker?.costPrice || 5) + getBreakerCost(fixedAux.breakerType)).toFixed(2)}
             </span>
           </div>
         </div>
