@@ -4,6 +4,9 @@ import { useSurvey } from '../hooks/useSurvey'
 import { getShortName } from '../utils/surveyUtils'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useOrderStore } from '@/stores/orderStore'
+import { DEFAULT_SCRIPT_TEMPLATES } from '@/constants/scripts'
+import { buildScriptVarsFromSurveyForm, renderScript } from '../hooks/useScript'
 import { Save, X, Copy, FileText } from 'lucide-react'
 
 interface SurveyModalProps {
@@ -27,6 +30,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const [showDropdown, setShowDropdown] = useState(false)
   const [showReport, setShowReport] = useState(false)
+  const [surveyNote, setSurveyNote] = useState(order.surveyNote || '')
+  const updateOrder = useOrderStore((s) => s.updateOrder)
   const engineerName = useSettingsStore((s) => s.engineerName)
   const engineerPhone = useSettingsStore((s) => s.engineerPhone)
   const needsBrandSelect = !order.brandName && !selectedBrand
@@ -41,6 +46,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const handleSave = () => {
     save()
+    updateOrder(order.id, { surveyNote })
     onClose()
   }
 
@@ -309,31 +315,60 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               placeholder="输入位置描述..."
             />
           </div>
+          {/* 📝 勘测备注 */}
+          <div className={sectionClass}>
+            <h3 className="font-medium text-sm text-gray-700 mb-2 flex items-center gap-1">
+              <span>📝</span> 备注
+            </h3>
+            <textarea
+              value={surveyNote}
+              onChange={(e) => setSurveyNote(e.target.value)}
+              className="w-full px-3 py-2 bg-white rounded-lg text-sm border border-gray-200 resize-none h-16 outline-none focus:ring-1 focus:ring-blue-500 text-gray-700"
+              placeholder="勘测备注（会带入话术，允许为空）"
+            />
+          </div>
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 p-4 border-t border-gray-100 shrink-0">
+        <div className="flex gap-2 p-4 border-t border-gray-100 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+            className="px-3 py-2.5 text-sm rounded-xl border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
           >
             取消
           </button>
           <button
             type="button"
-            onClick={() => setShowReport(true)}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+            onClick={() => {
+              const formData = { ...form, surveyNote }
+              const vars = buildScriptVarsFromSurveyForm(formData, order, { engineerName: engineerName || '谢责强', engineerPhone: engineerPhone || '' })
+              const brandName = order.brandName || '通用'
+              const template = DEFAULT_SCRIPT_TEMPLATES.find(t => t.brand === brandName && t.scene === '勘测完成') || DEFAULT_SCRIPT_TEMPLATES.find(t => t.id === 'default-survey-complete')
+              if (template) {
+                const text = renderScript(template.content, vars)
+                navigator.clipboard.writeText(text)
+              }
+            }}
+            className="flex items-center justify-center gap-1 px-3 py-2.5 text-sm rounded-xl border border-green-200 text-green-600 hover:bg-green-50 transition-colors"
           >
-            <FileText size={16} />
+            <Copy size={14} />
+            生成话术
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowReport(true)}
+            className="flex items-center justify-center gap-1 px-3 py-2.5 text-sm rounded-xl border border-blue-200 text-blue-600 hover:bg-blue-50 transition-colors"
+          >
+            <FileText size={14} />
             生成报告
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+            className="flex items-center justify-center gap-1 px-3 py-2.5 text-sm rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-colors"
           >
-            <Save size={16} />
+            <Save size={14} />
             保存
           </button>
         </div>
