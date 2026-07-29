@@ -77,7 +77,7 @@ export function useCompletion(orderId: string) {
       breakerCount: 1,
       breakerType: inferBreakerType(order),
     },
-    notes: order?.notes || '',
+    notes: order?.completionNotes || order?.notes || '',
   })
 
   const updateForm = useCallback((updates: Partial<CompletionFormData>) => {
