@@ -6,6 +6,7 @@ import {
   buildAddonSummary,
   buildPlatformBrand,
   extractCableMeters,
+  getServiceFee,
 } from '@/shared/utils/orderCalc'
 
 export function buildScriptVars(
@@ -102,10 +103,12 @@ export function buildScriptVarsFromSurveyForm(
 }
 
 interface CompletionFormInput {
-  materials?: Array<{ name: string; quantity: number }>
+  materials?: Array<{ name: string; quantity: number; customerSubtotal?: number }>
   notes?: string
   completeDate?: string
   installer?: string
+  customerReceivable?: number
+  actualProfit?: number
 }
 
 export function buildScriptVarsFromCompletionForm(
@@ -117,6 +120,19 @@ export function buildScriptVarsFromCompletionForm(
   defaults.notes = form.notes ?? order.completionNotes ?? order.notes ?? ''
   defaults.completeDate = form.completeDate || defaults.completeDate
   defaults.installer = form.installer || defaults.installer
+
+  let custTotal = form.customerReceivable || order.customerPrice || 0
+  if (!custTotal && form.materials?.length) {
+    const addonSubtotal = form.materials.reduce((s, m) => s + (m.customerSubtotal ?? 0), 0)
+    const serviceFee = getServiceFee(order.notes || '')
+    custTotal = addonSubtotal + serviceFee
+  }
+
+  const actProfit = form.actualProfit || order.actualProfit || 0
+
+  defaults.amount = String(custTotal)
+  defaults.addonSummary = buildAddonSummary(custTotal, actProfit)
+
   if (form.materials?.length) {
     const cable = form.materials.find(m => m.name.includes('电缆') || m.name.includes('YJV'))
     if (cable) defaults.actualCable = String(cable.quantity)
