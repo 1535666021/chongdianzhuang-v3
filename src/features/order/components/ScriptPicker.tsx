@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
-import { DEFAULT_SCRIPT_TEMPLATES } from '@/constants/scripts'
+import { scriptStorage } from '@/shared/storage/scriptStorage'
 import { buildScriptVars, renderScript } from '../hooks/useScript'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { X, Copy, FileText, Check } from 'lucide-react'
 import type { Order } from '@/types'
+import type { ScriptTemplate } from '@/constants/scripts'
 
 interface Props {
   order: Order
@@ -16,7 +17,8 @@ export default function ScriptPicker({ order, onClose }: Props) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
-    const matching = DEFAULT_SCRIPT_TEMPLATES.filter(
+    const all = scriptStorage.getAll()
+    const matching = all.filter(
       (t) => t.brand === '通用' || t.brand === brandName
     )
     const brandSpecific = matching.filter((t) => t.brand === brandName)
@@ -24,7 +26,7 @@ export default function ScriptPicker({ order, onClose }: Props) {
     return [...brandSpecific, ...generic]
   }, [brandName])
 
-  const handleCopy = (template: (typeof DEFAULT_SCRIPT_TEMPLATES)[0]) => {
+  const handleCopy = (template: ScriptTemplate) => {
     const vars = buildScriptVars(order, template.scene, {
       engineerName: settings.engineerName || '谢责强',
       engineerPhone: settings.engineerPhone || '15395147568',
