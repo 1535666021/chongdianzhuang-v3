@@ -60,6 +60,8 @@ export interface Order extends BaseEntity {
   remark?: string
   rawText?: string
   installType?: InstallType
+  surveyNote?: string
+  completionNotes?: string
 }
 
 export interface OrderFilter {
