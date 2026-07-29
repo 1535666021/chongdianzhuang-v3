@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, User, Calendar, FileText, Ruler, Copy, MessageCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, User, Phone, Calendar, FileText, Ruler, Copy, MessageCircle } from 'lucide-react'
 import { useCompletion } from '../hooks/useCompletion'
 import { MaterialPicker } from '../components/MaterialPicker'
 import { ProfitPreview } from '../components/ProfitPreview'
@@ -7,7 +7,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { scriptStorage } from '@/shared/storage/scriptStorage'
 import { buildScriptVarsFromCompletionForm, renderScript } from '../hooks/useScript'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
@@ -16,6 +16,16 @@ export default function OrderComplete() {
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const settings = useSettingsStore()
   const [copiedScript, setCopiedScript] = useState(false)
+  const [engineerPhone, setEngineerPhone] = useState(settings.engineerPhone || '')
+
+  useEffect(() => {
+    if (!form.installer && settings.engineerName) {
+      updateForm({ installer: settings.engineerName })
+    }
+    if (!engineerPhone && settings.engineerPhone) {
+      setEngineerPhone(settings.engineerPhone)
+    }
+  }, [])
 
   if (!order) {
     return (
@@ -86,6 +96,11 @@ export default function OrderComplete() {
           <div>
             <label className="flex items-center gap-1 text-xs text-gray-500 mb-1.5"><User size={12} />安装工</label>
             <input type="text" value={form.installer} onChange={(e) => updateForm({ installer: e.target.value })} placeholder="输入安装工姓名" className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm" />
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1 text-xs text-gray-500 mb-1.5"><Phone size={12} />安装工电话</label>
+            <input type="tel" value={engineerPhone} onChange={(e) => setEngineerPhone(e.target.value)} placeholder="输入安装工电话" className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm" />
           </div>
 
           <div>
@@ -164,7 +179,7 @@ export default function OrderComplete() {
             const all = scriptStorage.getAll()
             const template = all.find(t => t.brand === brandName && t.scene === '安装完成') || all.find(t => t.id === 'default-install-complete')
             if (template) {
-              const vars = buildScriptVarsFromCompletionForm(form, order, { engineerName: settings.engineerName || '谢责强', engineerPhone: settings.engineerPhone || '' })
+              const vars = buildScriptVarsFromCompletionForm(form, order, { engineerName: settings.engineerName || '谢责强', engineerPhone: engineerPhone || '' })
               const text = renderScript(template.content, vars)
               navigator.clipboard.writeText(text)
               setCopiedScript(true)
