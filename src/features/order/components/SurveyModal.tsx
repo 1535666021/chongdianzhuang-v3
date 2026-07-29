@@ -5,10 +5,9 @@ import { getShortName } from '../utils/surveyUtils'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useOrderStore } from '@/stores/orderStore'
-import { DEFAULT_SCRIPT_TEMPLATES } from '@/constants/scripts'
+import { scriptStorage } from '@/shared/storage/scriptStorage'
 import { buildScriptVarsFromSurveyForm, renderScript } from '../hooks/useScript'
 import { Save, X, Copy, FileText } from 'lucide-react'
-
 interface SurveyModalProps {
   order: Order
   onClose: () => void
@@ -344,7 +343,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               const formData = { ...form, surveyNote }
               const vars = buildScriptVarsFromSurveyForm(formData, order, { engineerName: engineerName || '谢责强', engineerPhone: engineerPhone || '' })
               const brandName = order.brandName || '通用'
-              const template = DEFAULT_SCRIPT_TEMPLATES.find(t => t.brand === brandName && t.scene === '勘测完成') || DEFAULT_SCRIPT_TEMPLATES.find(t => t.id === 'default-survey-complete')
+              const all = scriptStorage.getAll()
+              const template = all.find(t => t.brand === brandName && t.scene === '勘测完成') || all.find(t => t.id === 'default-survey-complete')
               if (template) {
                 const text = renderScript(template.content, vars)
                 navigator.clipboard.writeText(text)
