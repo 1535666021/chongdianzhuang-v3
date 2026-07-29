@@ -1,22 +1,34 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import ProfitBadge from './ProfitBadge'
 import AppointmentModal from './AppointmentModal'
+import OrderCardMenu from './OrderCardMenu'
+import ConfirmModal from './ConfirmModal'
+import ScriptPicker from './ScriptPicker'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt, Copy, X, Save } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt, Copy, X, Save, MoreVertical } from 'lucide-react'
 
 interface OrderCardProps {
   order: Order
   onClick?: () => void
+  showMenu?: boolean
+  isToday?: boolean
 }
 
-export default function OrderCard({ order, onClick }: OrderCardProps) {
+export default function OrderCard({ order, onClick, showMenu = false, isToday = false }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
   const updateOrder = useOrderStore((s) => s.updateOrder)
+  const deleteOrder = useOrderStore((s) => s.deleteOrder)
+  const navigate = useNavigate()
+
+  const cardClass = isToday
+    ? 'bg-amber-50 rounded-xl p-4 mb-3 shadow-sm border-2 border-amber-400 active:scale-[0.98] transition-transform cursor-pointer relative'
+    : 'bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer relative'
 
   const [copiedName, setCopiedName] = useState(false)
   const [copiedPhone, setCopiedPhone] = useState(false)
@@ -25,6 +37,9 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
   const [editRawText, setEditRawText] = useState('')
   const [copiedRaw, setCopiedRaw] = useState(false)
   const [showAppointment, setShowAppointment] = useState(false)
+  const [showMenuPanel, setShowMenuPanel] = useState(false)
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [showScriptPicker, setShowScriptPicker] = useState(false)
 
   const copyToClipboard = async (text: string, setter: (v: boolean) => void) => {
     try {
@@ -70,7 +85,7 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
     <>
       <div
         onClick={onClick}
-        className="bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer"
+        className={cardClass}
       >
         {/* 第一行：姓名 + 状态 */}
         <div className="flex justify-between items-start mb-2">
@@ -91,8 +106,13 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
           </span>
         </div>
 
-        {/* 标签行：平台 → 品牌 → 功率 → 米数 → 安装类型 */}
+        {/* 标签行：补桩 → 平台 → 品牌 → 功率 → 米数 → 安装类型 */}
         <div className="flex flex-wrap gap-1.5 mb-2">
+          {(order.serviceType?.includes('补桩') || order.remark?.includes('补桩') || order.notes?.includes('补桩') || order.rawText?.includes('补桩')) && (
+            <span className="inline-flex items-center gap-1 text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded">
+              补桩
+            </span>
+          )}
           {order.platformName && (
             <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
               <ShoppingCart size={10} />
@@ -203,10 +223,18 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
           >
             <span className="text-xs text-blue-600 font-medium">预约</span>
           </div>
-        )}
-      </div>
+          )}
+          {showMenu && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowMenuPanel(true) }}
+              className="absolute bottom-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <MoreVertical size={16} />
+            </button>
+          )}
+        </div>
 
-      {/* 订单原文编辑弹框 */}
+        {/* 订单原文编辑弹框 */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -260,6 +288,30 @@ export default function OrderCard({ order, onClick }: OrderCardProps) {
       )}
       {showAppointment && (
         <AppointmentModal order={order} onClose={() => setShowAppointment(false)} />
+      )}
+      {showMenuPanel && (
+        <OrderCardMenu
+          order={order}
+          onClose={() => setShowMenuPanel(false)}
+          onEditAppointment={() => { setEditRawText(order.rawText || ''); setShowModal(true) }}
+          onComplete={() => navigate(`/orders/${order.id}/complete`)}
+          onScript={() => { setShowMenuPanel(false); setShowScriptPicker(true) }}
+          onNavigate={() => { window.open(`https://uri.amap.com/marker?position=${encodeURIComponent(order.address)}`, '_blank') }}
+          onDelete={() => { setShowMenuPanel(false); setShowConfirmDelete(true) }}
+        />
+      )}
+      {showConfirmDelete && (
+        <ConfirmModal
+          title="确认删除"
+          message={`确定删除【${order.customerName}】的订单吗？`}
+          danger
+          confirmText="删除"
+          onConfirm={() => { deleteOrder(order.id); setShowConfirmDelete(false) }}
+          onCancel={() => setShowConfirmDelete(false)}
+        />
+      )}
+      {showScriptPicker && (
+        <ScriptPicker order={order} onClose={() => setShowScriptPicker(false)} />
       )}
     </>
   )
