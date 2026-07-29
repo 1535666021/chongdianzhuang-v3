@@ -33,6 +33,17 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const engineerName = useSettingsStore((s) => s.engineerName)
   const engineerPhone = useSettingsStore((s) => s.engineerPhone)
+  const FREQ_ORDER = ['电缆3*10', 'PVC', '漏保', '漏保盒', '保护箱', '打孔', '电度表']
+  const sortedBrandAddons = useMemo(() => [...brandAddons].sort((a, b) => {
+    if (a.name.includes('电缆3*6')) return -1
+    if (b.name.includes('电缆3*6')) return 1
+    const ia = FREQ_ORDER.findIndex(s => a.name.includes(s))
+    const ib = FREQ_ORDER.findIndex(s => b.name.includes(s))
+    if (ia !== -1 && ib !== -1) return ia - ib
+    if (ia !== -1) return -1
+    if (ib !== -1) return 1
+    return 0
+  }), [brandAddons])
   const needsBrandSelect = !order.brandName && !selectedBrand
 
   const getDisplayPrice = (name: string, fallback: number) => {
@@ -139,7 +150,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                       {brandAddons.length === 0 ? (
                         <div className="p-3 text-sm text-gray-400 text-center">该品牌暂无材料</div>
                       ) : (
-                        brandAddons.map((mat) => {
+                        sortedBrandAddons.map((mat) => {
                           const checked = form.estimatedMaterials.some((m) => m.name === mat.name)
                           return (
                             <label
