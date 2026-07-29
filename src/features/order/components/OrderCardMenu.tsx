@@ -1,13 +1,11 @@
 import { useEffect, useRef } from 'react'
-import { Calendar, CheckCircle, MessageCircle, MapPin, Trash2, X } from 'lucide-react'
+import { Calendar, MapPin, Trash2, X } from 'lucide-react'
 import type { Order } from '@/types'
 
 interface Props {
   order: Order
   onClose: () => void
   onEditAppointment: (order: Order) => void
-  onComplete: (order: Order) => void
-  onScript: (order: Order) => void
   onNavigate: (order: Order) => void
   onDelete: (order: Order) => void
 }
@@ -16,8 +14,6 @@ export default function OrderCardMenu({
   order,
   onClose,
   onEditAppointment,
-  onComplete,
-  onScript,
   onNavigate,
   onDelete,
 }: Props) {
@@ -34,9 +30,7 @@ export default function OrderCardMenu({
   }, [onClose])
 
   const items = [
-    { icon: Calendar, label: '修改预约', action: () => onEditAppointment(order) },
-    { icon: CheckCircle, label: '标记完工', action: () => onComplete(order) },
-    { icon: MessageCircle, label: '发送话术', action: () => onScript(order) },
+    { icon: Calendar, label: '改约', action: () => onEditAppointment(order) },
     { icon: MapPin, label: '导航', action: () => onNavigate(order) },
     { icon: Trash2, label: '删除', action: () => onDelete(order), danger: true },
   ]
