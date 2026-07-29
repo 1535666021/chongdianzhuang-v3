@@ -49,9 +49,9 @@ function mapPlatform(raw: unknown): Platform {
 
 /** v7 地区 → v3 地区映射 */
 function mapRegion(raw: unknown): Region {
-  const text = String(raw || '').trim()
+  const text = String(raw || '').trim().replace(/[省市]$/, '')
   const regions: Region[] = ['巢湖', '合肥', '芜湖', '马鞍山', '滁州', '宣城', '安庆', '其他']
-  const found = regions.find((r) => r === text)
+  const found = regions.find((r) => r === text || text.includes(r))
   return found || '其他'
 }
 

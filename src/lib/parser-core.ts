@@ -60,7 +60,7 @@ export const VIN_SEARCH_RE = /(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17
 /** 功率：数字 + kW/千瓦 */
 export const POWER_RE = /(\d+(?:\.\d+)?)\s*(?:kw|千瓦)/i;
 /** 米数：数字 + 米 */
-export const METERS_RE = /(\d+)\s*米/;
+export const METERS_RE = /(\d+)\s*(?:米|m|meter)/i;
 /** 日期 token */
 export const DATE_TOKEN_RE = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/;
 /** 时间 token */

@@ -150,10 +150,10 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
       if (!addressLine || line.length > addressLine.length) addressLine = line;
     }
     for (const word of BRAND_WORDS) {
-      if (line.includes(word) && !brandCandidates.includes(word)) brandCandidates.push(word);
+      if (line.toLowerCase().includes(word.toLowerCase()) && !brandCandidates.includes(word)) brandCandidates.push(word);
     }
     for (const word of PLATFORM_HINT_WORDS) {
-      if (line.includes(word) && !platformCandidates.includes(word)) platformCandidates.push(word);
+      if (line.toLowerCase().includes(word.toLowerCase()) && !platformCandidates.includes(word)) platformCandidates.push(word);
     }
     if (/(安装|维修|勘察|勘测|检测|拆桩|移机)/.test(line) && !serviceTypeCandidates.includes(line)) {
       serviceTypeCandidates.push(line);

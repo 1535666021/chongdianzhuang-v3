@@ -58,7 +58,7 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     rawText: it.rawText || '',
     /* ---- 必填字段默认值 ---- */
     platform: '其他' as Platform,
-    region: '巢湖' as Region,
+    region: '其他' as Region,
     notes: '',
     meterStatus: '未安装' as '未安装',
     installType: (it.installType as InstallType) || '其他',
