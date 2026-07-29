@@ -1,6 +1,10 @@
 export const DEFAULT_OVER_PRICE = 45
 export const DEFAULT_PACKAGE_METERS = 30
 
+import { costMaterials } from '@/constants/materialData'
+import { matchCostName } from '@/features/material/hooks/useCostMatcher'
+import { getCostMapping } from '@/shared/storage/costMappingStorage'
+
 export const SERVICE_FEE: Record<string, number> = {
   安装: 300,
   维修: 60,
@@ -77,4 +81,20 @@ export function isFreeQuotaMaterial(name: string) {
 export function extractCableMeters(materials: Array<{ name: string; quantity: number }>) {
   const cable = materials.find((m) => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
   return cable ? cable.quantity : 0
+}
+
+export function calcMaterialCost(materials: Array<{ name: string; quantity: number }>): number {
+  return materials.reduce((sum, m) => {
+    const mappedName = getCostMapping(m.name)
+    if (mappedName) {
+      const costItem = costMaterials.find((c) => c.name === mappedName)
+      return sum + (costItem?.costPrice || 0) * m.quantity
+    }
+    const matchedName = matchCostName(m.name)
+    if (matchedName) {
+      const costItem = costMaterials.find((c) => c.name === matchedName)
+      return sum + (costItem?.costPrice || 0) * m.quantity
+    }
+    return sum
+  }, 0)
 }

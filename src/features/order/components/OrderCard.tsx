@@ -9,7 +9,7 @@ import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Copy, X, Save, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
-import { calcAddonTotal, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
+import { calcMaterialCost, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
 
 interface OrderCardProps {
   order: Order
@@ -27,7 +27,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const customerPrice = order.customerPrice || 0
   const platformRate = getPlatformFeeRate(order.platform)
   const serviceFee = getServiceFee(order.notes || '')
-  const materialCost = calcAddonTotal(order.materials || [])
+  const materialCost = calcMaterialCost(order.materials || [])
   const platformFee = calcPlatformFee(customerPrice, platformRate)
   const profit = calcProfit(customerPrice + serviceFee, materialCost, platformFee)
   const materials = order.materials || []

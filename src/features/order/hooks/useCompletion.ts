@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -163,10 +163,7 @@ export function useCompletion(orderId: string) {
       breakerTypeCost
 
     // 材料成本 = 增项材料成本 + 固定辅材成本
-    const addonCost = form.materials.reduce((s, m) => {
-      if (isFreeQuotaMaterial(m.name)) return s
-      return s + m.costSubtotal
-    }, 0)
+    const addonCost = calcMaterialCost(form.materials)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
     // 平台扣点
