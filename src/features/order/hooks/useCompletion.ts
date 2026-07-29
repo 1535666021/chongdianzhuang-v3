@@ -173,7 +173,7 @@ export function useCompletion(orderId: string) {
     const serviceFee = order ? getServiceFee(order.notes || '') : 300
 
     // 利润
-    const actualProfit = Math.round((customerReceivable - platformFee + serviceFee - materialCost - (order?.laborCost || 0)) * 100) / 100
+    const actualProfit = Math.round((customerReceivable - platformFee + serviceFee - materialCost) * 100) / 100
 
     const receivableItems: { name: string; calc: string; amount: number }[] = []
     for (const m of form.materials) {
@@ -242,7 +242,6 @@ export function useCompletion(orderId: string) {
       freeAmount: Math.round(packageBreakdown.freeAmount * 100) / 100,
       platformFee,
       materialCost,
-      laborCost: order?.laborCost || 0,
       serviceFee,
       actualProfit,
       breakdown: {
@@ -250,7 +249,6 @@ export function useCompletion(orderId: string) {
         platformRate,
         serviceFeeLabel: `固定服务费 = ¥${serviceFee}`,
         materialItems,
-        laborLabel: `固定人工成本 = ¥${order?.laborCost || 0}`,
       },
     }
   }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown])
@@ -299,7 +297,6 @@ export function useCompletion(orderId: string) {
         unitPrice: m.settlementPrice,
       })),
       materialCost: profit.materialCost,
-      laborCost: profit.laborCost,
       platformFee: profit.platformFee,
       actualProfit: profit.actualProfit,
       customerPrice: profit.customerReceivable,
