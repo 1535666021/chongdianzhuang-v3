@@ -48,7 +48,7 @@ export function useSurvey(order: Order) {
     return form.estimatedMaterials.reduce((sum, m) => {
       const mat = addonMaterialsData.find((a) => a.name === m.name)
       if (!mat) return sum
-      if (mat.categoryCode === 'CABLE' || m.name.includes('线缆敷设')) {
+      if (mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(m.name)) {
         const over = Math.max(0, m.quantity - (mat.freeQuota || 0))
         return sum + over * mat.settlementPrice
       }
@@ -62,14 +62,14 @@ export function useSurvey(order: Order) {
       if (exists) {
         const removed = prev.estimatedMaterials.filter((m) => m.name !== mat.name)
         // 如果移除的是电缆材料，清空相关字段
-        const isCableRemoved = mat.categoryCode === 'CABLE' || mat.name.includes('线缆敷设')
+        const isCableRemoved = mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(mat.name)
         return {
           ...prev,
           estimatedMaterials: removed,
           ...(isCableRemoved ? { cableDistance: 0, estimatedCableCost: 0 } : {}),
         }
       }
-      const isCable = mat.categoryCode === 'CABLE' || mat.name.includes('线缆敷设')
+      const isCable = mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(mat.name)
       const item: SurveyMaterialItem = {
         name: mat.name,
         spec: '',
@@ -93,7 +93,7 @@ export function useSurvey(order: Order) {
 
   const isCableMat = (name: string) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
-    return mat && (mat.categoryCode === 'CABLE' || mat.name.includes('线缆敷设'))
+    return mat && (mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(mat.name))
   }
 
   const calcCableCost = (name: string, distance: number) => {

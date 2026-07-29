@@ -1,5 +1,6 @@
 import type { Order, OrderStatus, Platform, Region, OrderMaterialItem, OrderSurvey, InstallType } from '@/types'
 import { extractBrandName, extractPlatformName, POWER_RE, METERS_RE } from '@/lib/parser-core'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 /* ------------------------------------------------------------
  * v7 老备份 → v3 Order 转换器（R10：13字段补全版）
@@ -131,9 +132,9 @@ function getMoneyContainer(raw: Record<string, unknown>): Record<string, unknown
   return {}
 }
 
-/** 平台扣点率（官方公式：京东/天猫10%，其他20%） */
+/** 平台扣点率（唯一数据源：settingsStore） */
 function platformRate(platform: Platform): number {
-  return platform === '京东' || platform === '天猫' ? 0.1 : 0.2
+  return useSettingsStore.getState().getPlatformFeeRate(platform)
 }
 
 /** P0-008：从serviceType/remark推断InstallType（老系统无此字段时用） */

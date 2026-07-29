@@ -13,7 +13,7 @@ interface SurveyModalProps {
 }
 
 const POWER_OPTIONS = ['国网取电', '物业配电', '自家电表', '其他'] as const
-const CABLE_SPECS = ['3*6', '3*10', '4*6', '4*10', '5*6', '5*10', '2*4', '2*6', '其他']
+const CABLE_SPECS = ['3*6', '3*10', '3*16', '4*6', '4*10', '5*6', '5*10', '5*16', '2*4', '2*6', '其他']
 const INSTALL_OPTIONS = ['壁挂安装', '立柱安装', '吊装', '其他'] as const
 const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
 const BLUEPRINT_OPTIONS = ['是', '否'] as const
@@ -157,7 +157,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                                     toggleAddon(mat)
                                     if (isAdding) {
                                       setShowDropdown(false)
-                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|3x6|3x10|3x16|3X6|3X10|3X16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
+                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|3x6|3x10|3x16|3X6|3X10|3X16|3×6|3×10|3×16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
                                       if (cableMatch) {
                                         updateForm({ cableSpec: cableMatch[0] })
                                       }

@@ -363,7 +363,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_566",
-    "name": "线缆铺设 ZR-YJV 3x10mm²",
+    "name": "线缆铺设 ZR-YJV 3*10mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -378,7 +378,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_567",
-    "name": "线缆铺设 ZR-YJV 3x16mm²",
+    "name": "线缆铺设 ZR-YJV 3*16mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -393,7 +393,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_568",
-    "name": "线缆铺设 ZR-YJV 3x6mm²",
+    "name": "线缆铺设 ZR-YJV 3*6mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -408,7 +408,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_569",
-    "name": "线缆铺设 ZR-YJV 5x10mm²",
+    "name": "线缆铺设 ZR-YJV 5*10mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -423,7 +423,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_570",
-    "name": "线缆铺设 ZR-YJV 5x16mm²",
+    "name": "线缆铺设 ZR-YJV 5*16mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",
@@ -438,7 +438,7 @@ export const addonMaterials_batch12: Material[] = [
   },
   {
     "id": "addon_571",
-    "name": "线缆铺设 ZR-YJV 5x6mm²",
+    "name": "线缆铺设 ZR-YJV 5*6mm²",
     "category": "线缆",
     "categoryCode": "CABLE",
     "unit": "米",

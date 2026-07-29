@@ -12,7 +12,7 @@ export const DEFAULT_PACKAGES = [
 ]
 
 export function calculatePlatformFee(revenue: number, platform: string): number {
-  const rate = platform === '京东' ? DEDUCTION_RULES['京东10%'] : DEDUCTION_RULES['其他20%']
+  const rate = platform === '京东' || platform === '天猫' ? DEDUCTION_RULES['京东10%'] : DEDUCTION_RULES['其他20%']
   return Math.round(revenue * rate * 100) / 100
 }
 

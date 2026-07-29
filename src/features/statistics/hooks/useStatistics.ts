@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import type { Order } from '@/types'
 
 export interface MonthlyStats {
@@ -56,18 +57,12 @@ function getOrderCost(order: Order): number {
   return (order.materialCost || 0) + (order.laborCost || 0)
 }
 
-function getPlatformFeeRate(platform: string): number {
-  if (platform === '京东' || platform === '天猫') return 0.1
-  return 0.2
-}
-
 function getOrderPlatformFee(order: Order): number {
-  // 如果已有 platformFee 且 >0，优先使用
   if (typeof order.platformFee === 'number' && order.platformFee > 0) {
     return order.platformFee
   }
   const revenue = getOrderRevenue(order)
-  const rate = getPlatformFeeRate(order.platform)
+  const rate = useSettingsStore.getState().getPlatformFeeRate(order.platform)
   return Math.round(revenue * rate * 100) / 100
 }
 
