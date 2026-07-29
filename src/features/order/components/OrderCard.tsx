@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import ProfitBadge from './ProfitBadge'
 import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Package, Wrench, Receipt, Copy, X, Save, MoreVertical, ClipboardList, CheckCircle } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Copy, X, Save, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { calcAddonTotal, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
 
 interface OrderCardProps {
   order: Order
@@ -20,11 +22,21 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
+  const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
+
+  const customerPrice = order.customerPrice || 0
+  const platformRate = getPlatformFeeRate(order.platform)
+  const serviceFee = getServiceFee(order.notes || '')
+  const materialCost = calcAddonTotal(order.materials || [])
+  const platformFee = calcPlatformFee(customerPrice, platformRate)
+  const profit = calcProfit(customerPrice + serviceFee, materialCost, platformFee)
+  const materials = order.materials || []
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const deleteOrder = useOrderStore((s) => s.deleteOrder)
   const navigate = useNavigate()
+  const [showProfitDetail, setShowProfitDetail] = useState(false)
 
   const cardClass = isToday
     ? 'bg-amber-50 rounded-xl p-4 mb-3 shadow-sm border-2 border-amber-400 active:scale-[0.98] transition-transform cursor-pointer relative'
@@ -206,31 +218,78 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             </button>
           </div>
         ) : isCompleted ? (
-          <div className="bg-gray-50 rounded-lg p-2.5 space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1 text-gray-500">
-                <Package size={12} />材料
-              </div>
-              <span className="text-gray-700">¥{(order.materialCost || 0).toFixed(0)}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1 text-gray-500">
-                <Wrench size={12} />人工
-              </div>
-              <span className="text-gray-700">¥{(order.laborCost || 0).toFixed(0)}</span>
-            </div>
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-1 text-gray-500">
-                <Receipt size={12} />扣点
-              </div>
-              <span className="text-red-400">-¥{(order.platformFee || 0).toFixed(0)}</span>
-            </div>
-            <div className="border-t border-gray-200 pt-1.5 flex items-center justify-between">
+          <div className="bg-gray-50 rounded-lg p-2.5">
+            <div
+              onClick={(e) => { e.stopPropagation(); setShowProfitDetail(!showProfitDetail) }}
+              className="flex items-center justify-between cursor-pointer"
+            >
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <DollarSign size={12} />利润
               </div>
-              <ProfitBadge profit={order.actualProfit || 0} />
+              <div className="flex items-center gap-1">
+                <ProfitBadge profit={profit} />
+                {showProfitDetail ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+              </div>
             </div>
+            {showProfitDetail && (
+              <div className="mt-2 pt-2 border-t border-gray-200 space-y-2 text-xs">
+                <div>
+                  <div className="font-medium text-gray-600 mb-1">收了多少钱</div>
+                  <div className="space-y-0.5 pl-2 border-l-2 border-green-200">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">客户应收</span>
+                      <span className="text-green-600">+¥{customerPrice.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">服务费</span>
+                      <span className="text-green-600">+¥{serviceFee.toFixed(2)}</span>
+                    </div>
+                    <div className="border-t border-dashed border-gray-200 pt-0.5 flex justify-between font-medium">
+                      <span className="text-gray-600">收入合计</span>
+                      <span className="text-green-700">¥{(customerPrice + serviceFee).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-600 mb-1">计算费用（成本）</div>
+                  <div className="space-y-0.5 pl-2 border-l-2 border-red-200">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">平台扣点({(platformRate * 100).toFixed(0)}%)</span>
+                      <span className="text-red-400">-¥{platformFee.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">材料成本</span>
+                      <span className="text-red-400">-¥{materialCost.toFixed(2)}</span>
+                    </div>
+                    {materials.length > 0 && (
+                      <div className="space-y-0.5 pl-3">
+                        {materials.map((m, i) => (
+                          <div key={i} className="flex justify-between text-gray-400">
+                            <span className="truncate">{m.name} {m.quantity}{m.unit}×¥{m.unitPrice}/{m.unit || '个'}</span>
+                            <span className="shrink-0 ml-2">-¥{(m.quantity * m.unitPrice).toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="border-t border-dashed border-gray-200 pt-0.5 flex justify-between font-medium">
+                      <span className="text-gray-600">成本合计</span>
+                      <span className="text-red-500">-¥{(platformFee + materialCost).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="font-medium text-gray-600 mb-1">怎么计算的</div>
+                  <div className="pl-2 border-l-2 border-blue-200">
+                    <div className="text-gray-400">
+                      利润 = 客户应收 + 服务费 - 材料成本 - 平台扣点
+                    </div>
+                    <div className="text-gray-500 mt-0.5">
+                      ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div
