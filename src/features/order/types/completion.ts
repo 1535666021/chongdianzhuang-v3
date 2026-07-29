@@ -30,7 +30,6 @@ export interface ProfitBreakdown {
   platformRate: number
   serviceFeeLabel: string
   materialItems: ProfitBreakdownItem[]
-  laborLabel: string
 }
 
 export interface ProfitPreview {
@@ -38,7 +37,6 @@ export interface ProfitPreview {
   freeAmount?: number
   platformFee: number
   materialCost: number
-  laborCost: number
   serviceFee: number
   actualProfit: number
   breakdown: ProfitBreakdown
