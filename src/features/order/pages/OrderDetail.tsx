@@ -224,10 +224,6 @@ export default function OrderDetail() {
             <span>材料费</span>
             <span>¥{order.materialCost?.toFixed(2)}</span>
           </div>
-          <div className="flex justify-between">
-            <span>人工费</span>
-            <span>¥{order.laborCost?.toFixed(2)}</span>
-          </div>
           <div className="flex justify-between text-red-500">
             <span>平台扣点</span>
             <span>-¥{order.platformFee?.toFixed(2)}</span>
