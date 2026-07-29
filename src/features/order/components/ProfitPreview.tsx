@@ -87,18 +87,7 @@ export function ProfitPreview({ data }: Props) {
         )}
       </div>
 
-      {/* 5. 人工成本 */}
-      <div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">人工成本</span>
-          <span className="font-medium text-orange-500">-{fmt(data.laborCost)}</span>
-        </div>
-        <div className="mt-1 pl-4 border-l-2 border-gray-200">
-          <BreakdownLine label={breakdown.laborLabel} amount={'-' + fmt(data.laborCost)} color="text-orange-400" />
-        </div>
-      </div>
-
-      {/* 6. 实际利润 */}
+      {/* 5. 实际利润 */}
       <div className="border-t border-gray-100 pt-3">
         <div className="flex justify-between">
           <span className="font-semibold text-gray-800">实际利润</span>
@@ -111,7 +100,6 @@ export function ProfitPreview({ data }: Props) {
           <BreakdownLine label="平台扣点" amount={'-' + fmt(data.platformFee)} color="text-red-400" />
           <BreakdownLine label="服务费" amount={'+' + fmt(data.serviceFee)} color="text-blue-400" />
           <BreakdownLine label="材料成本" amount={'-' + fmt(data.materialCost)} color="text-orange-400" />
-          <BreakdownLine label="人工成本" amount={'-' + fmt(data.laborCost)} color="text-orange-400" />
           <div className="border-t border-dashed border-gray-200 pt-0.5">
             <BreakdownLine label="=" amount={fmt(data.actualProfit)} color={isProfit ? 'text-green-600 font-medium' : 'text-red-500 font-medium'} />
           </div>
