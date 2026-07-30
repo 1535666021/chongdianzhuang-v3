@@ -1,0 +1,256 @@
+/* 通用 Modal 样式 */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-md);
+}
+
+.modal-content {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 512px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-xl);
+  animation: modalSlideUp 200ms ease-out;
+}
+
+@keyframes modalSlideUp {
+  from {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 var(--space-md);
+  border-bottom: 1px solid var(--color-divider);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  font-size: var(--fs-card-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  transition: background 150ms;
+}
+
+.modal-close:hover {
+  background: var(--color-bg-muted);
+}
+
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+}
+
+.modal-footer {
+  display: flex;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-top: 1px solid var(--color-divider);
+  flex-shrink: 0;
+}
+
+.modal-btn {
+  flex: 1;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.modal-btn--secondary {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-divider);
+  color: var(--color-text-secondary);
+}
+
+.modal-btn--secondary:hover {
+  background: var(--color-bg-muted);
+}
+
+.modal-btn--primary {
+  background: var(--color-primary);
+  color: white;
+}
+
+.modal-btn--primary:hover {
+  background: var(--color-primary-dark);
+}
+
+.modal-btn--danger {
+  background: var(--color-danger);
+  color: white;
+}
+
+.modal-btn--danger:hover {
+  background: var(--color-danger-dark);
+}
+
+/* Section 样式 */
+.modal-section {
+  background: var(--color-bg-muted);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.modal-section__title {
+  font-size: var(--fs-aux);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.modal-section__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.modal-section__full {
+  grid-column: 1 / -1;
+}
+
+/* Form 元素 */
+.modal-select,
+.modal-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 var(--space-md);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.modal-select:focus,
+.modal-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.modal-textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--space-md);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-body);
+  color: var(--color-text-primary);
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+}
+
+.modal-textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* Label */
+.modal-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+/* Tag */
+.modal-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px var(--space-sm);
+  border-radius: var(--radius-xs);
+  font-size: var(--fs-aux);
+}
+
+.modal-tag--info {
+  background: var(--color-info-light);
+  color: var(--color-info);
+}
+
+.modal-tag--success {
+  background: var(--color-success-light);
+  color: var(--color-success);
+}
+
+.modal-tag--warning {
+  background: var(--color-secondary-light);
+  color: var(--color-secondary);
+}
+
+.modal-tag--danger {
+  background: #f8e7e3;
+  color: #bf5340;
+}
+
+/* Toast */
+.modal-toast {
+  position: fixed;
+  bottom: calc(var(--space-xl) + 56px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-text-primary);
+  color: white;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-aux);
+  box-shadow: var(--shadow-md);
+  z-index: calc(var(--z-modal) + 10);
+  animation: toastFadeIn 200ms ease-out;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
