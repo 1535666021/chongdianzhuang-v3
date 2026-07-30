@@ -1,0 +1,151 @@
+/* MaterialList 材料领用页 */
+.material-list-page {
+  min-height: 100vh;
+  background: var(--color-bg-page);
+  padding-bottom: calc(var(--space-xl) + 56px);
+}
+
+.material-list__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.material-list__title {
+  font-size: var(--fs-card-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.material-list__btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-aux);
+  border: none;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.material-list__btn--inventory {
+  background: var(--color-info-light);
+  color: var(--color-info);
+}
+
+.material-list__btn--inventory:hover {
+  background: var(--color-info-light-light);
+}
+
+.material-list__btn--add {
+  background: var(--color-primary);
+  color: white;
+  padding: var(--space-sm) var(--space-md);
+}
+
+.material-list__btn--add:hover {
+  background: var(--color-primary-dark);
+}
+
+.material-list__content {
+  padding: var(--space-md);
+}
+
+.material-list__group {
+  margin-bottom: var(--space-md);
+}
+
+.material-list__group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+  padding: 0 var(--space-xs);
+}
+
+.material-list__group-title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.material-list__group-total {
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.material-list__card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+}
+
+.material-list__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+.material-list__item:last-child {
+  border-bottom: none;
+}
+
+.material-list__item-date {
+  width: 56px;
+  font-size: var(--fs-aux);
+  color: var(--color-text-aux);
+  flex-shrink: 0;
+}
+
+.material-list__item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.material-list__item-name {
+  font-size: var(--fs-body);
+  color: var(--color-text-primary);
+}
+
+.material-list__item-unit {
+  font-size: var(--fs-aux);
+  color: var(--color-text-aux);
+  margin-left: var(--space-xs);
+}
+
+.material-list__item-amount {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  flex-shrink: 0;
+}
+
+.material-list__item-action {
+  background: none;
+  border: none;
+  color: var(--color-text-aux);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xs);
+  transition: color 150ms;
+}
+
+.material-list__item-action:hover {
+  color: var(--color-primary);
+}
+
+.material-list__item-action--delete:hover {
+  color: var(--color-danger);
+}

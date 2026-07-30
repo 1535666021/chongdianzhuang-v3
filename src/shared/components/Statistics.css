@@ -1,0 +1,133 @@
+/* Statistics 统计报表页 */
+.statistics-page {
+  min-height: 100vh;
+  background: var(--color-bg-page);
+  padding-bottom: calc(var(--space-xl) + 56px);
+}
+
+.statistics__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  background: var(--color-bg-card);
+  border-bottom: 1px solid var(--color-divider);
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+}
+
+.statistics__title {
+  font-size: var(--fs-card-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.statistics__content {
+  padding: var(--space-md);
+}
+
+.statistics__card {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.statistics__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-md);
+}
+
+.statistics__grid--full {
+  grid-column: 1 / -1;
+}
+
+.statistics__stat {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+}
+
+.statistics__stat-icon {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.statistics__stat-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.statistics__stat-value--profit {
+  color: var(--color-success);
+}
+
+.statistics__stat-value--fee {
+  color: var(--color-danger);
+}
+
+.statistics__month {
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+
+.statistics__month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-md);
+}
+
+.statistics__month-title {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.statistics__month-count {
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+}
+
+.statistics__month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+
+.statistics__month-item {
+  text-align: center;
+}
+
+.statistics__month-label {
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.statistics__month-value {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.statistics__month-value--fee {
+  color: var(--color-danger);
+}
+
+.statistics__month-value--profit {
+  color: var(--color-success);
+}

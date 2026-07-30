@@ -4,6 +4,8 @@ import { Plus, Trash2, Edit2, PackageOpen } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
 import { UsageForm } from '../components/UsageForm'
 import type { MaterialUsageRecord } from '@/types'
+import { EmptyState } from '@/shared/components/EmptyState'
+import '../../../shared/components/MaterialList.css'
 
 export default function MaterialList() {
   const navigate = useNavigate()
@@ -54,68 +56,65 @@ export default function MaterialList() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      <div className="flex items-center justify-between p-4 bg-white border-b border-gray-200">
-        <h1 className="font-semibold text-lg">材料领用</h1>
-        <div className="flex items-center gap-2">
+    <div className="material-list-page">
+      <div className="material-list__header">
+        <h1 className="material-list__title">材料领用</h1>
+        <div className="material-list__actions">
           <button
             onClick={() => navigate('/inventory')}
-            className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1.5 rounded-lg"
+            className="material-list__btn material-list__btn--inventory"
           >
             <PackageOpen size={14} /> 库存
           </button>
           <button
             onClick={handleAdd}
-            className="flex items-center gap-1 bg-blue-500 text-white text-sm px-3 py-1.5 rounded-lg"
+            className="material-list__btn material-list__btn--add"
           >
             <Plus size={16} /> 新增领用
           </button>
         </div>
       </div>
 
-      <div className="p-3 space-y-4">
-        {groupedByMonth.length === 0 && (
-          <div className="text-center text-gray-400 py-16">
-            <PackageOpen size={48} className="mx-auto mb-3 text-gray-300" />
-            <p className="text-sm">暂无领用记录</p>
-            <p className="text-xs text-gray-300 mt-1">点击右上角"新增领用"添加</p>
-          </div>
-        )}
+      <div className="material-list__content">
+        {groupedByMonth.length === 0 ? (
+          <EmptyState
+            type="materials"
+            description="点击右上角新增领用添加"
+          />
+        ) : (
+          groupedByMonth.map(({ month, label, records, total }) => (
+            <div key={month} className="material-list__group">
+              <div className="material-list__group-header">
+                <span className="material-list__group-title">{label}</span>
+                <span className="material-list__group-total">月合计 ¥{total.toFixed(2)}</span>
+              </div>
 
-        {groupedByMonth.map(({ month, label, records, total }) => (
-          <div key={month}>
-            <div className="flex items-center justify-between mb-2 px-1">
-              <span className="text-sm font-semibold text-gray-700">{label}</span>
-              <span className="text-sm font-bold text-orange-600">月合计 ¥{total.toFixed(2)}</span>
-            </div>
-
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              {records.map((r, i) => (
-                <div
-                  key={r.id}
-                  className={`flex items-center gap-2 px-3 py-2.5 text-sm ${
-                    i < records.length - 1 ? 'border-b border-gray-100' : ''
-                  }`}
-                >
-                  <span className="text-xs text-gray-400 w-14 shrink-0">{r.date.slice(5)}</span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-gray-800">{r.name}</span>
-                    <span className="text-xs text-gray-400 ml-1">
-                      {r.quantity}{r.unit} x ¥{r.costPrice}
-                    </span>
+              <div className="material-list__card">
+                {records.map((r, i) => (
+                  <div
+                    key={r.id}
+                    className={`material-list__item ${i < records.length - 1 ? 'material-list__item--border' : ''}`}
+                  >
+                    <span className="material-list__item-date">{r.date.slice(5)}</span>
+                    <div className="material-list__item-info">
+                      <span className="material-list__item-name">{r.name}</span>
+                      <span className="material-list__item-unit">
+                        {r.quantity}{r.unit} x ¥{r.costPrice}
+                      </span>
+                    </div>
+                    <span className="material-list__item-amount">¥{r.total.toFixed(2)}</span>
+                    <button onClick={() => handleEdit(r)} className="material-list__item-action">
+                      <Edit2 size={14} />
+                    </button>
+                    <button onClick={() => setDeleteId(r.id)} className="material-list__item-action material-list__item-action--delete">
+                      <Trash2 size={14} />
+                    </button>
                   </div>
-                  <span className="font-medium text-gray-700 shrink-0">¥{r.total.toFixed(2)}</span>
-                  <button onClick={() => handleEdit(r)} className="p-1 text-gray-400 hover:text-blue-500 shrink-0">
-                    <Edit2 size={14} />
-                  </button>
-                  <button onClick={() => setDeleteId(r.id)} className="p-1 text-gray-400 hover:text-red-500 shrink-0">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))
+        )}
       </div>
 
       {showForm && (
@@ -123,12 +122,14 @@ export default function MaterialList() {
       )}
 
       {deleteId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-xl p-5 mx-4 w-72">
-            <p className="text-sm text-gray-700 mb-4">确定删除这条领用记录吗？</p>
-            <div className="flex gap-2">
-              <button onClick={() => setDeleteId(null)} className="flex-1 py-2 text-sm border border-gray-200 rounded-lg">取消</button>
-              <button onClick={handleDelete} className="flex-1 py-2 text-sm bg-red-500 text-white rounded-lg">删除</button>
+        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-body">
+              <p className="text-sm text-gray-700">确定删除这条领用记录吗？</p>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setDeleteId(null)} className="modal-btn modal-btn--secondary">取消</button>
+              <button onClick={handleDelete} className="modal-btn modal-btn--danger">删除</button>
             </div>
           </div>
         </div>
