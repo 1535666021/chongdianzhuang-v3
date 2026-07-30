@@ -122,10 +122,11 @@
 
 /* Section 样式 */
 .modal-section {
-  background: var(--color-bg-muted);
+  background: var(--color-bg-card);
   border-radius: var(--radius-md);
   padding: var(--space-md);
   margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .modal-section__title {
@@ -156,7 +157,7 @@
   padding: 0 var(--space-md);
   background: var(--color-bg-card);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
+  border-radius: 8px;
   font-size: var(--fs-body);
   color: var(--color-text-primary);
   outline: none;

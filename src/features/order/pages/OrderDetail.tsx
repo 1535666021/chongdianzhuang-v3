@@ -91,8 +91,11 @@ export default function OrderDetail() {
         </button>
         <h1 className="font-semibold text-lg">订单详情</h1>
         <span
-          className="ml-auto text-xs px-2 py-1 rounded-full text-white"
-          style={{ backgroundColor: statusColor }}
+          className="ml-auto text-xs px-2 py-1 rounded-full"
+          style={{
+            backgroundColor: statusColor === '#3b82f6' ? '#ece8f4' : (statusColor + '20'),
+            color: statusColor === '#3b82f6' ? '#7a6aa8' : statusColor
+          }}
         >
           {order.status}
         </span>

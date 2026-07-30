@@ -24,6 +24,10 @@ const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
 const BLUEPRINT_OPTIONS = ['是', '否'] as const
 const RESULT_OPTIONS = ['勘测完成', '符合安装', '不符合安装', '需整改', '待定'] as const
 
+function formatCurrency(n: number): string {
+  return '¥' + n.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')
+}
+
 export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const {
     form, effectiveBrand, brandList, brandAddons,
@@ -176,29 +180,34 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     )}
                   </div>
                   {form.estimatedMaterials.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
+                    <div className="flex flex-col gap-3 mt-2">
                       {form.estimatedMaterials.map((m) => (
-                        <span
+                        <div
                           key={m.name}
-                          className="modal-tag modal-tag--info"
+                          className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-200"
                         >
-                          {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')} ¥{getDisplayPrice(m.name, m.unitPrice)}
-                          ×
+                          <span className="text-sm font-medium text-gray-700 flex-1">
+                            {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')}
+                          </span>
+                          <span className="text-sm text-gray-500">¥{m.unitPrice}/m</span>
                           <input
                             type="number"
                             min={addonMaterialsData.find((a) => a.name === m.name)?.categoryCode === 'CABLE' ? 0 : 1}
-                            value={m.quantity}
+                            value={String(m.quantity).padStart(0)}
                             onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
-                            className="w-10 text-center text-xs bg-white border rounded mx-1"
+                            className="w-16 text-center text-sm bg-gray-50 border border-gray-200 rounded px-2 py-1"
                           />
+                          <span className="text-sm font-semibold text-gray-800 w-20 text-right">
+                            ¥{((m.quantity || 0) * m.unitPrice).toFixed(2)}
+                          </span>
                           <button
                             type="button"
                             onClick={() => removeAddon(m.name)}
-                            className="text-blue-400 hover:text-blue-600 ml-0.5 leading-none"
+                            className="ml-1 text-[#bf5340] hover:text-[#a04430]"
                           >
-                            ×
+                            <X size={16} strokeWidth={2.5} />
                           </button>
-                        </span>
+                        </div>
                       ))}
                     </div>
                   )}
@@ -245,12 +254,13 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                 <div>
                   <label className="modal-label">预估费用 (元)</label>
                   <input
-                    type="number"
-                    value={totalEstimatedCost || ''}
-                    onChange={(e) => updateForm({ estimatedCableCost: Number(e.target.value) })}
+                    type="text"
+                    value={formatCurrency(totalEstimatedCost)}
+                    onChange={(e) => updateForm({ estimatedCableCost: Number(e.target.value.replace(/[^0-9.]/g, '')) })}
                     className="modal-input"
                     min={0}
-                    placeholder="0"
+                    placeholder="¥0.00"
+                    readOnly
                   />
                 </div>
               </div>
@@ -331,13 +341,12 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
             <button onClick={onClose} className="modal-btn modal-btn--secondary">取消</button>
             <button
               onClick={() => setShowReport(true)}
-              className="modal-btn modal-btn--primary"
-              style={{ background: 'var(--color-info)', borderColor: 'var(--color-info)' }}
+              className="modal-btn modal-btn--secondary"
+              style={{ color: 'var(--color-info)', borderColor: 'var(--color-info-border)' }}
             >
-              <FileText size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
               生成报告
             </button>
-            <button onClick={handleSave} className="modal-btn modal-btn--primary">保存</button>
+            <button onClick={handleSave} className="modal-btn modal-btn--primary">确认</button>
           </div>
         </div>
       </div>
