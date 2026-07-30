@@ -45,7 +45,14 @@ export function useSurvey(order: Order) {
       })
   }, [effectiveBrand, materialUsageCount])
 
-  const totalEstimatedCost = useMemo(() => calcAddonTotal(form.estimatedMaterials), [form.estimatedMaterials])
+  const totalEstimatedCost = useMemo(() => {
+    // 预估费用 = 电缆超米费用 + 其他增项材料费用
+    // 电缆材料单独用 calcOverFee 计算（扣除套餐免费配额），不直接参与累加
+    const nonCableTotal = form.estimatedMaterials
+      .filter((m) => !isCableMat(m.name))
+      .reduce((sum, m) => sum + m.quantity * m.unitPrice, 0)
+    return nonCableTotal + form.estimatedCableCost
+  }, [form.estimatedMaterials, form.estimatedCableCost])
 
   const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
