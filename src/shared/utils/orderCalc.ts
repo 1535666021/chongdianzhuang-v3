@@ -42,12 +42,18 @@ export function buildAddonItemsText(
     .join('\n')
 }
 
+export interface MaterialCostResult {
+  total: number
+  unmatched: string[]
+}
+
 export function calcProfit(
   customerPrice: number,
   materialCost: number,
-  platformFee: number
+  platformFee: number,
+  serviceFee = 0
 ) {
-  return customerPrice - materialCost - platformFee
+  return customerPrice - materialCost - platformFee + serviceFee
 }
 
 export function calcPlatformFee(receivable: number, rate: number) {
@@ -83,8 +89,9 @@ export function extractCableMeters(materials: Array<{ name: string; quantity: nu
   return cable ? cable.quantity : 0
 }
 
-export function calcMaterialCost(materials: Array<{ name: string; quantity: number }>): number {
-  return materials.reduce((sum, m) => {
+export function calcMaterialCost(materials: Array<{ name: string; quantity: number }>): MaterialCostResult {
+  const unmatched: string[] = []
+  const total = materials.reduce((sum, m) => {
     const mappedName = getCostMapping(m.name)
     if (mappedName) {
       const costItem = costMaterials.find((c) => c.name === mappedName)
@@ -95,6 +102,8 @@ export function calcMaterialCost(materials: Array<{ name: string; quantity: numb
       const costItem = costMaterials.find((c) => c.name === matchedName)
       return sum + (costItem?.costPrice || 0) * m.quantity
     }
+    unmatched.push(m.name)
     return sum
   }, 0)
+  return { total, unmatched }
 }

@@ -27,7 +27,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const customerPrice = order.customerPrice || 0
   const platformRate = getPlatformFeeRate(order.platform)
   const serviceFee = getServiceFee(order.notes || '')
-  const materialCost = calcMaterialCost(order.materials || [])
+  const { total: materialCost } = calcMaterialCost(order.materials || [])
   const platformFee = calcPlatformFee(customerPrice, platformRate)
   const profit = calcProfit(customerPrice + serviceFee, materialCost, platformFee)
   const materials = order.materials || []

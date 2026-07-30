@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost, calcProfit } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -135,6 +135,9 @@ export function useCompletion(orderId: string) {
     }))
   }, [])
 
+  const [bindVersion, setBindVersion] = useState(0)
+  const [dismissedMats] = useState<Set<string>>(new Set())
+
   const packageBreakdown = usePackageMeters(form.materials, packageMeters)
 
   const profit = useMemo<ProfitPreview>(() => {
@@ -163,7 +166,7 @@ export function useCompletion(orderId: string) {
       breakerTypeCost
 
     // 材料成本 = 增项材料成本 + 固定辅材成本
-    const addonCost = calcMaterialCost(form.materials)
+    const { total: addonCost, unmatched } = calcMaterialCost(form.materials)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
     // 平台扣点
@@ -174,7 +177,7 @@ export function useCompletion(orderId: string) {
     const serviceFee = order ? getServiceFee(order.notes || '') : 300
 
     // 利润
-    const actualProfit = Math.round((customerReceivable - platformFee + serviceFee - materialCost) * 100) / 100
+    const actualProfit = Math.round(calcProfit(customerReceivable, materialCost, platformFee, serviceFee) * 100) / 100
 
     const receivableItems: { name: string; calc: string; amount: number }[] = []
     for (const m of form.materials) {
@@ -254,6 +257,26 @@ export function useCompletion(orderId: string) {
     }
   }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown])
 
+  const pendingCostBind = useMemo(() => {
+    const { unmatched } = calcMaterialCost(form.materials)
+    const needsBind = unmatched.filter((n) => !isFreeQuotaMaterial(n) && !dismissedMats.has(n))
+    return needsBind[0] || null
+  }, [form.materials, bindVersion, dismissedMats])
+
+  const handleCostBound = useCallback(() => {
+    setBindVersion((v) => v + 1)
+  }, [])
+
+  const handleCostBindClose = useCallback(() => {
+    const { unmatched } = calcMaterialCost(form.materials)
+    const needsBind = unmatched.filter((n) => !isFreeQuotaMaterial(n) && !dismissedMats.has(n))
+    const current = needsBind[0]
+    if (current) {
+      dismissedMats.add(current)
+    }
+    setBindVersion((v) => v + 1)
+  }, [form.materials])
+
   const save = useCallback(() => {
     if (!order) return false
 
@@ -325,5 +348,8 @@ export function useCompletion(orderId: string) {
     removeMaterial,
     updateFixedAux,
     save,
+    pendingCostBind,
+    handleCostBound,
+    handleCostBindClose,
   }
 }

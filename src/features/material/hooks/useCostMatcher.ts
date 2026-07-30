@@ -13,6 +13,12 @@ const PRESET_RULES: PresetRule[] = [
   { keywords: ['立柱'], exclude: ['含立柱'], costName: '立柱安装费' },
   { keywords: ['吊丝'], costName: '吊丝' },
   { keywords: ['打孔', '开孔'], costName: '开孔' },
+  { keywords: ['柏油'], costName: '柏油' },
+  { keywords: ['桥架'], costName: '桥架' },
+  { keywords: ['水泥'], costName: '水泥' },
+  { keywords: ['泡钉'], costName: '泡钉' },
+  { keywords: ['浪涌'], costName: '浪涌' },
+  { keywords: ['镀锌管'], costName: '镀锌管' },
 ]
 
 function matchesRule(name: string, rule: PresetRule): boolean {

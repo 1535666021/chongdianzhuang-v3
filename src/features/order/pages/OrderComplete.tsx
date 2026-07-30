@@ -5,6 +5,7 @@ import { MaterialPicker } from '../components/MaterialPicker'
 import { ProfitPreview } from '../components/ProfitPreview'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import CostBindModal from '@/features/material/components/CostBindModal'
 import { scriptStorage } from '@/shared/storage/scriptStorage'
 import { buildScriptVarsFromCompletionForm, renderScript } from '../hooks/useScript'
 import { useState, useEffect } from 'react'
@@ -12,7 +13,7 @@ import { useState, useEffect } from 'react'
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { order, form, profit, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, save } = useCompletion(id || '')
+  const { order, form, profit, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const settings = useSettingsStore()
   const [copiedScript, setCopiedScript] = useState(false)
@@ -208,6 +209,14 @@ export default function OrderComplete() {
           <CheckCircle size={18} />确认完成
         </button>
       </div>
+
+      {pendingCostBind && (
+        <CostBindModal
+          materialName={pendingCostBind}
+          onClose={handleCostBindClose}
+          onBound={handleCostBound}
+        />
+      )}
     </div>
   )
 }

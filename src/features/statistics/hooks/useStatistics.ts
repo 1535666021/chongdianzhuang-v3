@@ -48,7 +48,8 @@ function getOrderCost(order: Order): number {
   // 优先使用 materials 数组计算
   const materials = (order as any).materials
   if (Array.isArray(materials) && materials.length > 0) {
-    return calcMaterialCost(materials)
+    const { total } = calcMaterialCost(materials)
+    return total
   }
   // 否则使用 materialCost + laborCost
   return (order.materialCost || 0) + (order.laborCost || 0)
