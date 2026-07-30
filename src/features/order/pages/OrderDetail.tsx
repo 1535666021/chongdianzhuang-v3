@@ -3,12 +3,13 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { STATUS_COLORS } from '@/constants/order'
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2, CheckCircle, ClipboardList, Map as MapIcon, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, ClipboardList, CheckCircle, X, ChevronDown, ChevronUp, Map as MapIcon, MoreVertical } from 'lucide-react'
 import { useGeocode } from '../hooks/useGeocode'
 import OrderMap from '../components/OrderMap'
 import NavigateButton from '../components/NavigateButton'
 import SurveyModal from '../components/SurveyModal'
 import ConfirmModal from '../components/ConfirmModal'
+import OrderActionMenu from '../components/OrderActionMenu'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -25,6 +26,7 @@ export default function OrderDetail() {
   const [showMap, setShowMap] = useState(false)
   const [showSurvey, setShowSurvey] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showActionMenu, setShowActionMenu] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     revenue: true,
     profit: true,
@@ -59,7 +61,7 @@ export default function OrderDetail() {
     setShowSurvey(true)
   }
 
-  const handleSchedule = () => {
+  const handleEdit = () => {
     navigate(`/order/edit/${id}`)
   }
 
@@ -344,49 +346,72 @@ export default function OrderDetail() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 flex gap-2 px-3 py-3 z-20">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-3 z-20">
         {order.status === '待办' && (
           <button
-            onClick={handleSchedule}
-            className="flex-1 flex items-center justify-center gap-1 bg-amber-500 text-white py-2 rounded-lg text-sm"
+            onClick={handleEdit}
+            className="w-full flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
+            style={{ height: '48px' }}
           >
             <Calendar size={16} />
             预约
           </button>
         )}
         {order.status === '已预约' && (
-          <>
+          <div className="flex gap-2">
             <button
               onClick={handleSurvey}
-              className="flex-1 flex items-center justify-center gap-1 bg-amber-500 text-white py-2 rounded-lg text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
+              style={{ height: '48px' }}
             >
               <ClipboardList size={16} />
-              {order.survey ? '查看勘察' : '勘测'}
+              {order.survey ? '查看勘测' : '勘测'}
             </button>
             <button
               onClick={handleComplete}
-              className="flex-1 flex items-center justify-center gap-1 bg-green-500 text-white py-2 rounded-lg text-sm"
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
+              style={{ height: '48px' }}
             >
               <CheckCircle size={16} />
               标记完成
             </button>
-          </>
+          </div>
         )}
-        <button
-          onClick={() => navigate(`/order/edit/${id}`)}
-          className="flex-1 flex items-center justify-center gap-1 bg-blue-600 text-white py-2 rounded-lg text-sm"
-        >
-          <Edit3 size={16} />
-          编辑
-        </button>
-        <button
-          onClick={handleDelete}
-          className="flex-1 flex items-center justify-center gap-1 bg-red-500 text-white py-2 rounded-lg text-sm"
-        >
-          <Trash2 size={16} />
-          删除
-        </button>
+        {order.status === '已完成' && (
+          <div className="flex gap-2">
+            <button
+              onClick={handleEdit}
+              className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
+              style={{ height: '48px' }}
+            >
+              <FileText size={16} />
+              查看报告
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* 右上角操作菜单按钮 */}
+      <button
+        onClick={() => setShowActionMenu(true)}
+        className="fixed bottom-24 right-4 w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center z-20"
+      >
+        <MoreVertical size={20} className="text-gray-600" />
+      </button>
+
+      {showActionMenu && (
+        <OrderActionMenu
+          orderId={id!}
+          onClose={() => setShowActionMenu(false)}
+          onEditAppointment={handleEdit}
+          onNavigate={() => {
+            if (order.address) {
+              window.open(`https://uri.amap.com/marker?position=${encodeURIComponent(order.address)}`, '_blank')
+            }
+          }}
+          onDelete={handleDelete}
+        />
+      )}
     </div>
   )
 }
