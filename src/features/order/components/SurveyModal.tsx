@@ -29,13 +29,12 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [surveyNote, setSurveyNote] = useState(order.surveyNote || '')
+  const [copyToast, setCopyToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' })
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const engineerName = useSettingsStore((s) => s.engineerName)
   const engineerPhone = useSettingsStore((s) => s.engineerPhone)
   const sortedBrandAddons = useMemo(
-    () => sortMaterialsByFrequency(brandAddons, getMaterialFrequency()),
-    [brandAddons]
-  )
+    () => sortMaterialsByFrequency(brandAddons, getMaterialFrequency()), [brandAddons])
   const needsBrandSelect = !order.brandName && !selectedBrand
 
   const getDisplayPrice = (name: string, fallback: number) => {
@@ -80,8 +79,17 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     return lines.join('\n')
   }, [form, engineerName, engineerPhone, totalEstimatedCost])
 
-  const handleCopyReport = () => {
-    navigator.clipboard.writeText(reportText)
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(reportText)
+      setShowReport(false)
+      setCopyToast({ show: true, message: '报告已复制' })
+      setTimeout(() => setCopyToast({ show: false, message: '' }), 2000)
+    } catch {
+      setShowReport(false)
+      setCopyToast({ show: true, message: '复制失败，请手动复制' })
+      setTimeout(() => setCopyToast({ show: false, message: '' }), 2000)
+    }
   }
 
   const sectionClass = 'bg-gray-50 rounded-xl p-3'
@@ -378,6 +386,12 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               <Copy size={16} /> 一键复制
             </button>
           </div>
+        </div>
+      )}
+
+      {copyToast.show && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg text-sm shadow-lg z-[70]">
+          {copyToast.message}
         </div>
       )}
     </div>

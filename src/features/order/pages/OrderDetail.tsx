@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { STATUS_COLORS } from '@/constants/order'
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2, CheckCircle, ClipboardList, Map as MapIcon, X } from 'lucide-react'
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, Edit3, Trash2, CheckCircle, ClipboardList, Map as MapIcon, X, ChevronDown, ChevronUp } from 'lucide-react'
 import { useGeocode } from '../hooks/useGeocode'
 import OrderMap from '../components/OrderMap'
 import NavigateButton from '../components/NavigateButton'
@@ -25,6 +25,13 @@ export default function OrderDetail() {
   const [showMap, setShowMap] = useState(false)
   const [showSurvey, setShowSurvey] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    revenue: true,
+    profit: true,
+    materialCost: false,
+    platformFee: false,
+    serviceFee: false,
+  })
 
   if (!order) {
     return (
@@ -215,22 +222,102 @@ export default function OrderDetail() {
           <FileText size={16} />
           费用明细
         </h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>平台</span>
-            <span>{order.platform}</span>
+        <div className="space-y-2">
+          {/* 客户应收 - 默认展开 */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, revenue: !prev.revenue }))}
+              className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700">客户应收</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold">¥{order.customerPrice?.toFixed(2) || '0.00'}</span>
+                {expandedSections.revenue ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSections.revenue && (
+              <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
+                客户支付的总费用（含材料费和服务费）
+              </div>
+            )}
           </div>
-          <div className="flex justify-between">
-            <span>材料费</span>
-            <span>¥{order.materialCost?.toFixed(2)}</span>
+
+          {/* 平台扣点 - 默认收起 */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, platformFee: !prev.platformFee }))}
+              className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700">平台扣点</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-red-600">-¥{order.platformFee?.toFixed(2) || '0.00'}</span>
+                {expandedSections.platformFee ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSections.platformFee && (
+              <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
+                平台收取的服务费（{order.platform}）
+              </div>
+            )}
           </div>
-          <div className="flex justify-between text-red-500">
-            <span>平台扣点</span>
-            <span>-¥{order.platformFee?.toFixed(2)}</span>
+
+          {/* 服务费 - 默认收起 */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, serviceFee: !prev.serviceFee }))}
+              className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700">服务费</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-700">
+                  ¥{(order.notes?.includes('维修') ? 60 : order.notes?.includes('勘察') || order.notes?.includes('勘测') ? 0 : 300).toFixed(2)}
+                </span>
+                {expandedSections.serviceFee ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSections.serviceFee && (
+              <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
+                固定服务费（安装 300 元，维修 60 元，勘察/勘测 0 元）
+              </div>
+            )}
           </div>
-          <div className="flex justify-between font-medium text-green-600 pt-2 border-t">
-            <span>实际利润</span>
-            <span>¥{order.actualProfit?.toFixed(2)}</span>
+
+          {/* 材料成本 - 默认收起 */}
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, materialCost: !prev.materialCost }))}
+              className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <span className="text-sm font-medium text-gray-700">材料成本</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-700">¥{order.materialCost?.toFixed(2) || '0.00'}</span>
+                {expandedSections.materialCost ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSections.materialCost && (
+              <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
+                材料采购成本（含增项材料和固定辅材）
+              </div>
+            )}
+          </div>
+
+          {/* 实际利润 - 默认展开 */}
+          <div className="border border-green-200 rounded-lg overflow-hidden bg-green-50">
+            <button
+              onClick={() => setExpandedSections(prev => ({ ...prev, profit: !prev.profit }))}
+              className="w-full flex items-center justify-between px-3 py-2 bg-green-100 hover:bg-green-200 transition-colors"
+            >
+              <span className="text-sm font-medium text-green-800">实际利润</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-green-700">¥{order.actualProfit?.toFixed(2) || '0.00'}</span>
+                {expandedSections.profit ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+            </button>
+            {expandedSections.profit && (
+              <div className="px-3 py-2 text-sm text-green-700 border-t border-green-200">
+                计算公式：客户应收 - 平台扣点 + 服务费 - 材料成本
+              </div>
+            )}
           </div>
         </div>
       </div>
