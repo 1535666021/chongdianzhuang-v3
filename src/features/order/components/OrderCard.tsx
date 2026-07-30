@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import ProfitBadge from './ProfitBadge'
+import { CollapsePanel } from '@/shared/components/CollapsePanel'
+import { InfoSection, InfoItem } from '@/shared/components/InfoSection'
 import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, DollarSign, Copy, X, Save, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { calcMaterialCost, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
+import '../../../shared/components/OrderCard.css'
 
 interface OrderCardProps {
   order: Order
@@ -38,119 +40,104 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const navigate = useNavigate()
   const [showProfitDetail, setShowProfitDetail] = useState(false)
 
-  const cardClass = isToday
-    ? 'bg-amber-50 rounded-xl p-4 mb-3 shadow-sm border-2 border-amber-400 active:scale-[0.98] transition-transform cursor-pointer relative'
-    : 'bg-white rounded-xl p-4 mb-3 shadow-sm border border-gray-100 active:scale-[0.98] transition-transform cursor-pointer relative'
-
-  const [copiedName, setCopiedName] = useState(false)
-  const [copiedPhone, setCopiedPhone] = useState(false)
-  const [copiedAddress, setCopiedAddress] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editRawText, setEditRawText] = useState('')
-  const [copiedRaw, setCopiedRaw] = useState(false)
   const [showAppointment, setShowAppointment] = useState(false)
   const [showMenuPanel, setShowMenuPanel] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [copyTimer, setCopyTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
 
-  const copyToClipboard = async (text: string, setter: (v: boolean) => void) => {
-    try {
-      await navigator.clipboard.writeText(text)
-      setter(true)
-      setTimeout(() => setter(false), 1500)
-    } catch {
-      setter(true)
-      setTimeout(() => setter(false), 1500)
+  const handleLongPressStart = useCallback((text: string | undefined) => {
+    if (!text) return
+    const timer = setTimeout(async () => {
+      try {
+        await navigator.clipboard.writeText(text)
+      } catch {
+        // ignore
+      }
+    }, 500)
+    setCopyTimer(timer)
+  }, [])
+
+  const handleLongPressEnd = useCallback(() => {
+    if (copyTimer) {
+      clearTimeout(copyTimer)
+      setCopyTimer(null)
     }
-  }
+  }, [copyTimer])
 
-  const handleCopyName = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (order.customerName) copyToClipboard(order.customerName, setCopiedName)
-  }
-  const handleCopyPhone = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (order.phone) copyToClipboard(order.phone, setCopiedPhone)
-  }
-  const handleCopyAddress = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (order.address) copyToClipboard(order.address, setCopiedAddress)
-  }
-
-  const openRawModal = (e: React.MouseEvent) => {
+  const openRawModal = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     setEditRawText(order.rawText || '')
-    setCopiedRaw(false)
     setShowModal(true)
-  }
+  }, [order.rawText])
 
-  const handleSaveRaw = () => {
+  const handleSaveRaw = useCallback(() => {
     updateOrder(order.id, { rawText: editRawText })
     setShowModal(false)
-  }
-
-  const handleCopyRaw = () => {
-    if (editRawText) copyToClipboard(editRawText, setCopiedRaw)
-  }
+  }, [order.id, editRawText, updateOrder])
 
   return (
     <>
       <div
         onClick={onClick}
-        className={cardClass}
+        className={`order-card ${isToday ? 'order-card--today' : ''}`}
       >
         {/* 第一行：姓名 + 状态 */}
-        <div className="flex justify-between items-start mb-2">
-          <div className="flex items-center gap-2">
-            <User size={16} className="text-gray-400 shrink-0" />
-            <span
-              onClick={handleCopyName}
-              className="font-semibold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors select-none"
-            >
-              {copiedName ? '已复制' : order.customerName}
-            </span>
+        <div className="order-card__header">
+          <div
+            className="order-card__name"
+            onMouseDown={() => handleLongPressStart(order.customerName)}
+            onMouseUp={handleLongPressEnd}
+            onMouseLeave={handleLongPressEnd}
+            onTouchStart={() => handleLongPressStart(order.customerName)}
+            onTouchEnd={handleLongPressEnd}
+          >
+            <User size={16} className="order-card__icon" />
+            <span>{order.customerName}</span>
           </div>
           <span
-            className="text-xs px-2 py-1 rounded-full text-white shrink-0"
+            className="order-card__status"
             style={{ backgroundColor: statusColor }}
           >
             {order.status}
           </span>
         </div>
 
-        {/* 标签行：补桩 → 平台 → 品牌 → 功率 → 米数 → 安装类型 */}
-        <div className="flex flex-wrap gap-1.5 mb-2">
+        {/* 标签行 */}
+        <div className="order-card__tags">
           {(order.serviceType?.includes('补桩') || order.remark?.includes('补桩') || order.notes?.includes('补桩') || order.rawText?.includes('补桩')) && (
-            <span className="inline-flex items-center gap-1 text-xs bg-red-50 text-red-600 px-2 py-0.5 rounded">
+            <span className="order-card__tag order-card__tag--pile">
               补桩
             </span>
           )}
           {order.platformName && (
-            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded">
+            <span className="order-card__tag order-card__tag--platform">
               <ShoppingCart size={10} />
               {order.platformName}
             </span>
           )}
           {order.brandName && (
-            <span className="inline-flex items-center gap-1 text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded">
+            <span className="order-card__tag order-card__tag--brand">
               <Tag size={10} />
               {order.brandName}
             </span>
           )}
           {order.powerKw && (
-            <span className="inline-flex items-center gap-1 text-xs bg-amber-50 text-amber-600 px-2 py-0.5 rounded">
+            <span className="order-card__tag order-card__tag--power">
               <Zap size={10} />
               {order.powerKw}kW
             </span>
           )}
           {order.packageMeters && (
-            <span className="inline-flex items-center gap-1 text-xs bg-green-50 text-green-600 px-2 py-0.5 rounded">
+            <span className="order-card__tag order-card__tag--meters">
               <Ruler size={10} />
               {order.packageMeters}米
             </span>
           )}
           {installType !== '其他' && (
             <span
-              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded font-medium"
+              className="order-card__tag"
               style={{ backgroundColor: typeColors.bg, color: typeColors.text }}
             >
               <Tag size={10} />
@@ -159,39 +146,42 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           )}
         </div>
 
-        {/* 第二行：电话 */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-          <Phone size={14} className="text-gray-400 shrink-0" />
-          <span
-            onClick={handleCopyPhone}
-            className="cursor-pointer hover:text-blue-600 transition-colors select-none"
-          >
-            {copiedPhone ? '已复制' : order.phone}
-          </span>
+        {/* 电话和地址 */}
+        <div
+          className="order-card__phone"
+          onMouseDown={() => handleLongPressStart(order.phone)}
+          onMouseUp={handleLongPressEnd}
+          onMouseLeave={handleLongPressEnd}
+          onTouchStart={() => handleLongPressStart(order.phone)}
+          onTouchEnd={handleLongPressEnd}
+        >
+          <Phone size={14} className="order-card__icon" />
+          <span>{order.phone}</span>
         </div>
 
-        {/* 第三行：地址 */}
-        <div className="flex items-start gap-2 text-base text-gray-600 mb-2">
-          <MapPin size={16} className="text-gray-400 shrink-0 mt-0.5" />
-          <span
-            onClick={handleCopyAddress}
-            className="break-words cursor-pointer hover:text-blue-600 transition-colors select-none"
-          >
-            {copiedAddress ? '已复制' : order.address}
-          </span>
+        <div
+          className="order-card__address"
+          onMouseDown={() => handleLongPressStart(order.address)}
+          onMouseUp={handleLongPressEnd}
+          onMouseLeave={handleLongPressEnd}
+          onTouchStart={() => handleLongPressStart(order.address)}
+          onTouchEnd={handleLongPressEnd}
+        >
+          <MapPin size={16} className="order-card__icon order-card__icon--top" />
+          <span>{order.address}</span>
         </div>
 
         {/* 预约信息 */}
-        <div className="mb-2">
+        <div className="order-card__appointment">
           {order.appointmentDate ? (
-            <div className="flex items-center gap-2 text-sm text-green-700">
+            <div className="order-card__appointment-info">
               <Calendar size={14} />
               <span>{order.appointmentDate} {order.appointmentTime}</span>
             </div>
           ) : (
             <div
+              className="order-card__appointment-placeholder"
               onClick={openRawModal}
-              className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer hover:text-blue-600 transition-colors"
             >
               <Calendar size={14} />
               <span>未预约</span>
@@ -199,171 +189,113 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           )}
         </div>
 
-        {/* 第六行：底部按钮区 */}
+        {/* 底部按钮区 */}
         {isScheduled ? (
-          <div className="flex gap-2">
+          <div className="order-card__actions">
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}?survey=true`) }}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-blue-600 text-white py-2 rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors"
+              className="order-card__btn order-card__btn--survey"
             >
               <ClipboardList size={14} />
               勘测
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}/complete`) }}
-              className="flex-1 flex items-center justify-center gap-1.5 bg-green-500 text-white py-2 rounded-lg text-xs font-medium hover:bg-green-600 transition-colors"
+              className="order-card__btn order-card__btn--complete"
             >
               <CheckCircle size={14} />
               安装完成
             </button>
           </div>
         ) : isCompleted ? (
-          <div className="bg-gray-50 rounded-lg p-2.5">
-            <div
-              onClick={(e) => { e.stopPropagation(); setShowProfitDetail(!showProfitDetail) }}
-              className="flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-1 text-xs text-gray-500">
-                <DollarSign size={12} />利润
+          <CollapsePanel
+            title={
+              <div className="order-card__profit-header">
+                <span>利润详情</span>
+                {showProfitDetail ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </div>
-              <div className="flex items-center gap-1">
-                <ProfitBadge profit={profit} />
-                {showProfitDetail ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
+            }
+            defaultExpanded={false}
+            onToggle={setShowProfitDetail}
+          >
+            <div className="order-card__profit-detail space-y-2 text-xs">
+              <InfoSection title="收了多少钱">
+                <InfoItem label="客户应收" value={`+¥${customerPrice.toFixed(2)}`} />
+                <InfoItem label="服务费" value={`+¥${serviceFee.toFixed(2)}`} />
+              </InfoSection>
+              <InfoSection title="计算费用（成本）">
+                <InfoItem label={`平台扣点 (${(platformRate * 100).toFixed(0)}%)`} value={`-¥${platformFee.toFixed(2)}`} />
+                <InfoItem label="材料成本" value={`-¥${materialCost.toFixed(2)}`} />
+              </InfoSection>
+              <div className="order-card__profit-formula">
+                <div className="order-card__profit-formula-label">计算方式</div>
+                <div className="order-card__profit-formula-text">
+                  利润 = 客户应收 + 服务费 - 材料成本 - 平台扣点
+                </div>
+                <div className="order-card__profit-formula-calc">
+                  ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}
+                </div>
               </div>
             </div>
-            {showProfitDetail && (
-              <div className="mt-2 pt-2 border-t border-gray-200 space-y-2 text-xs">
-                <div>
-                  <div className="font-medium text-gray-600 mb-1">收了多少钱</div>
-                  <div className="space-y-0.5 pl-2 border-l-2 border-green-200">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">客户应收</span>
-                      <span className="text-green-600">+¥{customerPrice.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">服务费</span>
-                      <span className="text-green-600">+¥{serviceFee.toFixed(2)}</span>
-                    </div>
-                    <div className="border-t border-dashed border-gray-200 pt-0.5 flex justify-between font-medium">
-                      <span className="text-gray-600">收入合计</span>
-                      <span className="text-green-700">¥{(customerPrice + serviceFee).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-600 mb-1">计算费用（成本）</div>
-                  <div className="space-y-0.5 pl-2 border-l-2 border-red-200">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">平台扣点({(platformRate * 100).toFixed(0)}%)</span>
-                      <span className="text-red-400">-¥{platformFee.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">材料成本</span>
-                      <span className="text-red-400">-¥{materialCost.toFixed(2)}</span>
-                    </div>
-                    {materials.length > 0 && (
-                      <div className="space-y-0.5 pl-3">
-                        {materials.map((m, i) => (
-                          <div key={i} className="flex justify-between text-gray-400">
-                            <span className="truncate">{m.name} {m.quantity}{m.unit}×¥{m.unitPrice}/{m.unit || '个'}</span>
-                            <span className="shrink-0 ml-2">-¥{(m.quantity * m.unitPrice).toFixed(2)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="border-t border-dashed border-gray-200 pt-0.5 flex justify-between font-medium">
-                      <span className="text-gray-600">成本合计</span>
-                      <span className="text-red-500">-¥{(platformFee + materialCost).toFixed(2)}</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <div className="font-medium text-gray-600 mb-1">怎么计算的</div>
-                  <div className="pl-2 border-l-2 border-blue-200">
-                    <div className="text-gray-400">
-                      利润 = 客户应收 + 服务费 - 材料成本 - 平台扣点
-                    </div>
-                    <div className="text-gray-500 mt-0.5">
-                      ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          </CollapsePanel>
         ) : (
           <div
+            className="order-card__appointment-btn"
             onClick={(e) => { e.stopPropagation(); setShowAppointment(true) }}
-            className="bg-blue-50 rounded-lg p-2 text-center cursor-pointer hover:bg-blue-100 transition-colors"
           >
-            <span className="text-xs text-blue-600 font-medium">预约</span>
+            <span>预约</span>
           </div>
         )}
-          {showMenu && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowMenuPanel(true) }}
-              className="absolute bottom-3 right-3 p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <MoreVertical size={16} />
-            </button>
-          )}
-        </div>
 
-        {/* 订单原文编辑弹框 */}
+        {showMenu && (
+          <button
+            onClick={(e) => { e.stopPropagation(); setShowMenuPanel(true) }}
+            className="order-card__menu-btn"
+          >
+            <MoreVertical size={16} />
+          </button>
+        )}
+      </div>
+
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="modal-overlay"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
+            className="modal-content"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">订单原文</h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1 text-gray-400 hover:text-gray-600 rounded"
-              >
-                <X size={20} />
+            <div className="modal-header">
+              <h2 className="modal-title">订单原文</h2>
+              <button onClick={() => setShowModal(false)} className="modal-close">
+                <ChevronUp size={20} className="rotate-180" />
               </button>
             </div>
-            <div className="flex-1 p-4 overflow-hidden">
+            <div className="modal-body">
               <textarea
                 value={editRawText}
                 onChange={(e) => setEditRawText(e.target.value)}
-                className="w-full h-64 p-3 bg-gray-50 rounded-lg text-sm font-mono resize-none outline-none focus:ring-2 focus:ring-blue-500"
+                className="modal-textarea"
                 placeholder="暂无订单原文"
               />
             </div>
-            <div className="flex gap-2 p-4 border-t border-gray-100">
-              <button
-                onClick={handleCopyRaw}
-                className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                <Copy size={14} />
-                {copiedRaw ? '已复制' : '复制'}
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-              >
+            <div className="modal-footer">
+              <button onClick={() => setShowModal(false)} className="modal-btn modal-btn--secondary">
                 取消
               </button>
-              <button
-                onClick={handleSaveRaw}
-                className="flex items-center gap-1.5 flex-1 px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-              >
-                <Save size={14} />
+              <button onClick={handleSaveRaw} className="modal-btn modal-btn--primary">
                 保存
               </button>
             </div>
           </div>
         </div>
       )}
+
       {showAppointment && (
         <AppointmentModal order={order} onClose={() => setShowAppointment(false)} />
       )}
+
       {showMenuPanel && (
         <OrderCardMenu
           order={order}
@@ -373,6 +305,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           onDelete={() => { setShowMenuPanel(false); setShowConfirmDelete(true) }}
         />
       )}
+
       {showConfirmDelete && (
         <ConfirmModal
           title="确认删除"

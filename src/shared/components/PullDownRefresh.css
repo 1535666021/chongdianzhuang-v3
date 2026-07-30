@@ -1,0 +1,37 @@
+.pull-down-refresh {
+  position: relative;
+  overflow: hidden;
+}
+
+.pull-down-refresh__indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+  transition: height 0.2s, opacity 0.2s;
+  pointer-events: none;
+}
+
+.pull-down-refresh__spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-bg-muted);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pull-down-refresh__content {
+  transform: translateY(0);
+}

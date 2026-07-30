@@ -1,0 +1,51 @@
+.shimmer-skeleton-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.shimmer-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-muted) 0%,
+    var(--color-border) 50%,
+    var(--color-bg-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: var(--radius-sm);
+}
+
+.shimmer-skeleton--card {
+  height: 120px;
+}
+
+.shimmer-skeleton--list {
+  height: 60px;
+}
+
+.shimmer-skeleton--detail {
+  height: 200px;
+}
+
+.shimmer-skeleton-line {
+  height: 16px;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-muted) 0%,
+    var(--color-border) 50%,
+    var(--color-bg-muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s linear infinite;
+  border-radius: var(--radius-xs);
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

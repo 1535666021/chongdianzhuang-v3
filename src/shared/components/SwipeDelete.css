@@ -1,0 +1,50 @@
+.swipe-delete-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.swipe-delete-container.deleting .swipe-delete__content {
+  animation: swipeOut 0.2s ease-out forwards;
+}
+
+@keyframes swipeOut {
+  to {
+    transform: translateX(-100%) !important;
+    opacity: 0;
+  }
+}
+
+.swipe-delete__background {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.swipe-delete__delete-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  width: 80px;
+  height: 100%;
+  background: var(--color-danger);
+  color: white;
+  border: none;
+  cursor: pointer;
+  justify-content: center;
+  font-size: var(--fs-body);
+  pointer-events: auto;
+}
+
+.swipe-delete__delete-btn:active {
+  background: var(--color-danger-dark);
+}
+
+.swipe-delete__content {
+  background: var(--color-bg-card);
+  position: relative;
+  z-index: 1;
+  touch-action: pan-y;
+}

@@ -1,0 +1,105 @@
+.form-field {
+  margin-bottom: var(--space-md);
+}
+
+.form-field__label {
+  display: block;
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.form-field__required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+
+.form-field__wrapper {
+  display: flex;
+  align-items: center;
+  height: 44px;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-md);
+  transition: border-color 200ms, box-shadow 200ms;
+}
+
+.form-field__wrapper--focused {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.form-field--error .form-field__wrapper {
+  border-color: var(--color-danger);
+}
+
+.form-field--error .form-field__wrapper--focused {
+  box-shadow: 0 0 0 2px var(--color-danger-light);
+}
+
+.form-field--shake {
+  animation: shake 600ms cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
+.form-field__input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  outline: none;
+  font-size: var(--fs-body);
+  color: var(--color-text-primary);
+  background: transparent;
+}
+
+.form-field__input::placeholder {
+  color: var(--color-text-aux);
+}
+
+.form-field__input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.form-field__prefix,
+.form-field__suffix {
+  display: flex;
+  align-items: center;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.form-field__prefix {
+  margin-right: var(--space-sm);
+}
+
+.form-field__suffix {
+  margin-left: var(--space-sm);
+}
+
+.form-field__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--color-text-aux);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.form-field__clear:hover {
+  color: var(--color-text-primary);
+}
+
+.form-field__error {
+  font-size: var(--fs-aux);
+  color: var(--color-danger);
+  margin-top: var(--space-xs);
+}

@@ -1,0 +1,46 @@
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.stepper__button {
+  width: 36px;
+  height: 36px;
+  background: var(--color-bg-muted);
+  border: none;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.stepper__button:hover:not(:disabled) {
+  background: var(--color-divider);
+}
+
+.stepper__button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper__input {
+  width: 48px;
+  height: 36px;
+  text-align: center;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: transparent;
+  border: none;
+  -moz-appearance: textfield;
+}
+
+.stepper__input::-webkit-outer-spin-button,
+.stepper__input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
