@@ -92,18 +92,25 @@ export function extractCableMeters(materials: Array<{ name: string; quantity: nu
 export function calcMaterialCost(materials: Array<{ name: string; quantity: number }>): MaterialCostResult {
   const unmatched: string[] = []
   const total = materials.reduce((sum, m) => {
-    const mappedName = getCostMapping(m.name)
-    if (mappedName) {
-      const costItem = costMaterials.find((c) => c.name === mappedName)
-      return sum + (costItem?.costPrice || 0) * m.quantity
+    const unitCost = resolveCostPrice(m.name)
+    if (unitCost === 0) {
+      unmatched.push(m.name)
     }
-    const matchedName = matchCostName(m.name)
-    if (matchedName) {
-      const costItem = costMaterials.find((c) => c.name === matchedName)
-      return sum + (costItem?.costPrice || 0) * m.quantity
-    }
-    unmatched.push(m.name)
-    return sum
+    return sum + unitCost * m.quantity
   }, 0)
   return { total, unmatched }
+}
+
+export function resolveCostPrice(name: string): number {
+  const mappedName = getCostMapping(name)
+  if (mappedName) {
+    const item = costMaterials.find((c) => c.name === mappedName)
+    if (item?.costPrice) return item.costPrice
+  }
+  const matchedName = matchCostName(name)
+  if (matchedName) {
+    const item = costMaterials.find((c) => c.name === matchedName)
+    if (item?.costPrice) return item.costPrice
+  }
+  return 0
 }

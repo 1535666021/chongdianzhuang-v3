@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost, calcProfit } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost, calcProfit, resolveCostPrice } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -62,7 +62,7 @@ export function useCompletion(orderId: string) {
     materials: (order?.materials?.length ? order.materials : order?.survey?.estimatedMaterials || []).map((m) => {
       const addon = findAddonMaterial(m.name)
       const sp = addon?.settlementPrice || m.unitPrice || 0
-      const cp = addon?.costPrice || m.unitPrice || 0
+      const cp = resolveCostPrice(m.name) || addon?.costPrice || m.unitPrice || 0
       return {
         id: Math.random().toString(36).slice(2),
         name: m.name,
@@ -136,7 +136,7 @@ export function useCompletion(orderId: string) {
   }, [])
 
   const [bindVersion, setBindVersion] = useState(0)
-  const [dismissedMats] = useState<Set<string>>(new Set())
+  const [dismissedMats, setDismissedMats] = useState<Set<string>>(new Set())
 
   const packageBreakdown = usePackageMeters(form.materials, packageMeters)
 
@@ -232,11 +232,13 @@ export function useCompletion(orderId: string) {
     }
     for (const m of form.materials) {
       if (isFreeQuotaMaterial(m.name)) continue
-      if (m.costSubtotal > 0) {
+      const unitCost = resolveCostPrice(m.name)
+      const amount = Math.round(unitCost * m.quantity * 100) / 100
+      if (amount > 0) {
         materialItems.push({
           name: m.name,
-          calc: `${m.name} ${m.quantity}${m.unit} × ¥${m.costPrice}`,
-          amount: m.costSubtotal,
+          calc: `${m.name} ${m.quantity}${m.unit} × ¥${unitCost}`,
+          amount,
         })
       }
     }
@@ -255,7 +257,7 @@ export function useCompletion(orderId: string) {
         materialItems,
       },
     }
-  }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown])
+  }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown, bindVersion])
 
   const pendingCostBind = useMemo(() => {
     const { unmatched } = calcMaterialCost(form.materials)
@@ -272,7 +274,7 @@ export function useCompletion(orderId: string) {
     const needsBind = unmatched.filter((n) => !isFreeQuotaMaterial(n) && !dismissedMats.has(n))
     const current = needsBind[0]
     if (current) {
-      dismissedMats.add(current)
+      setDismissedMats((prev) => new Set(prev).add(current))
     }
     setBindVersion((v) => v + 1)
   }, [form.materials])
