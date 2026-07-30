@@ -10,6 +10,7 @@ import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/mater
 import { Stepper } from '@/shared/components/Stepper'
 import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
 import { useToast } from '@/shared/hooks/useToast'
+import { formatCurrency } from '@/shared/utils/format'
 import '../../../shared/components/Modal.css'
 
 interface SurveyModalProps {
@@ -23,10 +24,6 @@ const INSTALL_OPTIONS = ['壁挂安装', '立柱安装', '吊装', '其他'] as 
 const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
 const BLUEPRINT_OPTIONS = ['是', '否'] as const
 const RESULT_OPTIONS = ['勘测完成', '符合安装', '不符合安装', '需整改', '待定'] as const
-
-function formatCurrency(n: number): string {
-  return '¥' + n.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')
-}
 
 export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const {
@@ -134,29 +131,36 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowDropdown(!showDropdown)}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-white rounded-lg border border-gray-200 text-sm"
+                      className="w-full flex items-center justify-between px-3 py-2 bg-white border rounded-lg text-sm"
+                      style={{ borderRadius: '8px', borderColor: 'var(--color-border)' }}
                     >
-                      <span className="text-gray-500">
+                      <span style={{ color: 'var(--color-text-secondary)' }}>
                         {showDropdown ? '收起列表' : '点击选择辅材'}
-                        <span className="text-gray-400 ml-1">({brandAddons.length}种可选)</span>
+                        <span style={{ color: 'var(--color-text-aux)', marginLeft: '4px' }}>
+                          ({brandAddons.length}种可选)
+                        </span>
                       </span>
-                      <span className="text-gray-400 text-xs">{showDropdown ? '▲' : '▼'}</span>
+                      <span style={{ color: 'var(--color-text-aux)', fontSize: '12px' }}>
+                        {showDropdown ? '▲' : '▼'}
+                      </span>
                     </button>
                     {showDropdown && (
-                      <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      <div className="modal-dropdown">
                         {brandAddons.length === 0 ? (
-                          <div className="p-3 text-sm text-gray-400 text-center">该品牌暂无材料</div>
+                          <div className="modal-dropdown-empty">该品牌暂无材料</div>
                         ) : (
                           sortedBrandAddons.map((mat) => {
                             const checked = form.estimatedMaterials.some((m) => m.name === mat.name)
                             return (
                               <label
                                 key={mat.id}
-                                className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer"
+                                className="modal-dropdown-item"
                               >
                                 <input
                                   type="checkbox"
                                   checked={checked}
+                                  className="w-4 h-4 rounded"
+                                  style={{ accentColor: 'var(--color-primary)' }}
                                   onChange={() => {
                                     const isAdding = !form.estimatedMaterials.some((em) => em.name === mat.name)
                                     toggleAddon(mat)
@@ -168,10 +172,11 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                                       }
                                     }
                                   }}
-                                  className="w-4 h-4 rounded accent-blue-600"
                                 />
-                                <span className="text-gray-700">{getShortName(mat.name, mat.category)}</span>
-                                <span className="text-gray-400 text-xs">¥{mat.settlementPrice}</span>
+                                <span style={{ color: 'var(--color-text-primary)' }}>
+                                  {getShortName(mat.name, mat.category)}
+                                </span>
+                                <span style={{ color: 'var(--color-text-aux)', fontSize: '12px' }}>¥{mat.settlementPrice}</span>
                               </label>
                             )
                           })
@@ -184,26 +189,26 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                       {form.estimatedMaterials.map((m) => (
                         <div
                           key={m.name}
-                          className="flex items-center gap-2 bg-white rounded-lg px-3 py-2 border border-gray-200"
+                          className="modal-material-item"
                         >
-                          <span className="text-sm font-medium text-gray-700 flex-1">
+                          <span className="modal-material-name">
                             {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')}
                           </span>
-                          <span className="text-sm text-gray-500">¥{m.unitPrice}/m</span>
+                          <span className="modal-material-price">¥{m.unitPrice}/m</span>
                           <input
                             type="number"
                             min={addonMaterialsData.find((a) => a.name === m.name)?.categoryCode === 'CABLE' ? 0 : 1}
-                            value={String(m.quantity).padStart(0)}
+                            value={String(m.quantity)}
                             onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
-                            className="w-16 text-center text-sm bg-gray-50 border border-gray-200 rounded px-2 py-1"
+                            className="modal-material-qty"
                           />
-                          <span className="text-sm font-semibold text-gray-800 w-20 text-right">
+                          <span className="modal-material-total">
                             ¥{((m.quantity || 0) * m.unitPrice).toFixed(2)}
                           </span>
                           <button
                             type="button"
                             onClick={() => removeAddon(m.name)}
-                            className="ml-1 text-[#bf5340] hover:text-[#a04430]"
+                            className="modal-material-remove"
                           >
                             <X size={16} strokeWidth={2.5} />
                           </button>
@@ -361,7 +366,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               </button>
             </div>
             <div className="modal-body">
-              <pre className="whitespace-pre-wrap text-sm text-gray-700 bg-gray-50 p-3 rounded-lg overflow-auto max-h-64">
+              <pre className="modal-report-content">
                 {reportText}
               </pre>
             </div>

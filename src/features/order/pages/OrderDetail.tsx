@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { STATUS_COLORS } from '@/constants/order'
+import { STATUS_COLORS, STATUS_BG_COLORS } from '@/constants/order'
 import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Zap, ClipboardList, CheckCircle, X, ChevronDown, ChevronUp, Map as MapIcon, MoreVertical } from 'lucide-react'
 import { useGeocode } from '../hooks/useGeocode'
 import OrderMap from '../components/OrderMap'
@@ -93,8 +93,8 @@ export default function OrderDetail() {
         <span
           className="ml-auto text-xs px-2 py-1 rounded-full"
           style={{
-            backgroundColor: statusColor === '#3b82f6' ? '#ece8f4' : (statusColor + '20'),
-            color: statusColor === '#3b82f6' ? '#7a6aa8' : statusColor
+            backgroundColor: STATUS_BG_COLORS[order.status as keyof typeof STATUS_BG_COLORS] || '#f3f4f6',
+            color: STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
           }}
         >
           {order.status}

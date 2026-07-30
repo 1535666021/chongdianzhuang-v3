@@ -21,7 +21,7 @@ export const INSTALL_TYPE_COLORS: Record<InstallType, { bg: string; text: string
 
 export const STATUS_COLORS: Record<OrderStatus, string> = {
   '待办': '#f59e0b',
-  '已预约': '#3b82f6',
+  '已预约': '#7a6aa8',
   '已完成': '#10b981',
   '回收站': '#6b7280',
 }
@@ -35,4 +35,12 @@ export const REGION_LABELS: Record<Region, string> = {
   '宣城': '宣城',
   '安庆': '安庆',
   '其他': '其他',
+}
+
+// 状态背景色映射（用于标签圆角背景）
+export const STATUS_BG_COLORS: Record<OrderStatus, string> = {
+  '待办': '#fef3c7',
+  '已预约': '#ece8f4',
+  '已完成': '#d1fae5',
+  '回收站': '#f3f4f6',
 }
