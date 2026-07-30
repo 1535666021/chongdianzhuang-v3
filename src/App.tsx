@@ -4,6 +4,10 @@ import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
+import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
+
+// 导出全局 toast
+export { toast }
 
 const iconMap: Record<string, React.ReactNode> = {
   Home: <Home size={20} />,
@@ -19,6 +23,8 @@ export default function App() {
   const navigate = useNavigate()
   const { hasUpdate, handleUpdate } = useVersionCheck()
   const orders = useOrderStore((s) => s.orders)
+  const { toasts, removeToast } = useToast()
+
   // 底部气泡：首页=待办数，已预约=已预约数（老系统同款红点提示）
   const badgeMap: Record<string, number> = {
     '待办': orders.filter((o) => o.status === '待办').length,
@@ -50,6 +56,9 @@ export default function App() {
           </button>
         </div>
       )}
+
+      {/* Toast 通知 */}
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       <main className="flex-1 overflow-auto">
         <Outlet />
