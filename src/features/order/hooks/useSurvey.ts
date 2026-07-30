@@ -28,6 +28,11 @@ export function useSurvey(order: Order) {
 
   const materialUsageCount = useSettingsStore((s) => s.materialUsageCount)
 
+  const isCableMat = (name: string) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    return mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))
+  }
+
   const brandAddons = useMemo<Material[]>(() => {
     if (!effectiveBrand) return []
     const usageCount = materialUsageCount
@@ -88,11 +93,6 @@ export function useSurvey(order: Order) {
       estimatedMaterials: prev.estimatedMaterials.filter((m) => m.name !== name),
     }))
   }, [])
-
-  const isCableMat = (name: string) => {
-    const mat = addonMaterialsData.find((a) => a.name === name)
-    return mat && (mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(mat.name))
-  }
 
   const calcCableCost = (name: string, distance: number) => {
     const mat = addonMaterialsData.find((a) => a.name === name)

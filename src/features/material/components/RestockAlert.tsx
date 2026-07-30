@@ -32,15 +32,7 @@ export default function RestockAlert() {
           status,
         }
       })
-      .filter(Boolean) as {
-        materialId: string
-        name: string
-        current: number
-        min: number
-        diff: number
-        unit: string
-        status: '紧张' | '缺货'
-      }[]
+      .filter((item): item is NonNullable<typeof item> => item !== null)
   }, [allMaterials, inventory])
 
   if (alerts.length === 0) return null
