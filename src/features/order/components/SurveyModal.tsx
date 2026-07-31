@@ -88,8 +88,11 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
       for (const m of form.estimatedMaterials) {
         const mat = addonMaterialsData.find((a) => a.name === m.name)
         const short = mat ? getShortName(mat.name, mat.category) : m.name
-        const subtotal = m.unitPrice * m.quantity
-        lines.push(`${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`)
+        const isCable = isCableMat(m.name), distance = form.cableDistance || 0, overMeters = Math.max(0, distance - (mat?.freeQuota || DEFAULT_PACKAGE_METERS))
+        const subtotal = isCable && mat ? form.estimatedCableCost || 0 : m.unitPrice * m.quantity
+        lines.push(isCable && mat
+          ? `${short} ${distance}米（超${overMeters}米）× ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`
+          : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`)
       }
       lines.push('')
       lines.push(`预计增项合计：¥${totalEstimatedCost.toFixed(2)}元（以实际使用为准）`)
