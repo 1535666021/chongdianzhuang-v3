@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { calcAddonTotal, calcOverFee } from '@/shared/utils/orderCalc'
+import { calcAddonTotal, calcOverFee, calcSurveyTotal } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import type { Material } from '@/types/material'
@@ -51,12 +51,13 @@ export function useSurvey(order: Order) {
   }, [effectiveBrand, materialUsageCount])
 
   const totalEstimatedCost = useMemo(() => {
-    // 预估费用 = 电缆超米费用 + 其他增项材料费用
-    // 电缆材料单独用 calcOverFee 计算（扣除套餐免费配额），不直接参与累加
-    const nonCableTotal = form.estimatedMaterials
-      .filter((m) => !isCableMat(m.name))
-      .reduce((sum, m) => sum + m.quantity * m.unitPrice, 0)
-    return nonCableTotal + form.estimatedCableCost
+    const items = form.estimatedMaterials.map((m) => ({
+      name: m.name,
+      quantity: m.quantity,
+      unitPrice: m.unitPrice,
+      isCable: isCableMat(m.name) || false,
+    }))
+    return calcSurveyTotal(items, form.estimatedCableCost)
   }, [form.estimatedMaterials, form.estimatedCableCost])
 
   const toggleAddon = useCallback((mat: Material) => {

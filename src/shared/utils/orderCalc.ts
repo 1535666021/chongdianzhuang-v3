@@ -114,3 +114,14 @@ export function resolveCostPrice(name: string): number {
   }
   return 0
 }
+
+/** 勘测预估费用汇总项 */
+export interface CalcSurveyItem { name: string; quantity: number; unitPrice: number; isCable: boolean }
+
+/** 计算勘测预估总费用 = 非电缆增项小计 + 电缆超米费用 */
+export function calcSurveyTotal(materials: CalcSurveyItem[], cableCost: number): number {
+  const nonCableTotal = materials
+    .filter((m) => !m.isCable)
+    .reduce((sum, m) => sum + m.quantity * m.unitPrice, 0)
+  return nonCableTotal + cableCost
+}
