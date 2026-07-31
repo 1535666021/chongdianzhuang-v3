@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import type { Order } from '@/types'
 import { useSurvey } from '../hooks/useSurvey'
 import { getShortName } from '../utils/surveyUtils'
@@ -43,6 +43,11 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const sortedBrandAddons = useMemo(
     () => sortMaterialsByFrequency(brandAddons, getMaterialFrequency()), [brandAddons])
   const needsBrandSelect = !order.brandName && !selectedBrand
+
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => { document.body.classList.remove('modal-open') }
+  }, [])
 
   const getDisplayPrice = (name: string, fallback: number) => {
     const addon = addonMaterialsData.find((m) => m.name === name)
@@ -197,7 +202,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     )}
                   </div>
                   {form.estimatedMaterials.length > 0 && (
-                    <div className="flex flex-col gap-3 mt-2" onTouchMove={(e) => e.stopPropagation()}>
+                    <div className="flex flex-col gap-3 mt-2">
                       {form.estimatedMaterials.map((m) => {
                         const isCable = isCableMat(m.name)
                         const displayFee = isCable

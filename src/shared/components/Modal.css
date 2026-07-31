@@ -8,7 +8,6 @@
   justify-content: center;
   z-index: var(--z-modal);
   padding: var(--space-md);
-  touch-action: none;
   overscroll-behavior: none;
 }
 
@@ -23,6 +22,7 @@
   box-shadow: var(--shadow-xl);
   animation: modalSlideUp 200ms ease-out;
   overscroll-behavior: contain;
+  touch-action: auto;
 }
 
 @keyframes modalSlideUp {
@@ -248,6 +248,11 @@
   animation: toastFadeIn 200ms ease-out;
 }
 
+/* 弹窗打开时阻止底层滚动 */
+body.modal-open {
+  overflow: hidden;
+}
+
 @keyframes toastFadeIn {
   from {
     opacity: 0;
@@ -275,6 +280,10 @@
   font-size: var(--fs-body);
   font-weight: 600;
   color: var(--color-text-primary);
+  min-width: 80px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .modal-material-price {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { getCostMaterialList } from '../hooks/useCostMatcher'
 import { setCostMapping } from '@/shared/storage/costMappingStorage'
@@ -16,6 +16,11 @@ export default function CostBindModal({ materialName, onClose, onBound }: Props)
     ? items.filter((i) => i.name.includes(search))
     : items
 
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => { document.body.classList.remove('modal-open') }
+  }, [])
+
   const handleBind = (costName: string) => {
     setCostMapping(materialName, costName)
     onBound()
@@ -23,16 +28,8 @@ export default function CostBindModal({ materialName, onClose, onBound }: Props)
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onTouchMove={(e) => e.stopPropagation()}
-      style={{ touchAction: 'none', overscrollBehavior: 'none' }}
-    >
-      <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 max-h-[70vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-        style={{ overscrollBehavior: 'contain' }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 max-h-[70vh] flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
           <div>
             <h3 className="font-semibold text-sm text-gray-900">绑定成本项</h3>

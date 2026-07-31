@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { Calendar, Clock, X, User, MapPin, FileText } from 'lucide-react'
@@ -16,6 +16,11 @@ export default function AppointmentModal({ order, onClose }: Props) {
   const [date, setDate] = useState(order.appointmentDate || new Date().toISOString().slice(0, 10))
   const [time, setTime] = useState<string>(order.appointmentTime || '')
   const [note, setNote] = useState(order.appointmentNote || '')
+
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => { document.body.classList.remove('modal-open') }
+  }, [])
 
   const handleSubmit = () => {
     if (!date || !time) return

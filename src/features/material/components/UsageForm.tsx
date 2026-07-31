@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
 import type { MaterialUsageRecord } from '@/types'
@@ -20,6 +20,11 @@ export function UsageForm({ record, onClose }: Props) {
   const [date, setDate] = useState(record?.date || new Date().toISOString().slice(0, 10))
   const [searchQuery, setSearchQuery] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
+
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => { document.body.classList.remove('modal-open') }
+  }, [])
 
   const total = useMemo(() => Math.round(costPrice * quantity * 100) / 100, [costPrice, quantity])
 
@@ -55,17 +60,8 @@ export function UsageForm({ record, onClose }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50"
-      onClick={onClose}
-      onTouchMove={(e) => e.stopPropagation()}
-      style={{ touchAction: 'none', overscrollBehavior: 'none' }}
-    >
-      <div
-        className="bg-white rounded-t-xl sm:rounded-xl w-full sm:max-w-md p-5 max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-        style={{ overscrollBehavior: 'contain' }}
-      >
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-t-xl sm:rounded-xl w-full sm:max-w-md p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800">{isEdit ? '编辑领用' : '新增领用'}</h3>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
