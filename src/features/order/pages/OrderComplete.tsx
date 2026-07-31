@@ -34,11 +34,12 @@ export default function OrderComplete() {
   }, [])
 
   if (!order) return null
+  if (!order.survey) return <div className="order-complete-page"><p className="order-complete__hint">该订单尚未勘测，请先完成勘测</p></div>
 
   const handleSave = () => {
     updateOrder(order.id, { completionNotes: form.notes })
     if (save()) {
-      navigate(`/orders/${id}`)
+      navigate('/completed')
     }
   }
 

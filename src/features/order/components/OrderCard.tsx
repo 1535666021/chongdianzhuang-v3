@@ -209,7 +209,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               勘测
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}/complete`) }}
+              onClick={(e) => { e.stopPropagation(); navigate(`/order/complete/${order.id}`) }}
               className="order-card__btn order-card__btn--complete"
             >
               <CheckCircle size={14} />
