@@ -8,7 +8,7 @@ import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { BRAND_DEFAULTS, BREAKER_NAMES } from '@/constants/brands'
 import type { Order } from '@/types'
-import type { MaterialInput, FixedAuxInput, ProfitPreview, CompletionFormData } from '../types/completion'
+import type { MaterialInput, FixedAuxInput, ProfitBreakdownItem, ProfitPreview, CompletionFormData } from '../types/completion'
 
 function findAddonMaterial(name: string) {
   return addonMaterialsData.find((m) => m.name === name)
@@ -203,7 +203,7 @@ export function useCompletion(orderId: string) {
     const fixedPvcCost = form.fixedAux.pvcMeters * (pvc?.costPrice || 1)
     const fixedBreakerBoxCost = form.fixedAux.breakerCount * (breaker?.costPrice || 5)
 
-    const materialItems: { name: string; calc: string; amount: number }[] = []
+    const materialItems: ProfitBreakdownItem[] = []
     if (form.fixedAux.cableMeters > 0) {
       materialItems.push({
         name: '电缆',
@@ -239,6 +239,7 @@ export function useCompletion(orderId: string) {
           name: m.name,
           calc: `${m.name} ${m.quantity}${m.unit} × ¥${unitCost}`,
           amount,
+          materialName: m.name,
         })
       }
     }

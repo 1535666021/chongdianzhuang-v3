@@ -23,6 +23,7 @@ export interface ProfitBreakdownItem {
   name: string
   calc: string
   amount: number
+  materialName?: string
 }
 
 export interface ProfitBreakdown {

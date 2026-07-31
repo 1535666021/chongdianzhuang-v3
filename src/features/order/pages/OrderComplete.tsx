@@ -233,7 +233,7 @@ export default function OrderComplete() {
           )}
 
           {/* 利润区 */}
-          <ProfitPreview data={profit} />
+          <ProfitPreview data={profit} onRefresh={handleCostBound} />
 
           {/* 话术生成 */}
           <button
