@@ -23,10 +23,13 @@ export default function ConfirmModal({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onCancel}
+      onTouchMove={(e) => e.stopPropagation()}
+      style={{ touchAction: 'none', overscrollBehavior: 'none' }}
     >
       <div
         className="bg-white rounded-xl w-full max-w-sm shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
+        style={{ overscrollBehavior: 'contain' }}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-2">

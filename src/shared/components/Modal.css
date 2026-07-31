@@ -8,6 +8,8 @@
   justify-content: center;
   z-index: var(--z-modal);
   padding: var(--space-md);
+  touch-action: none;
+  overscroll-behavior: none;
 }
 
 .modal-content {
@@ -20,6 +22,7 @@
   flex-direction: column;
   box-shadow: var(--shadow-xl);
   animation: modalSlideUp 200ms ease-out;
+  overscroll-behavior: contain;
 }
 
 @keyframes modalSlideUp {

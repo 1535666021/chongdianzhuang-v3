@@ -11,6 +11,7 @@ import { Stepper } from '@/shared/components/Stepper'
 import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
+import { calcOverFee, DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import '../../../shared/components/Modal.css'
 
 interface SurveyModalProps {
@@ -49,6 +50,17 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     const cost = costMaterials.find((m) => m.name === name)
     if (cost) return cost.settlementPrice
     return fallback
+  }
+
+  const isCableMat = (name: string) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    return mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))
+  }
+
+  const calcCableDisplayFee = (name: string, distance: number) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    if (!mat) return 0
+    return calcOverFee(distance, mat.freeQuota || DEFAULT_PACKAGE_METERS, mat.settlementPrice).overFee
   }
 
   const handleSave = () => {
@@ -185,35 +197,48 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     )}
                   </div>
                   {form.estimatedMaterials.length > 0 && (
-                    <div className="flex flex-col gap-3 mt-2">
-                      {form.estimatedMaterials.map((m) => (
-                        <div
-                          key={m.name}
-                          className="modal-material-item"
-                        >
-                          <span className="modal-material-name">
-                            {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')}
-                          </span>
-                          <span className="modal-material-price">¥{m.unitPrice}/m</span>
-                          <input
-                            type="number"
-                            min={addonMaterialsData.find((a) => a.name === m.name)?.categoryCode === 'CABLE' ? 0 : 1}
-                            value={String(m.quantity)}
-                            onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
-                            className="modal-material-qty"
-                          />
-                          <span className="modal-material-total">
-                            ¥{((m.quantity || 0) * m.unitPrice).toFixed(2)}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeAddon(m.name)}
-                            className="modal-material-remove"
+                    <div className="flex flex-col gap-3 mt-2" onTouchMove={(e) => e.stopPropagation()}>
+                      {form.estimatedMaterials.map((m) => {
+                        const isCable = isCableMat(m.name)
+                        const displayFee = isCable
+                          ? calcCableDisplayFee(m.name, m.quantity)
+                          : (m.quantity || 0) * m.unitPrice
+                        return (
+                          <div
+                            key={m.name}
+                            className="modal-material-item"
                           >
-                            <X size={16} strokeWidth={2.5} />
-                          </button>
-                        </div>
-                      ))}
+                            <span className="modal-material-name">
+                              {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')}
+                            </span>
+                            <span className="modal-material-price">¥{m.unitPrice}/m</span>
+                            <input
+                              type="number"
+                              min={addonMaterialsData.find((a) => a.name === m.name)?.categoryCode === 'CABLE' ? 0 : 1}
+                              value={String(m.quantity)}
+                              onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
+                              className="modal-material-qty"
+                            />
+                            <span className="modal-material-total" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '80px' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                                ¥{displayFee.toFixed(2)}
+                              </span>
+                              {isCable && (
+                                <span style={{ fontSize: '10px', color: 'var(--color-text-aux)', marginTop: '2px' }}>
+                                  超米费
+                                </span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeAddon(m.name)}
+                              className="modal-material-remove"
+                            >
+                              <X size={16} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        )
+                      })}
                     </div>
                   )}
                 </>
