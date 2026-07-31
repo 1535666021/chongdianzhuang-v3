@@ -16,11 +16,12 @@ import '../../../shared/components/OrderCard.css'
 interface OrderCardProps {
   order: Order
   onClick?: () => void
+  onSurvey?: (order: Order) => void
   showMenu?: boolean
   isToday?: boolean
 }
 
-export default function OrderCard({ order, onClick, showMenu = false, isToday = false }: OrderCardProps) {
+export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
@@ -193,7 +194,14 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         {isScheduled ? (
           <div className="order-card__actions">
             <button
-              onClick={(e) => { e.stopPropagation(); navigate(`/orders/${order.id}?survey=true`) }}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onSurvey) {
+                  onSurvey(order)
+                } else {
+                  navigate(`/orders/${order.id}?survey=true`)
+                }
+              }}
               className="order-card__btn order-card__btn--survey"
             >
               <ClipboardList size={14} />

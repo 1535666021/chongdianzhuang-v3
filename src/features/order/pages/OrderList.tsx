@@ -1,7 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
+import SurveyModal from '../components/SurveyModal'
 import { useState, useMemo } from 'react'
+import type { Order } from '@/types'
 import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Plus, FileText, Package } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
@@ -17,6 +19,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const [activeFilter, setActiveFilter] = useState<string>(fixedStatus ?? '全部')
   const [searchKw, setSearchKw] = useState('')
   const [showCount, setShowCount] = useState(50)
+  const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
 
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
   const { orders, stats } = useOrderList(filter)
@@ -151,6 +154,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
                 showMenu={fixedStatus === '已预约'}
                 isToday={order.appointmentDate === today}
                 onClick={() => navigate(`/orders/${order.id}`)}
+                onSurvey={setSurveyOrder}
               />
             ))}
             {displayOrders.length > showCount && (
@@ -164,6 +168,12 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
           </>
         )}
       </div>
+      {surveyOrder && (
+        <SurveyModal
+          order={surveyOrder}
+          onClose={() => setSurveyOrder(null)}
+        />
+      )}
     </div>
   )
 }
