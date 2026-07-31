@@ -202,7 +202,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     )}
                   </div>
                   {form.estimatedMaterials.length > 0 && (
-                    <div className="flex flex-col gap-3 mt-2">
+                    <div className="modal-material-list">
                       {form.estimatedMaterials.map((m) => {
                         const isCable = isCableMat(m.name)
                         const displayFee = isCable
