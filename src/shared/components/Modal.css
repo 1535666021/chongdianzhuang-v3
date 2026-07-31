@@ -17,14 +17,12 @@
   width: 100%;
   max-width: 512px;
   max-height: 90vh;
-  max-height: calc(100dvh - 48px);
-  padding-bottom: env(safe-area-inset-bottom);
+  max-height: calc(100dvh - 16px);
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
   box-shadow: var(--shadow-xl);
   animation: modalSlideUp 200ms ease-out;
-  overscroll-behavior: contain;
-  touch-action: auto;
   z-index: calc(var(--z-modal) + 1);
 }
 
@@ -74,11 +72,13 @@
 }
 
 .modal-body {
-  flex: 1;
+  flex: 1 1 0%;
   min-height: 0;
+  height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding: var(--space-md);
+  box-sizing: border-box;
 }
 
 .modal-footer {
@@ -291,12 +291,10 @@ body.modal-open {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
 .modal-material-price {
   font-size: var(--fs-body);
   color: var(--color-text-secondary);
 }
-
 .modal-material-qty {
   width: 64px;
   height: 36px;
@@ -308,7 +306,6 @@ body.modal-open {
   color: var(--color-text-primary);
   padding: 0 var(--space-xs);
 }
-
 .modal-material-total {
   width: 80px;
   text-align: right;
@@ -375,4 +372,9 @@ body.modal-open {
   overflow-y: auto;
   max-height: 400px;
 }
-.modal-material-list { display: flex; flex-direction: column; gap: var(--space-sm); margin-top: var(--space-sm); }
+.modal-material-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-top: var(--space-sm);
+}
