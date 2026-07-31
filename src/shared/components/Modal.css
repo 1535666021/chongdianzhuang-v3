@@ -2,7 +2,7 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,6 +23,7 @@
   animation: modalSlideUp 200ms ease-out;
   overscroll-behavior: contain;
   touch-action: auto;
+  z-index: calc(var(--z-modal) + 1);
 }
 
 @keyframes modalSlideUp {

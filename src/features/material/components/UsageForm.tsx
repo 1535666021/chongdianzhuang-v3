@@ -60,7 +60,7 @@ export function UsageForm({ record, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-[10000] flex items-end sm:items-center justify-center bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-t-xl sm:rounded-xl w-full sm:max-w-md p-5 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-gray-800">{isEdit ? '编辑领用' : '新增领用'}</h3>

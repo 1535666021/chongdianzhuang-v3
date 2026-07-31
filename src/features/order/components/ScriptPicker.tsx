@@ -43,7 +43,7 @@ export default function ScriptPicker({ order, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50"
+      className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/50"
       onClick={onClose}
     >
       <div

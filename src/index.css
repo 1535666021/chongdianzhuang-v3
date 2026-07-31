@@ -56,6 +56,10 @@
   /* z-index */
   --z-index-toast: 200;
   --z-index-modal: 100;
+  --z-sticky: 100;
+  --z-floating: 300;
+  --z-modal: 9999;
+  --z-dropdown: 10000;
 }
 
 body {

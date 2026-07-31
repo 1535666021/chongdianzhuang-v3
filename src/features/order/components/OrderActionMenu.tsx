@@ -35,7 +35,7 @@ export default function OrderActionMenu({ orderId, onClose, onEditAppointment, o
   }
 
   return (
-    <div className="fixed inset-0 z-50" onClick={onClose}>
+    <div className="fixed inset-0 z-[10000]" onClick={onClose}>
       <div
         ref={ref}
         className="absolute right-4 bottom-20 w-48 bg-white rounded-xl shadow-xl border border-gray-200 overflow-hidden"
