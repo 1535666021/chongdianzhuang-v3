@@ -12,6 +12,7 @@ import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { calcMaterialCost, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
 import '../../../shared/components/OrderCard.css'
+import '../../../shared/components/Modal.css'
 
 interface OrderCardProps {
   order: Order
