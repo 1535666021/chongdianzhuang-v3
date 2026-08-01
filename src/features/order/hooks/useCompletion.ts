@@ -255,7 +255,7 @@ export function useCompletion(orderId: string) {
       breakdown: {
         receivableItems,
         platformRate,
-        serviceFeeLabel: `固定服务费 = ¥${serviceFee}`,
+        serviceFeeLabel: `车企服务费 = ¥${serviceFee}`,
         materialItems,
       },
     }

@@ -266,13 +266,13 @@ export default function OrderDetail() {
             )}
           </div>
 
-          {/* 服务费 - 默认收起 */}
+          {/* 车企服务费 - 默认收起 */}
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             <button
               onClick={() => setExpandedSections(prev => ({ ...prev, serviceFee: !prev.serviceFee }))}
               className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
             >
-              <span className="text-sm font-medium text-gray-700">服务费</span>
+              <span className="text-sm font-medium text-gray-700">车企服务费</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-gray-700">
                   ¥{(order.notes?.includes('维修') ? 60 : order.notes?.includes('勘察') || order.notes?.includes('勘测') ? 0 : 300).toFixed(2)}
@@ -282,7 +282,7 @@ export default function OrderDetail() {
             </button>
             {expandedSections.serviceFee && (
               <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
-                固定服务费（安装 300 元，维修 60 元，勘察/勘测 0 元）
+                车企支付的服务费（安装 300 元，维修 60 元，勘察/勘测 0 元）
               </div>
             )}
           </div>
@@ -320,7 +320,7 @@ export default function OrderDetail() {
             </button>
             {expandedSections.profit && (
               <div className="px-3 py-2 text-sm text-green-700 border-t border-green-200">
-                计算公式：客户应收 - 平台扣点 + 服务费 - 材料成本
+                计算公式：客户应收 - 平台扣点 + 车企服务费 - 材料成本
               </div>
             )}
           </div>

@@ -63,10 +63,10 @@ export function ProfitPreview({ data, onRefresh }: Props) {
         </div>
       </div>
 
-      {/* 3. 服务费 */}
+      {/* 3. 车企服务费 */}
       <div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-500">服务费</span>
+          <span className="text-gray-500">车企服务费</span>
           <span className="font-medium text-blue-600">+{fmt(data.serviceFee)}</span>
         </div>
         <div className="mt-1 pl-4 border-l-2 border-gray-200">
@@ -106,7 +106,7 @@ export function ProfitPreview({ data, onRefresh }: Props) {
         <div className="mt-1 space-y-0.5 pl-4 border-l-2 border-gray-200 text-xs">
           <BreakdownLine label="客户应收" amount={fmt(data.customerReceivable)} />
           <BreakdownLine label="平台扣点" amount={'-' + fmt(data.platformFee)} color="text-red-400" />
-          <BreakdownLine label="服务费" amount={'+' + fmt(data.serviceFee)} color="text-blue-400" />
+          <BreakdownLine label="车企服务费" amount={'+' + fmt(data.serviceFee)} color="text-blue-400" />
           <BreakdownLine label="材料成本" amount={'-' + fmt(data.materialCost)} color="text-orange-400" />
           <div className="border-t border-dashed border-gray-200 pt-0.5">
             <BreakdownLine label="=" amount={fmt(data.actualProfit)} color={isProfit ? 'text-green-600 font-medium' : 'text-red-500 font-medium'} />

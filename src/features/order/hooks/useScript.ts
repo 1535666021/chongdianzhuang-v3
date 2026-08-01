@@ -7,7 +7,6 @@ import {
   buildAddonSummary,
   buildPlatformBrand,
   extractCableMeters,
-  getServiceFee,
   DEFAULT_PACKAGE_METERS,
 } from '@/shared/utils/orderCalc'
 
@@ -126,8 +125,7 @@ export function buildScriptVarsFromCompletionForm(
   let custTotal = form.customerReceivable || order.customerPrice || 0
   if (!custTotal && form.materials?.length) {
     const addonSubtotal = form.materials.reduce((s, m) => s + (m.customerSubtotal ?? 0), 0)
-    const serviceFee = getServiceFee(order.notes || '')
-    custTotal = addonSubtotal + serviceFee
+    custTotal = addonSubtotal
   }
 
   const actProfit = form.actualProfit || order.actualProfit || 0

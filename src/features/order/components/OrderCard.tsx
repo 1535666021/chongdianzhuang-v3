@@ -33,7 +33,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const serviceFee = getServiceFee(order.notes || '')
   const { total: materialCost } = calcMaterialCost(order.materials || [])
   const platformFee = calcPlatformFee(customerPrice, platformRate)
-  const profit = calcProfit(customerPrice + serviceFee, materialCost, platformFee)
+  const profit = calcProfit(customerPrice, materialCost, platformFee, serviceFee)
   const materials = order.materials || []
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
@@ -230,7 +230,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             <div className="order-card__profit-detail space-y-2 text-xs">
               <InfoSection title="收了多少钱">
                 <InfoItem label="客户应收" value={`+¥${customerPrice.toFixed(2)}`} />
-                <InfoItem label="服务费" value={`+¥${serviceFee.toFixed(2)}`} />
+                <InfoItem label="车企服务费" value={`+¥${serviceFee.toFixed(2)}`} />
               </InfoSection>
               <InfoSection title="计算费用（成本）">
                 <InfoItem label={`平台扣点 (${(platformRate * 100).toFixed(0)}%)`} value={`-¥${platformFee.toFixed(2)}`} />
@@ -239,7 +239,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               <div className="order-card__profit-formula">
                 <div className="order-card__profit-formula-label">计算方式</div>
                 <div className="order-card__profit-formula-text">
-                  利润 = 客户应收 + 服务费 - 材料成本 - 平台扣点
+                  利润 = 客户应收 + 车企服务费 - 材料成本 - 平台扣点
                 </div>
                 <div className="order-card__profit-formula-calc">
                   ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}

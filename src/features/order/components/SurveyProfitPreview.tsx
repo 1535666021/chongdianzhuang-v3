@@ -21,13 +21,13 @@ export function SurveyProfitPreview({
 }: SurveyProfitPreviewProps) {
   const { customerReceivable, platformFee, materialCost, profit } = useMemo(() => {
     const costResult = calcMaterialCost(materials)
-    const receivable = estimatedCost + serviceFee
+    const receivable = estimatedCost
     const fee = calcPlatformFee(estimatedCost, platformRate)
     return {
       customerReceivable: receivable,
       platformFee: fee,
       materialCost: costResult.total,
-      profit: calcProfit(receivable, costResult.total, fee),
+      profit: calcProfit(receivable, costResult.total, fee, serviceFee),
     }
   }, [estimatedCost, materials, platformRate, serviceFee])
 
@@ -42,7 +42,7 @@ export function SurveyProfitPreview({
           <span>预估增项</span><strong>{formatCurrency(estimatedCost)}</strong>
         </div>
         <div className="survey-profit-preview__row">
-          <span>服务费</span><strong>{formatCurrency(serviceFee)}</strong>
+          <span>车企服务费</span><strong>{formatCurrency(serviceFee)}</strong>
         </div>
         <div className="survey-profit-preview__row">
           <span>客户应收</span><strong>{formatCurrency(customerReceivable)}</strong>
