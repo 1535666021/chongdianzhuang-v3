@@ -92,25 +92,27 @@ export function extractCableMeters(materials: Array<{ name: string; quantity: nu
 export function calcMaterialCost(materials: Array<{ name: string; quantity: number }>): MaterialCostResult {
   const unmatched: string[] = []
   const total = materials.reduce((sum, m) => {
-    const unitCost = resolveCostPrice(m.name)
-    if (unitCost === 0) {
+    const unitCost = findCostPrice(m.name)
+    if (unitCost === null) {
       unmatched.push(m.name)
     }
-    return sum + unitCost * m.quantity
+    return sum + (unitCost ?? 0) * m.quantity
   }, 0)
   return { total, unmatched }
 }
 
-export function resolveCostPrice(name: string): number {
+export function resolveCostPrice(name: string): number { return findCostPrice(name) ?? 0 }
+
+export function findCostPrice(name: string): number | null {
   const mappedName = getCostMapping(name)
   if (mappedName) {
     const item = costMaterials.find((c) => c.name === mappedName)
-    if (item?.costPrice) return item.costPrice
+    if (item) return item.costPrice ?? 0
   }
   const matchedName = matchCostName(name)
   if (matchedName) {
     const item = costMaterials.find((c) => c.name === matchedName)
-    if (item?.costPrice) return item.costPrice
+    if (item) return item.costPrice ?? 0
   }
   const normalizedName = normalizeCostName(name)
   const fallbackItem = costMaterials.find((item) => {
@@ -118,7 +120,7 @@ export function resolveCostPrice(name: string): number {
     return normalizedCostName === normalizedName
       || (normalizedName.startsWith('电缆') && normalizedCostName === '电缆')
   })
-  return fallbackItem?.costPrice ?? 0
+  return fallbackItem?.costPrice ?? null
 }
 
 function normalizeCostName(name: string) {

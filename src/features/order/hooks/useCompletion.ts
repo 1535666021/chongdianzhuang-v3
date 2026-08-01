@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost, calcProfit, resolveCostPrice } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -62,7 +62,8 @@ export function useCompletion(orderId: string) {
     materials: (order?.materials?.length ? order.materials : order?.survey?.estimatedMaterials || []).map((m) => {
       const addon = findAddonMaterial(m.name)
       const sp = addon?.settlementPrice || m.unitPrice || 0
-      const cp = resolveCostPrice(m.name) || addon?.costPrice || m.unitPrice || 0
+      const resolvedCost = findCostPrice(m.name)
+      const cp = resolvedCost ?? addon?.costPrice ?? m.unitPrice ?? 0
       return {
         id: Math.random().toString(36).slice(2),
         name: m.name,
