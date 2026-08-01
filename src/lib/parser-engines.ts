@@ -109,7 +109,27 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
  * 六、流式块解析
  * -------------------------------------------------------------- */
 
+function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
+  const text = block.replace(/\s+/g, ' ').trim();
+  const identity = text.match(/(?:^|\s)(\d{10,20})\s+([\u4e00-\u9fa5]{2,4})\s+(1[3-9]\d{9})\s+(.+)$/);
+  if (!identity || identity.index === undefined) return null;
+  const [, orderNo, customerName, phone, tail] = identity;
+  const addressAndRemark = tail.match(/^(.+?)\s+(?:是|否)\s+(.+)$/);
+  if (!addressAndRemark) return null;
+  const item = emptyItem();
+  item.orderNo = orderNo;
+  item.customerName = customerName;
+  item.phone = phone;
+  item.serviceType = text.slice(0, identity.index).replace(/^\d{1,2}\.\d{1,2}\s+/, '').trim();
+  item.address = addressAndRemark[1].replace(/\s+/g, '');
+  item.remark = addressAndRemark[2].trim();
+  fillFallbacks(item, text);
+  return item;
+}
+
 export function parseFlowBlock(block: string): ParsedOrderItem {
+  const compactItem = parseCompactFlowBlock(block);
+  if (compactItem) return compactItem;
   const item = emptyItem();
   const lines = block.split('\n');
   const remarks: string[] = [];
