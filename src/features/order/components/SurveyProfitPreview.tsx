@@ -15,21 +15,19 @@ interface SurveyProfitPreviewProps {
 
 export function SurveyProfitPreview({
   estimatedCost,
-  cableCost,
   materials,
   serviceFee,
   platformRate,
 }: SurveyProfitPreviewProps) {
-  const { customerReceivable, platformFee, materialCost, profit, unmatched } = useMemo(() => {
+  const { customerReceivable, platformFee, materialCost, profit } = useMemo(() => {
     const costResult = calcMaterialCost(materials)
     const receivable = estimatedCost + serviceFee
-    const fee = calcPlatformFee(receivable, platformRate)
+    const fee = calcPlatformFee(estimatedCost, platformRate)
     return {
       customerReceivable: receivable,
       platformFee: fee,
       materialCost: costResult.total,
       profit: calcProfit(receivable, costResult.total, fee),
-      unmatched: costResult.unmatched,
     }
   }, [estimatedCost, materials, platformRate, serviceFee])
 
@@ -50,9 +48,6 @@ export function SurveyProfitPreview({
           <span>客户应收</span><strong>{formatCurrency(customerReceivable)}</strong>
         </div>
         <div className="survey-profit-preview__row">
-          <span>电缆超米费</span><strong>{formatCurrency(cableCost)}</strong>
-        </div>
-        <div className="survey-profit-preview__row">
           <span>平台费用</span><strong>-{formatCurrency(platformFee)}</strong>
         </div>
         <div className="survey-profit-preview__row">
@@ -61,9 +56,6 @@ export function SurveyProfitPreview({
         <div className={`survey-profit-preview__profit ${profit >= 0 ? 'is-positive' : 'is-negative'}`}>
           <span>预计利润</span><strong>{formatCurrency(profit)}</strong>
         </div>
-        {unmatched.length > 0 && (
-          <p className="survey-profit-preview__hint">{unmatched.length} 项材料未匹配成本价</p>
-        )}
       </div>
     </CollapsePanel>
   )

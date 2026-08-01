@@ -112,7 +112,17 @@ export function resolveCostPrice(name: string): number {
     const item = costMaterials.find((c) => c.name === matchedName)
     if (item?.costPrice) return item.costPrice
   }
-  return 0
+  const normalizedName = normalizeCostName(name)
+  const fallbackItem = costMaterials.find((item) => {
+    const normalizedCostName = normalizeCostName(item.name)
+    return normalizedCostName === normalizedName
+      || (normalizedName.startsWith('电缆') && normalizedCostName === '电缆')
+  })
+  return fallbackItem?.costPrice ?? 0
+}
+
+function normalizeCostName(name: string) {
+  return name.toLowerCase().replace(/\s/g, '').replace(/[x×]/g, '*').replace(/mm(?:²|2)/g, '')
 }
 
 /** 勘测预估费用汇总项 */
