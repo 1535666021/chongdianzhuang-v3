@@ -1,0 +1,45 @@
+.survey-profit-preview {
+  margin-bottom: var(--space-md);
+}
+
+.survey-profit-preview__content {
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.survey-profit-preview__row,
+.survey-profit-preview__profit {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-aux);
+}
+
+.survey-profit-preview__row strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.survey-profit-preview__profit {
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--color-info-border);
+  color: var(--color-text-primary);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.survey-profit-preview__profit.is-positive strong {
+  color: var(--color-success-dark);
+}
+
+.survey-profit-preview__profit.is-negative strong {
+  color: var(--color-danger);
+}
+
+.survey-profit-preview__hint {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-aux);
+  font-size: var(--fs-aux);
+}

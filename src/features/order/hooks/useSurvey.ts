@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { calcAddonTotal, calcOverFee, calcSurveyTotal } from '@/shared/utils/orderCalc'
+import { calcAddonTotal, calcOverFee, calcSurveyTotal, getServiceFee } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import type { Material } from '@/types/material'
@@ -27,6 +27,8 @@ export function useSurvey(order: Order) {
   const effectiveBrand = order.brandName || selectedBrand
 
   const materialUsageCount = useSettingsStore((s) => s.materialUsageCount)
+  const platformRate = useSettingsStore((s) => s.getPlatformFeeRate(order.platform))
+  const serviceFee = getServiceFee(order.notes || '')
 
   const isCableMat = (name: string) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
@@ -159,6 +161,8 @@ export function useSurvey(order: Order) {
     removeAddon,
     updateQuantity,
     totalEstimatedCost,
+    serviceFee,
+    platformRate,
     save,
   }
 }

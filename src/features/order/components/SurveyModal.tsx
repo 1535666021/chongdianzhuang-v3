@@ -12,6 +12,7 @@ import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
 import { calcOverFee, DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
+import { SurveyProfitPreview } from './SurveyProfitPreview'
 import '../../../shared/components/Modal.css'
 
 interface SurveyModalProps {
@@ -30,7 +31,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const {
     form, effectiveBrand, brandList, brandAddons,
     selectedBrand, setSelectedBrand,
-    updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost, save,
+    updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
+    serviceFee, platformRate, save,
   } = useSurvey(order)
 
   const [showDropdown, setShowDropdown] = useState(false)
@@ -373,6 +375,14 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                 style={{ minHeight: '64px' }}
               />
             </div>
+
+            <SurveyProfitPreview
+              estimatedCost={totalEstimatedCost}
+              cableCost={form.estimatedCableCost}
+              materials={form.estimatedMaterials}
+              serviceFee={serviceFee}
+              platformRate={platformRate}
+            />
           </div>
 
           <div className="modal-footer">
