@@ -21,11 +21,16 @@ interface OrderCardProps {
   onSurvey?: (order: Order) => void
   onGenerateScript?: (order: Order) => void
   onDelete?: (order: Order) => void
+  onEditPlatform?: (order: Order) => void
   showMenu?: boolean
   isToday?: boolean
 }
 
-export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete }: OrderCardProps) {
+function dedupeAddress(address: string) {
+  return address.replace(/^(.+?市)\1/, '$1')
+}
+
+export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
@@ -40,9 +45,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const materials = order.materials || []
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
-  const displayPlatform = order.platformName && order.platformName !== '其他' ? order.platformName : order.brandName
-  const displayPower = order.powerKw?.match(/\d+(?:\.\d+)?/)?.[0]
-  const displayAddress = order.address.replace(/^(.+?市)\1/, '$1')
+  const displayAddress = dedupeAddress(order.address || '')
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const deleteOrder = useOrderStore((s) => s.deleteOrder)
   const navigate = useNavigate()
@@ -136,22 +139,27 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               补桩
             </span>
           )}
-          {displayPlatform && (
-            <span className="order-card__tag order-card__tag--platform">
+          {order.platformName && (
+            <span
+              className="order-card__tag order-card__tag--platform"
+              style={{ cursor: 'pointer' }}
+              onClick={(event) => { event.stopPropagation(); onEditPlatform?.(order) }}
+            >
               <ShoppingCart size={10} />
-              {displayPlatform}
+              {order.platformName}
+              {order.platformName === '其他' && <span style={{ marginLeft: 2, fontSize: 10 }}>✎</span>}
             </span>
           )}
-          {order.brandName && order.brandName !== displayPlatform && (
+          {order.brandName && (
             <span className="order-card__tag order-card__tag--brand">
               <Tag size={10} />
               {order.brandName}
             </span>
           )}
-          {displayPower && (
+          {order.powerKw && (
             <span className="order-card__tag order-card__tag--power">
               <Zap size={10} />
-              {displayPower}kW
+              {order.powerKw.toString().replace(/(?:kW)+$/i, '')}kW
             </span>
           )}
           {order.packageMeters && (

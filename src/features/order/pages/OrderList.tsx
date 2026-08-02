@@ -9,6 +9,7 @@ import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Plus, FileText, Package } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
+import { getKnownPlatforms } from '@/shared/storage/platformStorage'
 import '../../../shared/components/OrderList.css'
 
 interface Props {
@@ -23,10 +24,13 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const [showCount, setShowCount] = useState(50)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
   const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
+  const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
 
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
   const { orders, stats } = useOrderList(filter)
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
+  const updateOrder = useOrderStore((state) => state.updateOrder)
+  const knownPlatforms = getKnownPlatforms()
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -161,6 +165,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
                 onSurvey={setSurveyOrder}
                 onGenerateScript={setScriptOrder}
                 onDelete={(item) => deleteOrder(item.id)}
+                onEditPlatform={setEditPlatformOrder}
               />
             ))}
             {displayOrders.length > showCount && (
@@ -181,6 +186,24 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
         />
       )}
       {scriptOrder && <ScriptEditorModal order={scriptOrder} onClose={() => setScriptOrder(null)} />}
+      {editPlatformOrder && (
+        <div className="modal-overlay" onClick={() => setEditPlatformOrder(null)}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header"><h3 className="modal-title">选择平台</h3></div>
+            <div className="modal-body">
+              {knownPlatforms.length ? knownPlatforms.map((platform) => (
+                <button
+                  key={platform}
+                  className="modal-btn modal-btn--secondary w-full mb-2"
+                  onClick={() => { updateOrder(editPlatformOrder.id, { platformName: platform }); setEditPlatformOrder(null) }}
+                >
+                  {platform}
+                </button>
+              )) : <p className="text-sm text-gray-500">暂无已知平台</p>}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
