@@ -31,7 +31,10 @@ export default function App() {
     const known = getKnownPlatforms()
     orders
       .filter((order) => order.status === '已完成')
-      .map((order) => order.platformName || (order.platform !== '其他' ? order.platform : order.brandName))
+      .map((order) => {
+        const platformName = order.platformName?.trim()
+        return platformName && platformName !== '其他' ? platformName : (order.platform !== '其他' ? order.platform : order.brandName)
+      })
       .filter((platform): platform is string => typeof platform === 'string' && platform.length > 0 && !known.includes(platform))
       .forEach(addKnownPlatform)
   }, [orders])

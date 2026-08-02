@@ -1,7 +1,7 @@
 const STORAGE_KEY = 'cdz_known_platforms_v1'
 
 function normalize(platforms: string[]): string[] {
-  return [...new Set(platforms.map((platform) => platform.trim()).filter(Boolean))]
+  return [...new Set(platforms.map((platform) => platform.trim()).filter((platform) => platform && platform !== '其他'))]
 }
 
 export function getKnownPlatforms(): string[] {

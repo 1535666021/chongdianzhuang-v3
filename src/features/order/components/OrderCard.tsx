@@ -40,6 +40,9 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const materials = order.materials || []
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
+  const displayPlatform = order.platformName && order.platformName !== '其他' ? order.platformName : order.brandName
+  const displayPower = order.powerKw?.match(/\d+(?:\.\d+)?/)?.[0]
+  const displayAddress = order.address.replace(/^(.+?市)\1/, '$1')
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const deleteOrder = useOrderStore((s) => s.deleteOrder)
   const navigate = useNavigate()
@@ -133,22 +136,22 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               补桩
             </span>
           )}
-          {order.platformName && (
+          {displayPlatform && (
             <span className="order-card__tag order-card__tag--platform">
               <ShoppingCart size={10} />
-              {order.platformName}
+              {displayPlatform}
             </span>
           )}
-          {order.brandName && (
+          {order.brandName && order.brandName !== displayPlatform && (
             <span className="order-card__tag order-card__tag--brand">
               <Tag size={10} />
               {order.brandName}
             </span>
           )}
-          {order.powerKw && (
+          {displayPower && (
             <span className="order-card__tag order-card__tag--power">
               <Zap size={10} />
-              {order.powerKw}kW
+              {displayPower}kW
             </span>
           )}
           {order.packageMeters && (
@@ -184,15 +187,15 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
 
         <div
           className="order-card__address"
-          onClick={(event) => { event.stopPropagation(); void copyToClipboard(order.address, '地址') }}
-          onMouseDown={() => handleLongPressStart(order.address)}
+          onClick={(event) => { event.stopPropagation(); void copyToClipboard(displayAddress, '地址') }}
+          onMouseDown={() => handleLongPressStart(displayAddress)}
           onMouseUp={handleLongPressEnd}
           onMouseLeave={handleLongPressEnd}
-          onTouchStart={() => handleLongPressStart(order.address)}
+          onTouchStart={() => handleLongPressStart(displayAddress)}
           onTouchEnd={handleLongPressEnd}
         >
           <MapPin size={16} className="order-card__icon order-card__icon--top" />
-          <span>{order.address}</span>
+          <span>{displayAddress}</span>
         </div>
 
         {/* 预约信息 */}
