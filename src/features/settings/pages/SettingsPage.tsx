@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useOutletContext } from 'react-router-dom'
 import {
   Settings,
   Upload,
@@ -32,7 +32,6 @@ import LingpaoTemplate from '../components/LingpaoTemplate'
 import { ScriptEditor } from '../components/ScriptEditor'
 import ScriptManager from '../components/ScriptManager'
 import AmapConfig from '../components/AmapConfig'
-
 type SettingSection =
   | 'cost'
   | 'addon'
@@ -52,6 +51,7 @@ type SettingSection =
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingSection>(null)
   const navigate = useNavigate()
+  const { checkNow, toast } = useOutletContext<{ checkNow: () => Promise<boolean>; toast: { success: (message: string) => void } }>()
 
   const menuItems = [
     { id: 'backup' as const, label: '数据导入', icon: Upload, desc: '从老系统导入订单数据' },
@@ -112,7 +112,7 @@ export default function SettingsPage() {
               <Settings size={28} className="text-white" />
             </div>
             <h3 className="text-lg font-bold text-gray-800">{APP_NAME}</h3>
-            <p className="text-sm text-gray-500">版本 v{APP_VERSION}</p>
+            <button type="button" onClick={async () => { if (!await checkNow()) toast.success('当前已是最新版本') }} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>版本 v{APP_VERSION}</button>
             <p className="text-xs text-gray-400 mt-4">专为充电桩安装工打造</p>
             <p className="text-xs text-gray-400">工程师：谢责强</p>
           </div>

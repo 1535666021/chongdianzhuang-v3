@@ -21,7 +21,7 @@ const iconMap: Record<string, React.ReactNode> = {
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { hasUpdate, handleUpdate } = useVersionCheck()
+  const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
   const orders = useOrderStore((s) => s.orders)
   const { toasts, removeToast } = useToast()
 
@@ -59,7 +59,7 @@ export default function App() {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       <main className="flex-1 overflow-auto">
-        <Outlet />
+        <Outlet context={{ checkNow, toast }} />
       </main>
       <nav className="bg-white border-t border-gray-200 px-2 py-1 fixed bottom-0 left-0 right-0">
         <div className="flex justify-around">

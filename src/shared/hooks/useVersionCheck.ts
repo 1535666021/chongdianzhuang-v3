@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { backupLocalData } from '@/shared/storage/dataMigration'
 
 declare const __APP_VERSION__: string
@@ -9,26 +9,33 @@ const VERSION_URL = `${import.meta.env.BASE_URL}version.json`
 export function useVersionCheck() {
   const [hasUpdate, setHasUpdate] = useState(false)
 
-  useEffect(() => {
-    const checkVersion = async () => {
-      const today = new Date().toISOString().slice(0, 10)
-      if (localStorage.getItem(CHECK_DATE_KEY) === today) return
-      try {
-        const response = await fetch(VERSION_URL, { cache: 'no-store' })
-        if (!response.ok) return
-        const { version } = await response.json() as { version?: string }
-        localStorage.setItem(CHECK_DATE_KEY, today)
-        if (version && version !== __APP_VERSION__) setHasUpdate(true)
-        navigator.serviceWorker?.getRegistration().then((registration) => registration?.update())
-      } catch {
-        // 离线时保留当前缓存，并在下次可联网时再次检测。
-      }
+  const checkVersion = useCallback(async (force = false) => {
+    const today = new Date().toISOString().slice(0, 10)
+    if (!force && localStorage.getItem(CHECK_DATE_KEY) === today) return false
+    try {
+      const url = force ? `${VERSION_URL}?t=${Date.now()}` : VERSION_URL
+      const response = await fetch(url, { cache: 'no-store' })
+      if (!response.ok) return false
+      const { version } = await response.json() as { version?: string }
+      localStorage.setItem(CHECK_DATE_KEY, today)
+      const hasNewVersion = Boolean(version && version !== __APP_VERSION__)
+      if (hasNewVersion) setHasUpdate(true)
+      navigator.serviceWorker?.getRegistration().then((registration) => registration?.update())
+      return hasNewVersion
+    } catch {
+      // 离线时保留当前缓存，并在下次可联网时再次检测。
+      return false
     }
+  }, [])
+
+  useEffect(() => {
     const onVisible = () => { if (document.visibilityState === 'visible') void checkVersion() }
     void checkVersion()
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
-  }, [])
+  }, [checkVersion])
+
+  const checkNow = useCallback(() => checkVersion(true), [checkVersion])
 
   const handleUpdate = async () => {
     backupLocalData()
@@ -43,5 +50,5 @@ export function useVersionCheck() {
     window.setTimeout(reload, 1000)
   }
 
-  return { hasUpdate, handleUpdate }
+  return { hasUpdate, handleUpdate, checkNow }
 }
