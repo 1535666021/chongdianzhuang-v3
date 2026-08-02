@@ -47,12 +47,12 @@ type SettingSection =
   | 'scripts'
   | 'map'
   | null
-
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingSection>(null)
+  const [isChecking, setIsChecking] = useState(false)
   const navigate = useNavigate()
   const { checkNow, toast } = useOutletContext<{ checkNow: () => Promise<boolean>; toast: { success: (message: string) => void } }>()
-
+  const handleVersionCheck = async () => { if (isChecking) return; setIsChecking(true); if (!await checkNow()) toast.success('当前已是最新版本'); window.setTimeout(() => setIsChecking(false), 3000) }
   const menuItems = [
     { id: 'backup' as const, label: '数据导入', icon: Upload, desc: '从老系统导入订单数据' },
     { id: 'map' as const, label: '地图配置', icon: MapPin, desc: '高德Key、缩放级别' },
@@ -112,7 +112,7 @@ export default function SettingsPage() {
               <Settings size={28} className="text-white" />
             </div>
             <h3 className="text-lg font-bold text-gray-800">{APP_NAME}</h3>
-            <button type="button" onClick={async () => { if (!await checkNow()) toast.success('当前已是最新版本') }} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>版本 v{APP_VERSION}</button>
+            <button type="button" disabled={isChecking} onClick={handleVersionCheck} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{isChecking ? '检测中...' : `版本 v${APP_VERSION}`}</button>
             <p className="text-xs text-gray-400 mt-4">专为充电桩安装工打造</p>
             <p className="text-xs text-gray-400">工程师：谢责强</p>
           </div>

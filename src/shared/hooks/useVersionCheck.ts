@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { backupLocalData } from '@/shared/storage/dataMigration'
 
 declare const __APP_VERSION__: string
@@ -8,6 +8,7 @@ const VERSION_URL = `${import.meta.env.BASE_URL}version.json`
 
 export function useVersionCheck() {
   const [hasUpdate, setHasUpdate] = useState(false)
+  const checkingRef = useRef(false)
 
   const checkVersion = useCallback(async (force = false) => {
     const today = new Date().toISOString().slice(0, 10)
@@ -35,7 +36,15 @@ export function useVersionCheck() {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [checkVersion])
 
-  const checkNow = useCallback(() => checkVersion(true), [checkVersion])
+  const checkNow = useCallback(async () => {
+    if (checkingRef.current) return false
+    checkingRef.current = true
+    try {
+      return await checkVersion(true)
+    } finally {
+      window.setTimeout(() => { checkingRef.current = false }, 3000)
+    }
+  }, [checkVersion])
 
   const handleUpdate = async () => {
     backupLocalData()

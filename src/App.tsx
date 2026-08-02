@@ -23,7 +23,7 @@ export default function App() {
   const navigate = useNavigate()
   const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
   const orders = useOrderStore((s) => s.orders)
-  const { toasts, removeToast } = useToast()
+  const { toast: appToast, toasts, removeToast } = useToast()
 
   // 底部气泡：首页=待办数，已预约=已预约数（老系统同款红点提示）
   const badgeMap: Record<string, number> = {
@@ -59,7 +59,7 @@ export default function App() {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       <main className="flex-1 overflow-auto">
-        <Outlet context={{ checkNow, toast }} />
+        <Outlet context={{ checkNow, toast: appToast }} />
       </main>
       <nav className="bg-white border-t border-gray-200 px-2 py-1 fixed bottom-0 left-0 right-0">
         <div className="flex justify-around">

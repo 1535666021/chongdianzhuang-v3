@@ -10,22 +10,23 @@ import {
   DEFAULT_PACKAGE_METERS,
 } from '@/shared/utils/orderCalc'
 
-export function buildScriptVars(
-  order: Order,
-  scene: string,
-  settings: { engineerName: string; engineerPhone: string }
-): Record<string, string> {
+function dedupeAddress(address: string) { return Array.from(new Set(address.replace(/-/g, ' ').split(/\s+/).filter(Boolean))).join('') }
+
+export function buildScriptVars(order: Order, scene: string, settings: { engineerName: string; engineerPhone: string }): Record<string, string> {
   const survey = order.survey
   const vars: Record<string, string> = {
     customerName: order.customerName || '',
     phone: order.phone || '',
-    address: order.address || '',
+    address: dedupeAddress(order.address || ''),
     brand: order.brandName || '',
     installer: settings.engineerName || '谢责强',
     appointmentDate: order.appointmentDate || '',
     timeSlot: order.appointmentTime || '',
     amount: String(order.customerPrice || 0),
     notes: order.notes || '',
+    addonCost: String(order.customerPrice || 0), totalCost: String(order.customerPrice || 0),
+    engineerName: settings.engineerName || '谢责强', engineerPhone: settings.engineerPhone || '15395147568',
+    surveyNotes: order.survey?.locationInfo || order.surveyNote || '',
     city: (() => { const a = order.address || ''; const m = REGIONS.find(r => a.includes(r)); return m || '' })(),
     platformBrand: buildPlatformBrand(order.platformName || order.platform || '', order.brandName || ''),
   }
@@ -46,7 +47,7 @@ export function buildScriptVars(
     }
   }
 
-  vars.completeDate = order.completeDate || ''
+  vars.completeDate = vars.completionDate = order.completeDate || ''
   vars.actualCable = String(extractCableMeters(order.materials || []) || vars.cableDistance || '0')
 
   const pkg = order.packageMeters ? parseInt(order.packageMeters) : DEFAULT_PACKAGE_METERS
@@ -112,11 +113,7 @@ interface CompletionFormInput {
   actualProfit?: number
 }
 
-export function buildScriptVarsFromCompletionForm(
-  form: CompletionFormInput,
-  order: Order,
-  settings: { engineerName: string; engineerPhone: string }
-): Record<string, string> {
+export function buildScriptVarsFromCompletionForm(form: CompletionFormInput, order: Order, settings: { engineerName: string; engineerPhone: string }): Record<string, string> {
   const defaults = buildScriptVars({ ...order, notes: form.notes ?? order.completionNotes ?? order.notes ?? '' }, '安装完成', settings)
   defaults.notes = form.notes ?? order.completionNotes ?? order.notes ?? ''
   defaults.completeDate = form.completeDate || defaults.completeDate
@@ -131,6 +128,7 @@ export function buildScriptVarsFromCompletionForm(
   const actProfit = form.actualProfit || order.actualProfit || 0
 
   defaults.amount = String(custTotal)
+  defaults.addonCost = defaults.totalCost = String(custTotal)
   defaults.addonSummary = buildAddonSummary(custTotal, actProfit)
 
   if (form.materials?.length) {

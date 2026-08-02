@@ -19,7 +19,7 @@ interface ToastApi {
 }
 
 const TOAST_DURATION: Record<ToastType, number> = {
-  success: 2200,
+  success: 3000,
   error: 3000,
   warning: 2500,
   info: 2000,

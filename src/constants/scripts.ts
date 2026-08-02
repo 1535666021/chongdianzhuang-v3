@@ -21,6 +21,14 @@ export const DEFAULT_SCRIPT_VARIABLES: ScriptVariable[] = [
   { name: 'phone', label: '联系电话', defaultValue: '15395147568' },
   { name: 'brand', label: '品牌', defaultValue: '' },
   { name: 'notes', label: '备注', defaultValue: '' },
+  { name: 'completionDate', label: '完工时间', defaultValue: '' },
+  { name: 'powerSource', label: '取电方式', defaultValue: '' },
+  { name: 'cableDistance', label: '线缆距离', defaultValue: '' },
+  { name: 'addonCost', label: '增项费用', defaultValue: '' },
+  { name: 'totalCost', label: '费用合计', defaultValue: '' },
+  { name: 'engineerName', label: '工程师姓名', defaultValue: '' },
+  { name: 'engineerPhone', label: '工程师电话', defaultValue: '' },
+  { name: 'surveyNotes', label: '勘测备注', defaultValue: '' },
 ]
 
 export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
@@ -60,6 +68,25 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
 使用电缆 {{actualCable}} 米。{{addonSummary}}
 安装工程师：{{installer}}
 电话：{{phone}}`,
+    variables: DEFAULT_SCRIPT_VARIABLES,
+  },
+  {
+    id: 'general-install-summary',
+    brand: '通用',
+    scene: '安装完成',
+    content: `完工总结：已完成安装
+品牌：{{brand}}
+完工时间：{{completionDate}}
+用户信息：{{customerName}}
+联系电话：{{phone}}
+地址：{{address}}
+取电方式：{{powerSource}}
+安装详情：线缆 {{cableDistance}} 米
+增项费用：{{addonCost}} 元
+费用合计：{{totalCost}}元
+安装工程师：{{engineerName}}
+工程师电话：{{engineerPhone}}
+备注：{{surveyNotes}}`,
     variables: DEFAULT_SCRIPT_VARIABLES,
   },
   {
