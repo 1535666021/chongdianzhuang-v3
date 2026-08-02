@@ -1,10 +1,12 @@
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
+import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
 
 // 导出全局 toast
 export { toast }
@@ -24,6 +26,15 @@ export default function App() {
   const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
   const orders = useOrderStore((s) => s.orders)
   const { toast: appToast, toasts, removeToast } = useToast()
+
+  useEffect(() => {
+    const known = getKnownPlatforms()
+    orders
+      .filter((order) => order.status === '已完成')
+      .map((order) => order.platformName || (order.platform !== '其他' ? order.platform : order.brandName))
+      .filter((platform): platform is string => typeof platform === 'string' && platform.length > 0 && !known.includes(platform))
+      .forEach(addKnownPlatform)
+  }, [orders])
 
   // 底部气泡：首页=待办数，已预约=已预约数（老系统同款红点提示）
   const badgeMap: Record<string, number> = {

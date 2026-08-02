@@ -211,10 +211,20 @@ function inferInstallType(item: ParsedOrderItem): void {
   item.installType = '其他';
 }
 
+function inferNature(item: ParsedOrderItem): void {
+  const text = `${item.serviceType} ${item.remark}`;
+  const parsedItem = item as ParsedOrderItem & { nature?: string };
+  if (/维修|故障|更换/.test(text)) { parsedItem.nature = '维修'; return; }
+  if (/勘察|勘测|测量/.test(text)) { parsedItem.nature = '勘测'; return; }
+  if (/补桩/.test(text)) { parsedItem.nature = '补桩'; return; }
+  parsedItem.nature = '安装';
+}
+
 export function parseBlock(block: string): ParsedOrderItem {
   const kvLineCount = block.split('\n').filter((l) => KEY_VALUE_RE.test(l.trim())).length;
   const item = kvLineCount >= 2 ? parseKeyValueBlock(block) : parseFlowBlock(block);
   inferInstallType(item);
+  inferNature(item);
   return item;
 }
 

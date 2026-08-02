@@ -19,11 +19,12 @@ interface OrderCardProps {
   onClick?: () => void
   onSurvey?: (order: Order) => void
   onGenerateScript?: (order: Order) => void
+  onDelete?: (order: Order) => void
   showMenu?: boolean
   isToday?: boolean
 }
 
-export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript }: OrderCardProps) {
+export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
@@ -315,7 +316,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         <OrderCardMenu
           order={order}
           onClose={() => setShowMenuPanel(false)}
-          onEditAppointment={() => { setEditRawText(order.rawText || ''); setShowModal(true) }}
+          onEditAppointment={() => setShowAppointment(true)}
           onNavigate={() => { window.open(`https://uri.amap.com/marker?position=${encodeURIComponent(order.address)}`, '_blank') }}
           onDelete={() => { setShowMenuPanel(false); setShowConfirmDelete(true) }}
         />
@@ -327,7 +328,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           message={`确定删除【${order.customerName}】的订单吗？`}
           danger
           confirmText="删除"
-          onConfirm={() => { deleteOrder(order.id); setShowConfirmDelete(false) }}
+          onConfirm={() => { onDelete?.(order) ?? deleteOrder(order.id); setShowConfirmDelete(false) }}
           onCancel={() => setShowConfirmDelete(false)}
         />
       )}

@@ -8,6 +8,7 @@ import type { Order } from '@/types'
 import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Plus, FileText, Package } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
+import { useOrderStore } from '@/stores/orderStore'
 import '../../../shared/components/OrderList.css'
 
 interface Props {
@@ -25,6 +26,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
 
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
   const { orders, stats } = useOrderList(filter)
+  const deleteOrder = useOrderStore((state) => state.deleteOrder)
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -153,11 +155,12 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
               <OrderCard
                 key={order.id}
                 order={order}
-                showMenu={fixedStatus === '已预约'}
+                showMenu={fixedStatus === '待办' || fixedStatus === '已预约'}
                 isToday={order.appointmentDate === today}
                 onClick={() => navigate(`/orders/${order.id}`)}
                 onSurvey={setSurveyOrder}
                 onGenerateScript={setScriptOrder}
+                onDelete={(item) => deleteOrder(item.id)}
               />
             ))}
             {displayOrders.length > showCount && (

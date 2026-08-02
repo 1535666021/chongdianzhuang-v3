@@ -1,18 +1,6 @@
 import type { BaseEntity, Platform, OrderStatus, Region, InstallType } from './common'
-
-export interface OrderMaterialItem {
-  name: string
-  spec?: string
-  quantity: number
-  unit: string
-  unitPrice: number
-}
-
-export interface OrderPayment {
-  paid: boolean
-  paidDate?: string
-}
-
+export interface OrderMaterialItem { name: string; spec?: string; quantity: number; unit: string; unitPrice: number }
+export interface OrderPayment { paid: boolean; paidDate?: string }
 export interface OrderSurvey {
   estimatedMaterials?: OrderMaterialItem[]
   powerSource?: '国网取电' | '物业配电' | '自家电表' | '其他'
@@ -25,7 +13,6 @@ export interface OrderSurvey {
   surveyResult?: '勘测完成' | '符合安装' | '不符合安装' | '需整改' | '待定'
   locationInfo?: string
 }
-
 export interface Order extends BaseEntity {
   customerName: string
   phone: string
@@ -62,8 +49,8 @@ export interface Order extends BaseEntity {
   installType?: InstallType
   surveyNote?: string
   completionNotes?: string
+  nature?: string
 }
-
 export interface OrderFilter {
   status?: OrderStatus
   platform?: Platform
