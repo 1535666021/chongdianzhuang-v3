@@ -1,5 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+import '@/shared/storage/dataMigration'
 import AppRoutes from '@/routes'
 import './index.css'
 

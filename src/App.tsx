@@ -45,16 +45,14 @@ export default function App() {
 
       {/* 版本更新提示 */}
       {hasUpdate && (
-        <div className="bg-blue-600 text-white px-4 py-2 text-center text-sm flex items-center justify-center gap-2 sticky top-0 z-50">
+        <button
+          type="button"
+          onClick={handleUpdate}
+          style={{ background: 'var(--color-success)', borderRadius: 'var(--radius-md)', bottom: 'calc(64px + env(safe-area-inset-bottom))', color: 'white', left: 'var(--space-md)', padding: 'var(--space-sm) var(--space-md)', position: 'fixed', right: 'var(--space-md)', zIndex: 'var(--z-modal)' }}
+        >
           <RefreshCw size={14} />
-          <span>发现新版本，点击刷新</span>
-          <button
-            onClick={handleUpdate}
-            className="ml-2 px-3 py-0.5 bg-white text-blue-600 rounded text-xs font-medium"
-          >
-            刷新
-          </button>
-        </div>
+          <span>发现新版本，点击更新</span>
+        </button>
       )}
 
       {/* Toast 通知 */}
