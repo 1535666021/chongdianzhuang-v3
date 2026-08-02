@@ -18,11 +18,12 @@ interface OrderCardProps {
   order: Order
   onClick?: () => void
   onSurvey?: (order: Order) => void
+  onGenerateScript?: (order: Order) => void
   showMenu?: boolean
   isToday?: boolean
 }
 
-export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey }: OrderCardProps) {
+export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
@@ -217,36 +218,41 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             </button>
           </div>
         ) : isCompleted ? (
-          <CollapsePanel
-            title={
-              <div className="order-card__profit-header">
-                <span>利润详情</span>
-                {showProfitDetail ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </div>
-            }
-            defaultExpanded={false}
-            onToggle={setShowProfitDetail}
-          >
-            <div className="order-card__profit-detail space-y-2 text-xs">
-              <InfoSection title="收了多少钱">
-                <InfoItem label="客户应收" value={`+¥${customerPrice.toFixed(2)}`} />
-                <InfoItem label="车企服务费" value={`+¥${serviceFee.toFixed(2)}`} />
-              </InfoSection>
-              <InfoSection title="计算费用（成本）">
-                <InfoItem label={`平台扣点 (${(platformRate * 100).toFixed(0)}%)`} value={`-¥${platformFee.toFixed(2)}`} />
-                <InfoItem label="材料成本" value={`-¥${materialCost.toFixed(2)}`} />
-              </InfoSection>
-              <div className="order-card__profit-formula">
-                <div className="order-card__profit-formula-label">计算方式</div>
-                <div className="order-card__profit-formula-text">
-                  利润 = 客户应收 + 车企服务费 - 材料成本 - 平台扣点
+          <>
+            <CollapsePanel
+              title={
+                <div className="order-card__profit-header">
+                  <span>利润详情</span>
+                  {showProfitDetail ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                 </div>
-                <div className="order-card__profit-formula-calc">
-                  ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}
+              }
+              defaultExpanded={false}
+              onToggle={setShowProfitDetail}
+            >
+              <div className="order-card__profit-detail space-y-2 text-xs">
+                <InfoSection title="收了多少钱">
+                  <InfoItem label="客户应收" value={`+¥${customerPrice.toFixed(2)}`} />
+                  <InfoItem label="车企服务费" value={`+¥${serviceFee.toFixed(2)}`} />
+                </InfoSection>
+                <InfoSection title="计算费用（成本）">
+                  <InfoItem label={`平台扣点 (${(platformRate * 100).toFixed(0)}%)`} value={`-¥${platformFee.toFixed(2)}`} />
+                  <InfoItem label="材料成本" value={`-¥${materialCost.toFixed(2)}`} />
+                </InfoSection>
+                <div className="order-card__profit-formula">
+                  <div className="order-card__profit-formula-label">计算方式</div>
+                  <div className="order-card__profit-formula-text">
+                    利润 = 客户应收 + 车企服务费 - 材料成本 - 平台扣点
+                  </div>
+                  <div className="order-card__profit-formula-calc">
+                    ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}
+                  </div>
                 </div>
               </div>
-            </div>
-          </CollapsePanel>
+            </CollapsePanel>
+            <button className="order-card__appointment-btn" onClick={(e) => { e.stopPropagation(); onGenerateScript?.(order) }}>
+              <span>生成话术</span>
+            </button>
+          </>
         ) : (
           <div
             className="order-card__appointment-btn"

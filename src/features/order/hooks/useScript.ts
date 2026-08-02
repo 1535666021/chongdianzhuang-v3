@@ -1,5 +1,6 @@
 import type { Order } from '@/types'
 import { REGIONS } from '@/constants/order'
+import { DEFAULT_SCRIPT_TEMPLATES } from '@/constants/scripts'
 import {
   calcOverFee,
   calcAddonTotal,
@@ -70,6 +71,11 @@ export function renderScript(template: string, vars: Record<string, string>): st
   }
   result = result.replace(/{{[a-zA-Z]+}}/g, '')
   return result.trim()
+}
+
+export function generateCompletionScript(order: Order, settings: { engineerName: string; engineerPhone: string }): string {
+  const template = DEFAULT_SCRIPT_TEMPLATES.find((item) => item.id === 'general-install-summary')
+  return template ? renderScript(template.content, buildScriptVars(order, template.scene, settings)) : ''
 }
 
 interface SurveyFormInput {

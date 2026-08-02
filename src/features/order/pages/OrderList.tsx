@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
 import SurveyModal from '../components/SurveyModal'
+import ScriptEditorModal from '../components/ScriptEditorModal'
 import { useState, useMemo } from 'react'
 import type { Order } from '@/types'
 import { ORDER_STATUSES } from '@/constants/order'
@@ -20,6 +21,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const [searchKw, setSearchKw] = useState('')
   const [showCount, setShowCount] = useState(50)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
+  const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
 
   const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
   const { orders, stats } = useOrderList(filter)
@@ -155,6 +157,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
                 isToday={order.appointmentDate === today}
                 onClick={() => navigate(`/orders/${order.id}`)}
                 onSurvey={setSurveyOrder}
+                onGenerateScript={setScriptOrder}
               />
             ))}
             {displayOrders.length > showCount && (
@@ -174,6 +177,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
           onClose={() => setSurveyOrder(null)}
         />
       )}
+      {scriptOrder && <ScriptEditorModal order={scriptOrder} onClose={() => setScriptOrder(null)} />}
     </div>
   )
 }
