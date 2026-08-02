@@ -11,6 +11,7 @@ import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { calcMaterialCost, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
+import { toast } from '@/shared/hooks/useToast'
 import '../../../shared/components/OrderCard.css'
 import '../../../shared/components/Modal.css'
 
@@ -70,6 +71,22 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
     }
   }, [copyTimer])
 
+  const copyToClipboard = useCallback(async (text: string | undefined, label: string) => {
+    if (!text) return
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const input = document.createElement('input')
+      input.value = text
+      document.body.appendChild(input)
+      input.select()
+      const copied = document.execCommand('copy')
+      document.body.removeChild(input)
+      if (!copied) return
+    }
+    toast.success(`${label}已复制`)
+  }, [])
+
   const openRawModal = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
     setEditRawText(order.rawText || '')
@@ -91,6 +108,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         <div className="order-card__header">
           <div
             className="order-card__name"
+            onClick={(event) => { event.stopPropagation(); void copyToClipboard(order.customerName, '姓名') }}
             onMouseDown={() => handleLongPressStart(order.customerName)}
             onMouseUp={handleLongPressEnd}
             onMouseLeave={handleLongPressEnd}
@@ -153,6 +171,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         {/* 电话和地址 */}
         <div
           className="order-card__phone"
+          onClick={(event) => { event.stopPropagation(); void copyToClipboard(order.phone, '电话') }}
           onMouseDown={() => handleLongPressStart(order.phone)}
           onMouseUp={handleLongPressEnd}
           onMouseLeave={handleLongPressEnd}
@@ -165,6 +184,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
 
         <div
           className="order-card__address"
+          onClick={(event) => { event.stopPropagation(); void copyToClipboard(order.address, '地址') }}
           onMouseDown={() => handleLongPressStart(order.address)}
           onMouseUp={handleLongPressEnd}
           onMouseLeave={handleLongPressEnd}
