@@ -121,6 +121,8 @@ function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
   item.customerName = customerName;
   item.phone = phone;
   item.serviceType = text.slice(0, identity.index).replace(/^\d{1,2}\.\d{1,2}\s+/, '').trim();
+  const powerMatch = item.serviceType.match(POWER_RE);
+  if (powerMatch) item.powerKw = powerMatch[1];
   item.address = addressAndRemark[1].replace(/\s+/g, '');
   item.remark = addressAndRemark[2].trim();
   fillFallbacks(item, text);
