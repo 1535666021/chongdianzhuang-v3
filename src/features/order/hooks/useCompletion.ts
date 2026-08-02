@@ -166,8 +166,9 @@ export function useCompletion(orderId: string) {
       (form.fixedAux.breakerCount * (breaker?.costPrice || 5)) +
       breakerTypeCost
 
-    // 材料成本 = 增项材料成本 + 固定辅材成本
-    const { total: addonCost, unmatched } = calcMaterialCost(form.materials)
+    // 电缆、PVC 已由固定辅材按勘测距离计入，增项材料只累计其余项目。
+    const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name))
+    const { total: addonCost, unmatched } = calcMaterialCost(chargeableMaterials)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
     // 平台扣点
