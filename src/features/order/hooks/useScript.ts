@@ -11,7 +11,13 @@ import {
   DEFAULT_PACKAGE_METERS,
 } from '@/shared/utils/orderCalc'
 
-function dedupeAddress(address: string) { return Array.from(new Set(address.replace(/-/g, ' ').split(/\s+/).filter(Boolean))).join('') }
+function dedupeAddress(address: string) {
+  const normalized = Array.from(new Set(address.replace(/-/g, ' ').split(/\s+/).filter(Boolean))).join('')
+  const province = normalized.match(/^(?:.+?省|.+?自治区|.+?特别行政区)/)?.[0] || ''
+  const cityPrefix = province ? normalized.match(new RegExp(`^${province}.+?(?:市|州|盟)`))?.[0] || province : normalized.match(/^.+?(?:市|州|盟)/)?.[0] || ''
+  const duplicateAt = cityPrefix ? normalized.indexOf(cityPrefix, cityPrefix.length) : -1
+  return duplicateAt > 0 ? cityPrefix + normalized.slice(duplicateAt + cityPrefix.length) : normalized
+}
 
 export function buildScriptVars(order: Order, scene: string, settings: { engineerName: string; engineerPhone: string }): Record<string, string> {
   const survey = order.survey
@@ -91,11 +97,7 @@ interface SurveyFormInput {
   surveyNote?: string
 }
 
-export function buildScriptVarsFromSurveyForm(
-  form: SurveyFormInput,
-  order: Order,
-  settings: { engineerName: string; engineerPhone: string }
-): Record<string, string> {
+export function buildScriptVarsFromSurveyForm(form: SurveyFormInput, order: Order, settings: { engineerName: string; engineerPhone: string }): Record<string, string> {
   const defaults = buildScriptVars(order, '勘测完成', settings)
   const cableItem = form.estimatedMaterials?.find(m => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
   defaults.cableDistance = String(form.cableDistance ?? order.survey?.cableDistance ?? 0)
