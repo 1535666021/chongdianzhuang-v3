@@ -111,7 +111,8 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
     <>
       <div
         onClick={onClick}
-        className={`order-card ${isToday ? 'order-card--today' : ''}`}
+        className={`order-card ${isToday ? 'order-card--today' : ''} ${isCompleted ? 'order-card--completed' : ''}`}
+        data-status={order.status}
       >
         {/* 第一行：姓名 + 状态 */}
         <div className="order-card__header">
@@ -285,28 +286,29 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             >
               <div className="order-card__profit-detail space-y-2 text-xs">
                 <InfoSection title="收了多少钱">
-                  <InfoItem label="客户应收" value={`+¥${customerPrice.toFixed(2)}`} />
-                  <InfoItem label="车企服务费" value={`+¥${serviceFee.toFixed(2)}`} />
+                  <InfoItem label="客户应付总额" value={`+¥${customerPrice.toFixed(2)}`} />
+                  <InfoItem label="服务费" value={`+¥${serviceFee.toFixed(2)}`} />
                 </InfoSection>
                 <InfoSection title="计算费用（成本）">
                   <InfoItem label={`平台扣点 (${(platformRate * 100).toFixed(0)}%)`} value={`-¥${platformFee.toFixed(2)}`} />
                   <InfoItem label="材料成本" value={`-¥${materialCost.toFixed(2)}`} />
+                  <InfoItem label="实际利润" value={`¥${profit.toFixed(2)}`} />
                 </InfoSection>
                 <div className="order-card__profit-formula">
                   <div className="order-card__profit-formula-label">计算方式</div>
-                  <div className="order-card__profit-formula-text">
-                    利润 = 客户应收 + 车企服务费 - 材料成本 - 平台扣点
-                  </div>
-                  <div className="order-card__profit-formula-calc">
-                    ¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}
-                  </div>
+                  <div className="order-card__profit-formula-text">利润 = 客户应付总额 + 服务费 - 材料成本 - 平台扣点</div>
+                  <div className="order-card__profit-formula-calc">¥{customerPrice.toFixed(2)} + ¥{serviceFee.toFixed(2)} - ¥{materialCost.toFixed(2)} - ¥{platformFee.toFixed(2)} = ¥{profit.toFixed(2)}</div>
                 </div>
-              </div>
-            </CollapsePanel>
+                </div>
+              </CollapsePanel>
             <button className="order-card__appointment-btn" onClick={(e) => { e.stopPropagation(); onGenerateScript?.(order) }}>
               <span>生成话术</span>
             </button>
           </>
+        ) : order.status === '回收站' ? (
+          <button className="order-card__appointment-btn order-card__appointment-btn--delete" onClick={(e) => { e.stopPropagation(); setShowConfirmDelete(true) }}>
+            <span>彻底删除</span>
+          </button>
         ) : (
           <div
             className="order-card__appointment-btn"
@@ -377,10 +379,10 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
 
       {showConfirmDelete && (
         <ConfirmModal
-          title="确认删除"
-          message={`确定删除【${order.customerName}】的订单吗？`}
+          title={order.status === '回收站' ? '确认彻底删除' : '确认删除'}
+          message={order.status === '回收站' ? `确定彻底删除【${order.customerName}】的订单吗？删除后无法恢复。` : `确定删除【${order.customerName}】的订单吗？`}
           danger
-          confirmText="删除"
+          confirmText={order.status === '回收站' ? '彻底删除' : '删除'}
           onConfirm={() => { onDelete?.(order) ?? deleteOrder(order.id); setShowConfirmDelete(false) }}
           onCancel={() => setShowConfirmDelete(false)}
         />
