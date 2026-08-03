@@ -46,6 +46,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
   const displayAddress = dedupeAddress(order.address || '')
+  const powerKw = order.powerKw?.toString().match(/\d+(?:\.\d+)?/)?.[0]
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const deleteOrder = useOrderStore((s) => s.deleteOrder)
   const navigate = useNavigate()
@@ -156,10 +157,10 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               {order.brandName}
             </span>
           )}
-          {order.powerKw && (
+          {powerKw && (
             <span className="order-card__tag order-card__tag--power">
               <Zap size={10} />
-              {order.powerKw.toString().replace(/(?:kW)+$/i, '')}kW
+              {powerKw}kW
             </span>
           )}
           {order.packageMeters && (

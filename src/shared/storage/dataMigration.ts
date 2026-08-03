@@ -2,8 +2,9 @@ const DATA_VERSION_KEY = 'cdz_data_version'
 const UPDATE_BACKUP_KEY = 'cdz_update_backup'
 const CURRENT_DATA_VERSION = 'v1'
 const ORDERS_KEY = 'cdz_v3_orders_list'
-const POWER_MIGRATION_KEY = 'cdz_powerkw_migrated_v1'
+const POWER_MIGRATION_KEY = 'cdz_powerkw_migrated_v2'
 const POWER_RE = /(\d+(?:\.\d+)?)\s*(?:kw|千瓦)/i
+const NUMBER_RE = /\d+(?:\.\d+)?/
 
 type LocalData = Record<string, string>
 
@@ -41,13 +42,12 @@ export function migratePowerKw(): void {
     let changed = false
     for (const order of orders) {
       const current = order.powerKw?.toString()
-      const needsFix = !current || current === 'kW' || current.includes('kWkW')
-      if (!needsFix) continue
-      const sourceText = [order.serviceType, order.remark, order.brand, order.brandName].filter(Boolean).join(' ')
-      const match = sourceText.match(POWER_RE)
-      if (match) {
-        order.powerKw = match[1]
-        changed = true
+      const currentPower = current?.match(NUMBER_RE)?.[0]
+      const sourceText = Object.values(order).filter((value): value is string => typeof value === 'string').join(' ')
+      const power = currentPower || sourceText.match(POWER_RE)?.[1]
+      if (power) {
+        order.powerKw = power
+        changed ||= order.powerKw !== current
       }
     }
     if (changed) localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
