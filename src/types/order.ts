@@ -25,6 +25,7 @@ export interface Order extends BaseEntity {
   meterStatus: '已安装' | '未安装'
   meterNumber?: string
   completeDate?: string
+  actualInstallDate?: string
   customerPrice?: number
   serviceFee?: number
   installer?: string

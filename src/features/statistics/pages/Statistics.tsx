@@ -6,9 +6,10 @@ import PlatformBreakdown from '../components/PlatformBreakdown'
 import ProfitDetailModal from '../components/ProfitDetailModal'
 import { exportReconciliationCsv } from '@/shared/utils/exportExcel'
 
-function getOrderMonth(order: { completeDate?: string; createdAt: number }) {
-  const completeMonth = order.completeDate?.match(/^\d{4}-\d{2}/)?.[0]
-  if (completeMonth) return completeMonth
+function getOrderMonth(order: { actualInstallDate?: string; appointmentDate?: string; completeDate?: string; createdAt: number }) {
+  const orderMonth = [order.actualInstallDate, order.appointmentDate, order.completeDate]
+    .find((date) => /^\d{4}-\d{2}/.test(date || ''))?.slice(0, 7)
+  if (orderMonth) return orderMonth
   const date = new Date(order.createdAt)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }

@@ -95,12 +95,12 @@ export default function OrderComplete() {
             <div className="order-complete__form-item">
               <label className="order-complete__label">
                 <Calendar size={12} />
-                完成日期
+                实际安装日期
               </label>
               <input
                 type="date"
-                value={form.completeDate}
-                onChange={(e) => updateForm({ completeDate: e.target.value })}
+                value={form.actualInstallDate}
+                onChange={(e) => updateForm({ actualInstallDate: e.target.value })}
                 className="order-complete__input"
               />
             </div>

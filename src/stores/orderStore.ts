@@ -12,6 +12,7 @@ interface OrderState {
   setOrders: (orders: Order[]) => void
   addOrder: (order: Order) => void
   updateOrder: (id: string, updates: Partial<Order>) => void
+  completeOrder: (id: string, updates: Omit<Partial<Order>, 'status' | 'completeDate'>) => void
   deleteOrder: (id: string) => void
   setFilter: (filter: OrderFilter) => void
   importOrders: (orders: Order[]) => { added: number; skipped: number; updated: number }
@@ -34,6 +35,17 @@ export const useOrderStore = create<OrderState>((set, get) => ({
   },
   updateOrder: (id, updates) => {
     const newOrders = get().orders.map((o) => (o as any).id === id ? { ...o, ...updates, updatedAt: Date.now() } : o)
+    storage.set('list', newOrders)
+    set({ orders: newOrders })
+  },
+  completeOrder: (id, updates) => {
+    const newOrders = get().orders.map((o) => (o as any).id === id ? {
+      ...o,
+      ...updates,
+      status: '已完成' as const,
+      completeDate: new Date().toISOString().slice(0, 10),
+      updatedAt: Date.now(),
+    } : o)
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },

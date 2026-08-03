@@ -40,7 +40,7 @@ function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'
 
 export function useCompletion(orderId: string) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
-  const updateOrder = useOrderStore((s) => s.updateOrder)
+  const completeOrder = useOrderStore((s) => s.completeOrder)
   const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
   const stockOut = useInventoryStore((s) => s.stockOut)
   const recordMaterialUsage = useSettingsStore((s) => s.recordMaterialUsage)
@@ -58,6 +58,7 @@ export function useCompletion(orderId: string) {
 
   const [form, setForm] = useState<CompletionFormData>({
     completeDate: new Date().toISOString().slice(0, 10),
+    actualInstallDate: order?.actualInstallDate || order?.appointmentDate || new Date().toISOString().slice(0, 10),
     installer: order?.installer || '',
     materials: (order?.materials?.length ? order.materials : order?.survey?.estimatedMaterials || []).map((m) => {
       const addon = findAddonMaterial(m.name)
@@ -313,9 +314,8 @@ export function useCompletion(orderId: string) {
       if (btName) stockOut('breaker-' + form.fixedAux.breakerType, btName, 1, `订单完成: ${order.customerName}`)
     }
 
-    updateOrder(orderId, {
-      status: '已完成',
-      completeDate: form.completeDate,
+    completeOrder(orderId, {
+      actualInstallDate: form.actualInstallDate,
       installer: form.installer,
       materials: form.materials.map((m) => ({
         name: m.name,
@@ -338,7 +338,7 @@ export function useCompletion(orderId: string) {
       materials: form.materials.map((m) => ({ name: m.name, quantity: m.quantity, unit: m.unit, unitPrice: m.settlementPrice })),
     })
     return true
-  }, [order, orderId, form, profit, updateOrder, stockOut])
+  }, [order, orderId, form, profit, completeOrder, stockOut])
 
   return {
     order,

@@ -45,6 +45,7 @@ export interface ProfitPreview {
 
 export interface CompletionFormData {
   completeDate: string
+  actualInstallDate: string
   installer: string
   materials: MaterialInput[]
   fixedAux: FixedAuxInput
