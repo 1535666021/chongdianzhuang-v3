@@ -6,6 +6,10 @@ function fmt(n: number): string {
   return '¥' + (n || 0).toFixed(2)
 }
 
+function SummaryItem({ value, label, color = 'text-gray-800', full = false }: { value: string; label: string; color?: string; full?: boolean }) {
+  return <div className={`bg-gray-50 rounded-lg p-3 text-center ${full ? 'col-span-2' : ''}`}><div className={`text-lg font-bold ${color}`}>{value}</div><div className="text-[10px] text-gray-400">{label}</div></div>
+}
+
 export function ReconciliationTable() {
   const { availableMonths, getMonthReconciliation } = useFinance()
   const [selectedMonth, setSelectedMonth] = useState(availableMonths[0] || '')
@@ -43,34 +47,14 @@ export function ReconciliationTable() {
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h3 className="text-sm font-semibold text-gray-700 mb-3">{data.month} 对账汇总</h3>
           <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-gray-800">{data.orderCount}</div>
-              <div className="text-[10px] text-gray-400">订单数</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-green-600">{fmt(data.totalReceivable)}</div>
-              <div className="text-[10px] text-gray-400">应收总额</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-red-500">{fmt(data.totalDeduction)}</div>
-              <div className="text-[10px] text-gray-400">平台扣点</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-blue-600">{fmt(data.totalActual)}</div>
-              <div className="text-[10px] text-gray-400">实际到账</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-gray-800">{fmt(data.totalMaterial)}</div>
-              <div className="text-[10px] text-gray-400">材料成本</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-lg font-bold text-gray-800">{fmt(data.totalLabor)}</div>
-              <div className="text-[10px] text-gray-400">人工成本</div>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-3 text-center col-span-2">
-              <div className="text-lg font-bold text-green-600">{fmt(data.totalProfit)}</div>
-              <div className="text-[10px] text-gray-400">实际利润</div>
-            </div>
+            <SummaryItem value={String(data.orderCount)} label="订单数" />
+            <SummaryItem value={fmt(data.totalReceivable)} label="增项费用" color="text-green-600" />
+            <SummaryItem value={`+${fmt(data.totalServiceFee)}`} label="服务费" color="text-green-600" />
+            <SummaryItem value={fmt(data.totalCustomerPay)} label="客户应付总额" color="text-green-600" />
+            <SummaryItem value={`-${fmt(data.totalDeduction)}`} label="平台扣点" color="text-red-500" />
+            <SummaryItem value={fmt(data.totalActual)} label="实际到账" color="text-blue-600" />
+            <SummaryItem value={`-${fmt(data.totalMaterial)}`} label="材料成本" color="text-red-500" />
+            <SummaryItem value={fmt(data.totalProfit)} label="实际利润" color="text-green-600" full />
           </div>
         </div>
       )}

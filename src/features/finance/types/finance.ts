@@ -2,10 +2,11 @@ export interface MonthlyReconciliation {
   month: string
   orderCount: number
   totalReceivable: number
+  totalServiceFee: number
+  totalCustomerPay: number
   totalDeduction: number
   totalActual: number
   totalMaterial: number
-  totalLabor: number
   totalProfit: number
 }
 

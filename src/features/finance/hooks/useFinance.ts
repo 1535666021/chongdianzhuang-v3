@@ -1,5 +1,6 @@
 import { useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { getServiceFee } from '@/shared/utils/orderCalc'
 import type { MonthlyReconciliation, ReceivableOrder, OrderCostDetail } from '../types/finance'
 
 export function useFinance() {
@@ -27,19 +28,21 @@ export function useFinance() {
     if (monthOrders.length === 0) return null
 
     const totalReceivable = monthOrders.reduce((s, o) => s + (o.customerPrice || 0), 0)
+    const totalServiceFee = monthOrders.reduce((s, o) => s + (o.serviceFee ?? getServiceFee(o.notes || '')), 0)
+    const totalCustomerPay = totalReceivable + totalServiceFee
     const totalDeduction = monthOrders.reduce((s, o) => s + (o.platformFee || 0), 0)
     const totalMaterial = monthOrders.reduce((s, o) => s + (o.materialCost || 0), 0)
-    const totalLabor = monthOrders.reduce((s, o) => s + (o.laborCost || 0), 0)
 
     return {
       month,
       orderCount: monthOrders.length,
       totalReceivable,
+      totalServiceFee,
+      totalCustomerPay,
       totalDeduction,
-      totalActual: totalReceivable - totalDeduction,
+      totalActual: totalCustomerPay - totalDeduction,
       totalMaterial,
-      totalLabor,
-      totalProfit: totalReceivable - totalDeduction - totalMaterial - totalLabor,
+      totalProfit: totalCustomerPay - totalDeduction - totalMaterial,
     }
   }, [completedOrders])
 

@@ -4,12 +4,9 @@ export interface OrderPayment { paid: boolean; paidDate?: string }
 export interface OrderSurvey {
   estimatedMaterials?: OrderMaterialItem[]
   powerSource?: '国网取电' | '物业配电' | '自家电表' | '其他'
-  cableSpec?: string
-  cableDistance?: number
-  estimatedCableCost?: number
+  cableSpec?: string; cableDistance?: number; estimatedCableCost?: number
   installMethod?: '壁挂安装' | '立柱安装' | '吊装' | '其他'
-  meterStatus?: '已安装' | '未安装'
-  needBlueprint?: '是' | '否'
+  meterStatus?: '已安装' | '未安装'; needBlueprint?: '是' | '否'
   surveyResult?: '勘测完成' | '符合安装' | '不符合安装' | '需整改' | '待定'
   locationInfo?: string
 }
@@ -20,11 +17,8 @@ export interface Order extends BaseEntity {
   platform: Platform
   status: OrderStatus
   region: Region
-  appointmentDate?: string
-  appointmentTime?: string
-  appointmentNote?: string
-  materialCost: number
-  laborCost: number
+  appointmentDate?: string; appointmentTime?: string; appointmentNote?: string
+  materialCost: number; laborCost: number
   platformFee: number
   actualProfit: number
   notes: string
@@ -32,6 +26,7 @@ export interface Order extends BaseEntity {
   meterNumber?: string
   completeDate?: string
   customerPrice?: number
+  serviceFee?: number
   installer?: string
   materials?: OrderMaterialItem[]
   payment?: OrderPayment
