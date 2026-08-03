@@ -1,3 +1,5 @@
+import type { Order } from '@/types'
+
 const DATA_VERSION_KEY = 'cdz_data_version'
 const UPDATE_BACKUP_KEY = 'cdz_update_backup'
 const CURRENT_DATA_VERSION = 'v1'
@@ -29,17 +31,17 @@ export function migrateData(): void {
   localStorage.setItem(DATA_VERSION_KEY, CURRENT_DATA_VERSION)
 }
 
-export function migratePowerKw(): void {
-  if (localStorage.getItem(POWER_MIGRATION_KEY)) return
+export function migratePowerKw(): Order[] | null {
+  if (localStorage.getItem(POWER_MIGRATION_KEY)) return null
   const ordersRaw = localStorage.getItem(ORDERS_KEY)
   if (!ordersRaw) {
     localStorage.setItem(POWER_MIGRATION_KEY, 'true')
-    return
+    return null
   }
 
   try {
-    const orders = JSON.parse(ordersRaw)
-    if (!Array.isArray(orders)) return
+    const orders = JSON.parse(ordersRaw) as Order[]
+    if (!Array.isArray(orders)) return null
     let changed = false
     for (const order of orders) {
       const current = order.powerKw?.toString()
@@ -56,8 +58,10 @@ export function migratePowerKw(): void {
     }
     if (changed) localStorage.setItem(ORDERS_KEY, JSON.stringify(orders))
     localStorage.setItem(POWER_MIGRATION_KEY, 'true')
+    return changed ? orders : null
   } catch (error) {
     console.error('migratePowerKw failed:', error)
+    return null
   }
 }
 

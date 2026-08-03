@@ -26,11 +26,16 @@ export default function App() {
   const navigate = useNavigate()
   const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
   const orders = useOrderStore((s) => s.orders)
+  const setOrders = useOrderStore((s) => s.setOrders)
   const { toast: appToast, toasts, removeToast } = useToast()
 
   useEffect(() => {
     migrateData()
-    migratePowerKw()
+    const migratedOrders = migratePowerKw()
+    if (migratedOrders) setOrders(migratedOrders)
+  }, [setOrders])
+
+  useEffect(() => {
     const known = getKnownPlatforms()
     orders
       .filter((order) => order.status === '已完成')
