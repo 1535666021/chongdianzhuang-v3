@@ -7,6 +7,7 @@ import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
 import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
+import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
 
 // 导出全局 toast
 export { toast }
@@ -26,6 +27,11 @@ export default function App() {
   const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
   const orders = useOrderStore((s) => s.orders)
   const { toast: appToast, toasts, removeToast } = useToast()
+
+  useEffect(() => {
+    migrateData()
+    migratePowerKw()
+  }, [])
 
   useEffect(() => {
     const known = getKnownPlatforms()
