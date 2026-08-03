@@ -30,6 +30,8 @@ function dedupeAddress(address: string) {
   return address.replace(/^(.+?市)\1/, '$1')
 }
 
+const POWER_OPTIONS = ['3.5', '7', '11', '22']
+
 export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
@@ -161,6 +163,24 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             <span className="order-card__tag order-card__tag--power">
               <Zap size={10} />
               {powerKw}kW
+            </span>
+          )}
+          {!powerKw && (
+            <span className="order-card__tag order-card__tag--power">
+              <Zap size={10} />
+              <select
+                aria-label="选择功率"
+                className="bg-transparent outline-none"
+                defaultValue=""
+                onClick={(event) => event.stopPropagation()}
+                onChange={(event) => {
+                  event.stopPropagation()
+                  updateOrder(order.id, { powerKw: event.target.value })
+                }}
+              >
+                <option value="" disabled>选择功率</option>
+                {POWER_OPTIONS.map((option) => <option key={option} value={option}>{option}kW</option>)}
+              </select>
             </span>
           )}
           {order.packageMeters && (
