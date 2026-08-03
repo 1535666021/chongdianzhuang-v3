@@ -31,9 +31,6 @@ export default function App() {
   useEffect(() => {
     migrateData()
     migratePowerKw()
-  }, [])
-
-  useEffect(() => {
     const known = getKnownPlatforms()
     orders
       .filter((order) => order.status === '已完成')
