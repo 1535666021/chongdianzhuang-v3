@@ -178,6 +178,15 @@
   background: var(--color-success-dark);
 }
 
+.order-card__btn--watermark {
+  background: var(--color-info, #3b82f6);
+  color: white;
+}
+
+.order-card__btn--watermark:hover {
+  background: var(--color-info-dark, #2563eb);
+}
+
 .order-card__profit-header {
   display: flex;
   justify-content: space-between;

@@ -9,7 +9,7 @@ import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy } from 'lucide-react'
 import { calcMaterialCost, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
 import { toast } from '@/shared/hooks/useToast'
 import '../../../shared/components/OrderCard.css'
@@ -262,6 +262,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               <ClipboardList size={14} />
               勘测
             </button>
+            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([order.platform, order.brandName, order.customerName].filter(Boolean).join(' '), '水印') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/order/complete/${order.id}`) }}
               className="order-card__btn order-card__btn--complete"
