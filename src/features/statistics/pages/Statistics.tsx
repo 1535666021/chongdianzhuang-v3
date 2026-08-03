@@ -7,16 +7,17 @@ import ProfitDetailModal from '../components/ProfitDetailModal'
 import { exportReconciliationCsv } from '@/shared/utils/exportExcel'
 
 function getOrderMonth(order: { completeDate?: string; createdAt: number }) {
-  if (order.completeDate) return order.completeDate.slice(0, 7)
+  const completeMonth = order.completeDate?.match(/^\d{4}-\d{2}/)?.[0]
+  if (completeMonth) return completeMonth
   const date = new Date(order.createdAt)
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
 function getAmountFontClass(value: number) {
   const len = Math.floor(Math.abs(value)).toString().length
-  if (len <= 3) return 'text-2xl'
-  if (len <= 5) return 'text-xl'
-  return 'text-lg'
+  if (len <= 3) return 'text-lg'
+  if (len <= 5) return 'text-sm'
+  return 'text-xs'
 }
 
 function formatMonth(month: string) {
@@ -25,8 +26,8 @@ function formatMonth(month: string) {
 }
 
 function Metric({ label, value, color, onClick, amount = true }: { label: string; value: number; color: string; onClick?: () => void; amount?: boolean }) {
-  const valueClass = amount ? getAmountFontClass(value) : 'text-2xl'
-  return <button type="button" onClick={onClick} disabled={!onClick} className={`min-w-0 overflow-hidden text-center ${onClick ? 'cursor-pointer' : 'cursor-default'}`}><div className={`mb-1 text-xs text-gray-500 ${onClick ? 'whitespace-nowrap text-[11px]' : ''}`}>{label}</div><div className={`${valueClass} truncate font-bold ${color}`}>{amount ? `¥${value.toFixed(2)}` : value}</div></button>
+  const valueClass = amount ? getAmountFontClass(value) : 'text-lg'
+  return <button type="button" onClick={onClick} disabled={!onClick} className={`min-w-0 text-center ${onClick ? 'cursor-pointer' : 'cursor-default'}`}><div className={`mb-1 text-xs text-gray-500 ${onClick ? 'whitespace-nowrap text-[11px]' : ''}`}>{label}</div><div className={`${valueClass} whitespace-nowrap font-bold ${color}`}>{amount ? `¥${value.toFixed(2)}` : value}</div></button>
 }
 
 export default function Statistics() {
@@ -40,14 +41,14 @@ export default function Statistics() {
   const months = useMemo(() => Array.from(new Set([currentMonth, ...orders.map(getOrderMonth)])).sort((a, b) => b.localeCompare(a)), [currentMonth, orders])
   const selectedOrders = useMemo(() => orders.filter((order) => getOrderMonth(order) === selectedMonth), [orders, selectedMonth])
   const completedOrders = useMemo(() => selectedOrders.filter((order) => order.status === '已完成'), [selectedOrders])
-  const stats = useMemo(() => selectedOrders.reduce((total, order) => ({
+  const stats = useMemo(() => completedOrders.reduce((total, order) => ({
     orderCount: total.orderCount + 1,
     customerPay: total.customerPay + (order.customerPrice || 0),
     netIncome: total.netIncome + (order.customerPrice || 0) - (order.platformFee || 0),
     reconciliationProfit: total.reconciliationProfit + (order.actualProfit || 0) + (order.platformFee || 0),
     actualProfit: total.actualProfit + (order.actualProfit || 0),
     addonCost: total.addonCost + (order.materialCost || 0) + (order.laborCost || 0),
-  }), { orderCount: 0, customerPay: 0, netIncome: 0, reconciliationProfit: 0, actualProfit: 0, addonCost: 0 }), [selectedOrders])
+  }), { orderCount: 0, customerPay: 0, netIncome: 0, reconciliationProfit: 0, actualProfit: 0, addonCost: 0 }), [completedOrders])
   const averageProfit = stats.orderCount ? stats.actualProfit / stats.orderCount : 0
   const averageAddon = stats.orderCount ? stats.addonCost / stats.orderCount : 0
 
@@ -79,7 +80,7 @@ export default function Statistics() {
           <button type="button" onClick={() => exportReconciliationCsv(selectedOrders, selectedMonth)} className="w-full rounded-xl bg-green-600 py-3 text-sm font-medium text-white">导出Excel对账单</button>
         </div>
 
-        <div className="mx-4"><PlatformBreakdown orders={selectedOrders} /></div>
+        <div className="mx-4"><PlatformBreakdown orders={completedOrders} /></div>
         <div className="mx-4"><button onClick={() => navigate('/finance')} className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white p-3 transition-colors hover:bg-gray-50"><span className="flex items-center gap-2 text-sm font-medium text-gray-800"><FileText size={16} className="text-blue-600" />查看财务对账</span><span className="text-xs font-medium text-blue-600">进入 →</span></button></div>
 
       </main>
