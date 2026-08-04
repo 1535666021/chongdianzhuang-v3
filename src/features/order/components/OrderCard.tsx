@@ -43,7 +43,6 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const serviceFee = getServiceFee(order.notes || '')
   const { total: materialCost } = calcMaterialCost(order.materials || [])
   const { platformFee, actualProfit: profit } = calcOrderFinancials(customerPrice, materialCost, platformRate, serviceFee)
-  const materials = order.materials || []
   const displayAddress = dedupeAddress(order.address || '')
   const platformDisplay = order.platformName || order.platform
   const updateOrder = useOrderStore((s) => s.updateOrder)

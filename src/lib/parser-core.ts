@@ -2,7 +2,6 @@
  * 解析层核心：类型定义 + 常量 + 工具函数 + 文本切块
  * ============================================================ */
 
-import type { Order } from '@/types';
 import { BRAND_NAMES } from '@/constants/brands';
 import { PLATFORM_NAMES } from '@/constants/platforms';
 
