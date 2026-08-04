@@ -1,4 +1,4 @@
-import type { ScriptTemplate, ScriptVariable } from '@/constants/scripts'
+import type { ScriptTemplate } from '@/constants/scripts'
 
 export interface ScriptTemplateLocal extends ScriptTemplate {
   isDefault?: boolean

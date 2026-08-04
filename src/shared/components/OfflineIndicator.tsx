@@ -10,17 +10,14 @@ import './OfflineIndicator.css'
  * - 带关闭按钮，关闭后本次会话不再显示
  */
 export function OfflineIndicator() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [showPending, setShowPending] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true)
       setShowPending(false)
     }
     const handleOffline = () => {
-      setIsOnline(false)
       // 3 秒延迟显示
       const timer = setTimeout(() => {
         if (!dismissed) setShowPending(true)

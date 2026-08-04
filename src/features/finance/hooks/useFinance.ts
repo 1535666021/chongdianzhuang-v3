@@ -1,6 +1,6 @@
 import { useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { getServiceFee } from '@/shared/utils/orderCalc'
+import { getCompletedOrderFinancials, getOrderBusinessDate } from '@/shared/utils/orderCalc'
 import type { MonthlyReconciliation, ReceivableOrder, OrderCostDetail } from '../types/finance'
 
 export function useFinance() {
@@ -14,7 +14,7 @@ export function useFinance() {
   const availableMonths = useMemo(() => {
     const set = new Set<string>()
     completedOrders.forEach(o => {
-      const d = o.completeDate || o.appointmentDate || ''
+      const d = getOrderBusinessDate(o)
       if (d.length >= 7) set.add(d.slice(0, 7))
     })
     return Array.from(set).sort().reverse()
@@ -22,27 +22,28 @@ export function useFinance() {
 
   const getMonthReconciliation = useCallback((month: string): MonthlyReconciliation | null => {
     const monthOrders = completedOrders.filter(o => {
-      const d = o.completeDate || o.appointmentDate || ''
+      const d = getOrderBusinessDate(o)
       return d.slice(0, 7) === month
     })
     if (monthOrders.length === 0) return null
 
-    const totalReceivable = monthOrders.reduce((s, o) => s + (o.customerPrice || 0), 0)
-    const totalServiceFee = monthOrders.reduce((s, o) => s + (o.serviceFee ?? getServiceFee(o.notes || '')), 0)
-    const totalCustomerPay = totalReceivable + totalServiceFee
-    const totalDeduction = monthOrders.reduce((s, o) => s + (o.platformFee || 0), 0)
-    const totalMaterial = monthOrders.reduce((s, o) => s + (o.materialCost || 0), 0)
+    const totals = monthOrders.reduce((sum, order) => {
+      const financials = getCompletedOrderFinancials(order)
+      return {
+        totalReceivable: sum.totalReceivable + financials.customerPrice,
+        totalServiceFee: sum.totalServiceFee + financials.serviceFee,
+        totalCustomerPay: sum.totalCustomerPay + financials.customerPay,
+        totalDeduction: sum.totalDeduction + financials.platformFee,
+        totalActual: sum.totalActual + financials.actualIncome,
+        totalMaterial: sum.totalMaterial + financials.materialCost,
+        totalProfit: sum.totalProfit + financials.actualProfit,
+      }
+    }, { totalReceivable: 0, totalServiceFee: 0, totalCustomerPay: 0, totalDeduction: 0, totalActual: 0, totalMaterial: 0, totalProfit: 0 })
 
     return {
       month,
       orderCount: monthOrders.length,
-      totalReceivable,
-      totalServiceFee,
-      totalCustomerPay,
-      totalDeduction,
-      totalActual: totalCustomerPay - totalDeduction,
-      totalMaterial,
-      totalProfit: totalCustomerPay - totalDeduction - totalMaterial,
+      ...totals,
     }
   }, [completedOrders])
 
@@ -70,7 +71,7 @@ export function useFinance() {
   const getCostBreakdown = useCallback((month: string): OrderCostDetail[] => {
     return completedOrders
       .filter(o => {
-        const d = o.completeDate || o.appointmentDate || ''
+        const d = getOrderBusinessDate(o)
         return d.slice(0, 7) === month
       })
       .map(o => ({

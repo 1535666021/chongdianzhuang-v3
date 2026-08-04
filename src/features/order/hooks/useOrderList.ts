@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import type { Order, OrderFilter } from '@/types'
+import type { OrderFilter } from '@/types'
 
 export function useOrderList(filter?: OrderFilter) {
   const orders = useOrderStore((state) => state.orders)

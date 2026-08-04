@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, CheckCircle, User, Phone, Calendar, FileText, Ruler, Copy, MessageCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle, User, Phone, Calendar, FileText, Ruler, MessageCircle } from 'lucide-react'
 import { useCompletion } from '../hooks/useCompletion'
 import { MaterialPicker } from '../components/MaterialPicker'
 import { ProfitPreview } from '../components/ProfitPreview'
@@ -12,6 +12,9 @@ import { useState, useEffect } from 'react'
 import { useToast } from '@/shared/hooks/useToast'
 import { InfoSection, InfoItem } from '@/shared/components/InfoSection'
 import { CollapsePanel } from '@/shared/components/CollapsePanel'
+import { getBrandLabel } from '@/constants/brands'
+import { getPlatformLabel } from '@/constants/platforms'
+import { getPowerLabel } from '@/constants/power'
 import '../../../shared/components/OrderComplete.css'
 
 export default function OrderComplete() {
@@ -43,7 +46,7 @@ export default function OrderComplete() {
     }
   }
 
-  const handleGenerateScript = () => {
+  const handleGenerateScript = async () => {
     const brandName = order.brandName || '通用'
     const all = scriptStorage.getAll()
     const template = all.find(t => t.brand === brandName && t.scene === '安装完成') || all.find(t => t.id === 'default-install-complete')
@@ -54,10 +57,14 @@ export default function OrderComplete() {
         { engineerName: settings.engineerName || '谢责强', engineerPhone: engineerPhone || '' }
       )
       const text = renderScript(template.content, vars)
-      navigator.clipboard.writeText(text)
-      setCopiedScript(true)
-      setTimeout(() => setCopiedScript(false), 1500)
-      toast.toast.success('话术已复制')
+      try {
+        await navigator.clipboard.writeText(text)
+        setCopiedScript(true)
+        setTimeout(() => setCopiedScript(false), 1500)
+        toast.toast.success('话术已复制')
+      } catch {
+        toast.toast.error('复制失败，请检查浏览器权限')
+      }
     }
   }
 
@@ -77,12 +84,12 @@ export default function OrderComplete() {
             <InfoItem label="客户" value={order.customerName} />
             <InfoItem 
               label="平台" 
-              value={`${order.platform}${order.platformName ? ` (${order.platformName})` : ''}`} 
+                value={getPlatformLabel(order.platformName || order.platform)}
             />
             {order.brandName && (
               <InfoItem 
                 label="品牌" 
-                value={`${order.brandName}${order.powerKw ? ` ${order.powerKw}kW` : ''}`} 
+                value={`${getBrandLabel(order.brandName)}${order.powerKw ? ` ${getPowerLabel(order.powerKw)}` : ''}`}
               />
             )}
             <InfoItem label="地址" value={order.address} />

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getServiceFee, calcOverFee, calcPlatformFee, buildPlatformBrand, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getOrderServiceFee, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -169,7 +169,7 @@ export function useCompletion(orderId: string) {
 
     // 电缆、PVC 已由固定辅材按勘测距离计入，增项材料只累计其余项目。
     const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name))
-    const { total: addonCost, unmatched } = calcMaterialCost(chargeableMaterials)
+    const { total: addonCost } = calcMaterialCost(chargeableMaterials)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
     // 平台扣点
@@ -177,7 +177,7 @@ export function useCompletion(orderId: string) {
     const platformFee = Math.round(calcPlatformFee(customerReceivable, platformRate) * 100) / 100
 
     // 服务费
-    const serviceFee = order ? getServiceFee(order.notes || '') : 300
+    const serviceFee = order ? getOrderServiceFee(order) : 300
 
     // 利润
     const actualProfit = Math.round(calcProfit(customerReceivable, materialCost, platformFee, serviceFee) * 100) / 100
@@ -328,6 +328,7 @@ export function useCompletion(orderId: string) {
       platformFee: profit.platformFee,
       actualProfit: profit.actualProfit,
       customerPrice: profit.customerReceivable,
+      serviceFee: profit.serviceFee,
       notes: form.notes,
     })
 

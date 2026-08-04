@@ -1,5 +1,3 @@
-import type { BaseEntity } from './common'
-
 export type MaterialCategory = '线缆' | '管材' | '辅材' | '工具' | '其他' | '漏保' | '接地' | '保护箱' | '立柱' | '开孔' | '路面' | '桥架' | '吊筋' | '电表' | '浪涌' | '服务' | '拆除' | '安装' | '基础' | '高空'
 
 export type MaterialCategoryCode = 'CABLE' | 'PVC' | 'BREAKER' | 'GROUND' | 'OTHER' | 'BOX' | 'POLE' | 'WALL_DRILL' | 'ROAD_OPEN' | 'BRIDGE' | 'HANGER' | 'METER' | 'SURGE' | 'SERVICE' | 'REMOVE' | 'INSTALL' | 'FOUNDATION' | 'HIGH_ALTITUDE'

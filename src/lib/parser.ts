@@ -4,7 +4,7 @@
 
 import type { Order, Platform, OrderStatus, Region, InstallType } from '@/types';
 import type { ParsedOrderItem, ParseTextResult } from './parser-core';
-import { splitOrderBlocks, emptyItem } from './parser-core';
+import { splitOrderBlocks } from './parser-core';
 import { parseBlock, hasAnyField } from './parser-engines';
 
 /* --------------------------------------------------------------
@@ -60,7 +60,7 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     platform: '其他' as Platform,
     region: '其他' as Region,
     notes: '',
-    meterStatus: '未安装' as '未安装',
+    meterStatus: '未安装' as const,
     installType: (it.installType as InstallType) || '其他',
   }));
 }

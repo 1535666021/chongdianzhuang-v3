@@ -2,17 +2,16 @@ import { useState, useMemo, useEffect } from 'react'
 import type { Order } from '@/types'
 import { useSurvey } from '../hooks/useSurvey'
 import { getShortName } from '../utils/surveyUtils'
-import { addonMaterialsData, costMaterials } from '@/constants/materialData'
+import { addonMaterialsData } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useOrderStore } from '@/stores/orderStore'
-import { Save, X, Copy, FileText } from 'lucide-react'
+import { X } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
-import { Stepper } from '@/shared/components/Stepper'
-import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
 import { calcOverFee, DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import { SurveyProfitPreview } from './SurveyProfitPreview'
+import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
 
 interface SurveyModalProps {
@@ -29,7 +28,7 @@ const RESULT_OPTIONS = ['勘测完成', '符合安装', '不符合安装', '需�
 
 export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const {
-    form, effectiveBrand, brandList, brandAddons,
+    form, brandList, brandAddons,
     selectedBrand, setSelectedBrand,
     updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
     serviceFee, platformRate, save,
@@ -50,14 +49,6 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     document.body.classList.add('modal-open')
     return () => { document.body.classList.remove('modal-open') }
   }, [])
-
-  const getDisplayPrice = (name: string, fallback: number) => {
-    const addon = addonMaterialsData.find((m) => m.name === name)
-    if (addon) return addon.settlementPrice
-    const cost = costMaterials.find((m) => m.name === name)
-    if (cost) return cost.settlementPrice
-    return fallback
-  }
 
   const isCableMat = (name: string) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
@@ -399,32 +390,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
         </div>
       </div>
 
-      {showReport && (
-        <div className="modal-overlay" onClick={() => setShowReport(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">勘测报告</h3>
-              <button onClick={() => setShowReport(false)} className="modal-close">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="modal-body">
-              <pre className="modal-report-content">
-                {reportText}
-              </pre>
-            </div>
-            <div className="modal-footer">
-              <button
-                onClick={handleCopyReport}
-                className="modal-btn modal-btn--primary"
-              >
-                <Copy size={16} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
-                一键复制
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {showReport && <SurveyReportModal reportText={reportText} onClose={() => setShowReport(false)} onCopy={handleCopyReport} />}
     </>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useScripts } from '../hooks/useScripts'
 import { Copy, Plus, Trash2, Edit3, Check, X, MessageSquare, Sparkles } from 'lucide-react'
 import type { ScriptTemplateLocal } from '../types/script'
+import { toast } from '@/shared/hooks/useToast'
 
 export function ScriptEditor() {
   const { allTemplates, brands, addTemplate, updateTemplate, deleteTemplate, generateScript, defaultVariables } = useScripts()
@@ -26,11 +27,16 @@ export function ScriptEditor() {
     return generateScript(selectedTemplate, variableValues)
   }, [selectedTemplate, variableValues, generateScript])
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (generated?.generatedText) {
-      navigator.clipboard.writeText(generated.generatedText)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      try {
+        await navigator.clipboard.writeText(generated.generatedText)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        toast.success('话术已复制')
+      } catch {
+        toast.error('复制失败，请检查浏览器权限')
+      }
     }
   }
 

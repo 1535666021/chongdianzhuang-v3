@@ -5,13 +5,10 @@ import { useOrderStore } from '@/stores/orderStore'
 import PlatformBreakdown from '../components/PlatformBreakdown'
 import ProfitDetailModal from '../components/ProfitDetailModal'
 import { exportReconciliationCsv } from '@/shared/utils/exportExcel'
+import { getCompletedOrderFinancials, getOrderBusinessDate } from '@/shared/utils/orderCalc'
 
 function getOrderMonth(order: { actualInstallDate?: string; appointmentDate?: string; completeDate?: string; createdAt: number }) {
-  const orderMonth = [order.actualInstallDate, order.appointmentDate, order.completeDate]
-    .find((date) => /^\d{4}-\d{2}/.test(date || ''))?.slice(0, 7)
-  if (orderMonth) return orderMonth
-  const date = new Date(order.createdAt)
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+  return getOrderBusinessDate(order).slice(0, 7)
 }
 
 function getAmountFontClass(value: number) {
@@ -42,14 +39,17 @@ export default function Statistics() {
   const months = useMemo(() => Array.from(new Set([currentMonth, ...orders.map(getOrderMonth)])).sort((a, b) => b.localeCompare(a)), [currentMonth, orders])
   const selectedOrders = useMemo(() => orders.filter((order) => getOrderMonth(order) === selectedMonth), [orders, selectedMonth])
   const completedOrders = useMemo(() => selectedOrders.filter((order) => order.status === '已完成'), [selectedOrders])
-  const stats = useMemo(() => completedOrders.reduce((total, order) => ({
-    orderCount: total.orderCount + 1,
-    customerPay: total.customerPay + (order.customerPrice || 0),
-    netIncome: total.netIncome + (order.customerPrice || 0) - (order.platformFee || 0),
-    reconciliationProfit: total.reconciliationProfit + (order.actualProfit || 0) + (order.platformFee || 0),
-    actualProfit: total.actualProfit + (order.actualProfit || 0),
-    addonCost: total.addonCost + (order.materialCost || 0) + (order.laborCost || 0),
-  }), { orderCount: 0, customerPay: 0, netIncome: 0, reconciliationProfit: 0, actualProfit: 0, addonCost: 0 }), [completedOrders])
+  const stats = useMemo(() => completedOrders.reduce((total, order) => {
+    const financials = getCompletedOrderFinancials(order)
+    return {
+      orderCount: total.orderCount + 1,
+      customerPay: total.customerPay + financials.customerPay,
+      netIncome: total.netIncome + financials.actualIncome,
+      reconciliationProfit: total.reconciliationProfit + financials.actualProfit + financials.platformFee,
+      actualProfit: total.actualProfit + financials.actualProfit,
+      addonCost: total.addonCost + financials.materialCost + (order.laborCost || 0),
+    }
+  }, { orderCount: 0, customerPay: 0, netIncome: 0, reconciliationProfit: 0, actualProfit: 0, addonCost: 0 }), [completedOrders])
   const averageProfit = stats.orderCount ? stats.actualProfit / stats.orderCount : 0
   const averageAddon = stats.orderCount ? stats.addonCost / stats.orderCount : 0
 

@@ -10,6 +10,7 @@ import NavigateButton from '../components/NavigateButton'
 import SurveyModal from '../components/SurveyModal'
 import ConfirmModal from '../components/ConfirmModal'
 import OrderActionMenu from '../components/OrderActionMenu'
+import { OrderDetailInfoSections } from '../components/OrderDetailInfoSections'
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -50,8 +51,6 @@ export default function OrderDetail() {
       </div>
     )
   }
-
-  const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
 
   const handleComplete = () => {
     navigate(`/order/complete/${id}`)
@@ -171,56 +170,7 @@ export default function OrderDetail() {
         </div>
       </div>
 
-      <div className="bg-white p-4 border-b border-gray-200">
-        <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-          <Calendar size={16} />
-          预约信息
-        </h2>
-        <div className="space-y-2 text-sm">
-          <div>
-            预约时间: {order.appointmentDate || '未预约'} {order.appointmentTime || ''}
-          </div>
-          <div>
-            电表: {order.meterStatus} {order.meterNumber ? `(${order.meterNumber})` : ''}
-          </div>
-        </div>
-      </div>
-
-      {order.survey && (
-        <div className="bg-white p-4 border-b border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-            <ClipboardList size={16} />
-            勘察记录
-          </h2>
-          <div className="space-y-2 text-sm">
-            {order.survey.powerSource && <div>取电方式: {order.survey.powerSource}</div>}
-            {order.survey.cableSpec && <div>线缆规格: {order.survey.cableSpec}</div>}
-            {order.survey.cableDistance !== undefined && order.survey.cableDistance > 0 && (
-              <div>电缆距离: {order.survey.cableDistance}米</div>
-            )}
-            {order.survey.estimatedCableCost !== undefined && order.survey.estimatedCableCost > 0 && (
-              <div>预估线缆费: ¥{order.survey.estimatedCableCost.toFixed(2)}</div>
-            )}
-            {order.survey.installMethod && <div>安装方式: {order.survey.installMethod}</div>}
-            {order.survey.meterStatus && <div>电表状态: {order.survey.meterStatus}</div>}
-            {order.survey.needBlueprint && <div>物业方案图: {order.survey.needBlueprint}</div>}
-            {order.survey.surveyResult && <div>勘测结果: {order.survey.surveyResult}</div>}
-            {order.survey.locationInfo && <div>位置信息: {order.survey.locationInfo}</div>}
-            {order.survey.estimatedMaterials && order.survey.estimatedMaterials.length > 0 && (
-              <div>
-                预估材料:
-                <div className="mt-1 space-y-1">
-                  {order.survey.estimatedMaterials.map((m, i) => (
-                    <div key={i} className="text-xs text-gray-600">
-                      {m.name} {m.spec ? `(${m.spec})` : ''} × {m.quantity}{m.unit}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <OrderDetailInfoSections order={order} />
 
       <div className="bg-white p-4 border-b border-gray-200">
         <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
@@ -404,7 +354,6 @@ export default function OrderDetail() {
 
       {showActionMenu && (
         <OrderActionMenu
-          orderId={id!}
           onClose={() => setShowActionMenu(false)}
           onEditAppointment={handleEdit}
           onNavigate={() => {

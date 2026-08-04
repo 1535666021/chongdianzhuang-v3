@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useOrderForm } from '../hooks/useOrderForm'
 import { PLATFORMS, ORDER_STATUSES, INSTALL_TYPES } from '@/constants/order'
-import { ArrowLeft, Save, User, Phone, MapPin, Calendar, FileText, DollarSign, Zap } from 'lucide-react'
+import { ArrowLeft, Save, User, Phone, MapPin, Calendar, DollarSign, Zap } from 'lucide-react'
 
 export default function OrderForm() {
   const { id } = useParams<{ id: string }>()

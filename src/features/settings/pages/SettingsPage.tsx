@@ -19,7 +19,6 @@ import {
   MapPin,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION } from '@/constants/common'
-import { useSettingsStore } from '@/stores/settingsStore'
 import CostSheetManager from '../components/CostSheetManager'
 import ExtraItemManager from '../components/ExtraItemManager'
 import EngineerInfo from '../components/EngineerInfo'
@@ -29,7 +28,6 @@ import FormPresets from '../components/FormPresets'
 import BrandTemplates from '../components/BrandTemplates'
 import WatermarkTemplate from '../components/WatermarkTemplate'
 import LingpaoTemplate from '../components/LingpaoTemplate'
-import { ScriptEditor } from '../components/ScriptEditor'
 import ScriptManager from '../components/ScriptManager'
 import AmapConfig from '../components/AmapConfig'
 type SettingSection =

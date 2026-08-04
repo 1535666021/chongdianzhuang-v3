@@ -1,5 +1,3 @@
-import type { Material } from '@/types'
-
 export interface InventoryItem {
   materialId: string
   name: string

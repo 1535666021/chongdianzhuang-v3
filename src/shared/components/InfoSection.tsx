@@ -1,4 +1,4 @@
-import { ReactNode, useState, useCallback } from 'react'
+import { ReactNode } from 'react'
 import { Copy } from 'lucide-react'
 import './InfoSection.css'
 
@@ -28,19 +28,6 @@ export function InfoSection({ title, children, className = '' }: InfoSectionProp
 }
 
 export function InfoItem({ label, value, copyable, onClick, className = '' }: InfoItemProps) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = useCallback(async () => {
-    if (typeof value !== 'string') return
-    try {
-      await navigator.clipboard.writeText(value)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch {
-      // ignore
-    }
-  }, [value])
-
   const isString = typeof value === 'string'
   const showCopy = copyable && isString
 
@@ -56,7 +43,6 @@ export function InfoItem({ label, value, copyable, onClick, className = '' }: In
       {showCopy && (
         <>
           <Copy size={14} className="info-section__copy-icon" />
-          {copied && <span className="info-section__copy-toast">已复制</span>}
         </>
       )}
     </div>

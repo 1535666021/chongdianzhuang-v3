@@ -1,11 +1,8 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { DEFAULT_SCRIPT_TEMPLATES, DEFAULT_SCRIPT_VARIABLES } from '@/constants/scripts'
 import type { ScriptTemplateLocal, ScriptVariableValue, GeneratedScript } from '../types/script'
 
 export function useScripts() {
-  const { brandTemplates, setBrandTemplate } = useSettingsStore()
-
   const [customTemplates, setCustomTemplates] = useState<ScriptTemplateLocal[]>(() => {
     try {
       const saved = localStorage.getItem('cdz_v3_script_templates')

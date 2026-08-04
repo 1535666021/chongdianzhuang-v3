@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { Package, FileX, BarChart3, Settings, Search } from 'lucide-react'
+import { Package, BarChart3, Settings, Search } from 'lucide-react'
 import './EmptyState.css'
 
 type EmptyStateType = 'orders' | 'materials' | 'statistics' | 'settings' | 'search'

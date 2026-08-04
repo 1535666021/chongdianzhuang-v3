@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Package, Plus, Minus, ClipboardCheck, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { getStockStatus, getStatusColor } from '../types/inventory'

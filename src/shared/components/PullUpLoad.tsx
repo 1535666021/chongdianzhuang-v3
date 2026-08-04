@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, ReactNode } from 'react'
+import { useState, useEffect, useRef, ReactNode } from 'react'
 import './PullUpLoad.css'
 
 interface PullUpLoadProps {
@@ -19,34 +19,6 @@ export function PullUpLoad({
   const [loading, setLoading] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
-
-  const handleIntersect = useCallback(async (entries: IntersectionObserverEntry[]) => {
-    const [entry] = entries
-    if (entry.isIntersecting && !loading && hasMore) {
-      setLoading(true)
-      try {
-        await onLoadMore()
-      } finally {
-        setLoading(false)
-      }
-    }
-  }, [loading, hasMore, onLoadMore])
-
-  useEffect(() => {
-    const options: IntersectionObserverInit = {
-      root: null,
-      rootMargin: `0px 0px ${threshold}px 0px`,
-      threshold: 0,
-    }
-
-    const element = sentinelRef.current
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-    }
-  }, [threshold])
 
   useEffect(() => {
     if (!sentinelRef.current || loading || !hasMore) return

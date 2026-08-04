@@ -1,4 +1,4 @@
-import { ReactNode, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { X, Search } from 'lucide-react'
 import './BottomSheetSelect.css'
 

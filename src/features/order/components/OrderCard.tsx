@@ -10,7 +10,7 @@ import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy } from 'lucide-react'
-import { calcMaterialCost, calcOrderFinancials, getServiceFee } from '@/shared/utils/orderCalc'
+import { calcMaterialCost, calcOrderFinancials, getOrderServiceFee } from '@/shared/utils/orderCalc'
 import { getPlatformLabel } from '@/constants/platforms'
 import { toast } from '@/shared/hooks/useToast'
 import OrderCardTags from './OrderCardTags'
@@ -40,7 +40,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
 
   const customerPrice = order.customerPrice || 0
   const platformRate = getPlatformFeeRate(order.platform)
-  const serviceFee = getServiceFee(order.notes || '')
+  const serviceFee = getOrderServiceFee(order)
   const { total: materialCost } = calcMaterialCost(order.materials || [])
   const { platformFee, actualProfit: profit } = calcOrderFinancials(customerPrice, materialCost, platformRate, serviceFee)
   const displayAddress = dedupeAddress(order.address || '')

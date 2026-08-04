@@ -1,5 +1,3 @@
-import type { OrderMaterialItem } from '@/types'
-
 export interface MaterialInput {
   id: string
   name: string

@@ -16,7 +16,8 @@ type ParsedOrderWithNature = ParsedOrderItem & { nature?: string }
 function isDuplicate(order: Order, existingOrders: Order[]): boolean {
   const currentMonth = new Date().toISOString().slice(0, 7)
   return existingOrders.some((existing) => {
-    const existingMonth = new Date(existing.createdAt).toISOString().slice(0, 7)
+    const createdAt = new Date(existing.createdAt)
+    const existingMonth = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString().slice(0, 7)
     return existing.status !== '已完成' && existingMonth === currentMonth &&
       (existing.customerName === order.customerName || (order.phone && existing.phone === order.phone)) &&
       (existing.nature || '安装') === order.nature

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { ToastContainer } from '../components/Toast'
 
 export { ToastContainer }
@@ -9,13 +9,6 @@ interface ToastItem {
   id: string
   type: ToastType
   message: string
-}
-
-interface ToastApi {
-  success: (message: string) => void
-  error: (message: string) => void
-  warning: (message: string) => void
-  info: (message: string) => void
 }
 
 const TOAST_DURATION: Record<ToastType, number> = {

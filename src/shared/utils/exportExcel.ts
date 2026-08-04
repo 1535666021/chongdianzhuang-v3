@@ -1,4 +1,6 @@
 import type { Order } from '@/types'
+import { getOrderBusinessDate } from './orderCalc'
+import { getPlatformLabel } from '@/constants/platforms'
 
 const headers = ['序号', '客户名', '电话', '地址', '平台', '金额', '材料成本', '平台扣点', '利润', '日期']
 
@@ -8,7 +10,7 @@ function escapeCsv(value: string | number) {
 }
 
 function formatDate(order: Order) {
-  return order.completeDate || new Date(order.createdAt).toISOString().slice(0, 10)
+  return getOrderBusinessDate(order)
 }
 
 export function exportReconciliationCsv(orders: Order[], month: string) {
@@ -17,7 +19,7 @@ export function exportReconciliationCsv(orders: Order[], month: string) {
     order.customerName,
     order.phone,
     order.address,
-    order.platformName || order.platform,
+    getPlatformLabel(order.platformName || order.platform),
     (order.customerPrice || 0).toFixed(2),
     (order.materialCost || 0).toFixed(2),
     (order.platformFee || 0).toFixed(2),

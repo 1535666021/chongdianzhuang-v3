@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, ReactNode } from 'react'
+import { useState, useCallback, useRef, ReactNode } from 'react'
 import './PullDownRefresh.css'
 
 interface PullDownRefreshProps {

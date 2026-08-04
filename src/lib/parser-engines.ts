@@ -4,13 +4,12 @@
 
 import type { ParsedOrderItem } from './parser-core';
 import {
-  PHONE_RE, VIN_SEARCH_RE, POWER_RE, METERS_RE,
+  PHONE_RE, VIN_SEARCH_RE, POWER_RE,
   TIMESTAMP_PREFIX_RE, KEY_VALUE_RE,
   ADDRESS_HINTS, STRONG_ADDRESS_HINTS, NAME_EXCLUDE_RE,
   BRAND_WORDS, PLATFORM_HINT_WORDS,
   KV_FIELD_KEYS, KV_REMARK_KEYS, KV_DISCARD_KEYS, STANDALONE_DISCARD,
-  emptyItem, extractPhone, pickKv, cleanAddressText,
-  extractBrandName, extractPlatformName, stripWordFromText, fillFallbacks,
+  emptyItem, extractPhone, pickKv, cleanAddressText, fillFallbacks,
 } from './parser-core';
 
 /* --------------------------------------------------------------
@@ -137,12 +136,12 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
   const remarks: string[] = [];
   let phoneLine = '';
   let addressLine = '';
-  let nameCandidates: string[] = [];
-  let brandCandidates: string[] = [];
-  let platformCandidates: string[] = [];
-  let vinCandidates: string[] = [];
-  let orderNoCandidates: string[] = [];
-  let serviceTypeCandidates: string[] = [];
+  const nameCandidates: string[] = [];
+  const brandCandidates: string[] = [];
+  const platformCandidates: string[] = [];
+  const vinCandidates: string[] = [];
+  const orderNoCandidates: string[] = [];
+  const serviceTypeCandidates: string[] = [];
   for (const rawLine of lines) {
     const line = rawLine.replace(TIMESTAMP_PREFIX_RE, '').trim();
     if (!line) continue;
@@ -202,7 +201,6 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
 function inferInstallType(item: ParsedOrderItem): void {
   const st = (item.serviceType || '').toLowerCase();
   const rm = (item.remark || '').toLowerCase();
-  const text = st + ' ' + rm;
   if (st.includes('带桩') || rm.includes('带桩上门')) { item.installType = '带桩上门'; return; }
   if (st.includes('维修')) { item.installType = '维修'; return; }
   if (/勘察|勘测/.test(st)) { item.installType = '勘察'; return; }

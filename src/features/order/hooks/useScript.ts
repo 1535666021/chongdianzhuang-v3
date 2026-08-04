@@ -99,7 +99,6 @@ interface SurveyFormInput {
 
 export function buildScriptVarsFromSurveyForm(form: SurveyFormInput, order: Order, settings: { engineerName: string; engineerPhone: string }): Record<string, string> {
   const defaults = buildScriptVars(order, '勘测完成', settings)
-  const cableItem = form.estimatedMaterials?.find(m => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
   defaults.cableDistance = String(form.cableDistance ?? order.survey?.cableDistance ?? 0)
   defaults.powerSource = form.powerSource || defaults.powerSource
   defaults.installType = form.installMethod || defaults.installType

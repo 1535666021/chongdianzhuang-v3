@@ -1,4 +1,3 @@
-import { ReactNode } from 'react'
 import './ShimmerSkeleton.css'
 
 type ShimmerType = 'card' | 'list' | 'detail'

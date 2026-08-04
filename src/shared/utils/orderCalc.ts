@@ -65,6 +65,48 @@ export function calcOrderFinancials(customerPrice: number, materialCost: number,
   return { platformFee, actualProfit: calcProfit(customerPrice, materialCost, platformFee, serviceFee) }
 }
 
+type OrderFinancialSource = {
+  actualInstallDate?: string
+  appointmentDate?: string
+  completeDate?: string
+  createdAt: number
+  customerPrice?: number
+  materialCost?: number
+  platformFee?: number
+  actualProfit?: number
+  serviceFee?: number
+  notes?: string
+}
+
+function isDateValue(value: string | undefined) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value || '')
+}
+
+export function getOrderBusinessDate(order: Pick<OrderFinancialSource, 'actualInstallDate' | 'appointmentDate' | 'completeDate' | 'createdAt'>) {
+  const businessDate = [order.actualInstallDate, order.appointmentDate, order.completeDate].find(isDateValue)
+  if (businessDate) return businessDate
+
+  const createdAt = new Date(order.createdAt)
+  if (Number.isNaN(createdAt.getTime())) return ''
+  return `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}-${String(createdAt.getDate()).padStart(2, '0')}`
+}
+
+export function getOrderServiceFee(order: Pick<OrderFinancialSource, 'serviceFee' | 'notes'>) {
+  return order.serviceFee ?? getServiceFee(order.notes || '')
+}
+
+export function getCompletedOrderFinancials(order: OrderFinancialSource) {
+  const customerPrice = order.customerPrice || 0
+  const materialCost = order.materialCost || 0
+  const platformFee = order.platformFee || 0
+  const serviceFee = getOrderServiceFee(order)
+  const customerPay = customerPrice + serviceFee
+  const actualIncome = customerPay - platformFee
+  const actualProfit = order.actualProfit ?? actualIncome - materialCost
+
+  return { customerPrice, materialCost, platformFee, serviceFee, customerPay, actualIncome, actualProfit }
+}
+
 export function getServiceFee(orderNotes: string) {
   const notes = orderNotes || ''
   if (notes.includes('维修')) return SERVICE_FEE['维修']

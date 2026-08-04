@@ -1,18 +1,14 @@
 import { useEffect, useRef } from 'react'
 import { Calendar, MapPin, Trash2, X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
-
 interface OrderActionMenuProps {
-  orderId: string
   onClose: () => void
   onEditAppointment?: () => void
   onNavigate?: () => void
   onDelete?: () => void
 }
 
-export default function OrderActionMenu({ orderId, onClose, onEditAppointment, onNavigate, onDelete }: OrderActionMenuProps) {
+export default function OrderActionMenu({ onClose, onEditAppointment, onNavigate, onDelete }: OrderActionMenuProps) {
   const ref = useRef<HTMLDivElement>(null)
-  const navigate = useNavigate()
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { isFreeQuotaMaterial } from '@/constants/package'
 import { DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'

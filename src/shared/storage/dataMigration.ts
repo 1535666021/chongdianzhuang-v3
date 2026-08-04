@@ -46,8 +46,10 @@ export function migratePowerKw(): Order[] | null {
     for (const order of orders) {
       const current = order.powerKw?.toString()
       const currentPower = current?.match(NUMBER_RE)?.[0]
-      const { powerKw: _, ...sourceFields } = order
-      const sourceText = Object.values(sourceFields).filter((value): value is string => typeof value === 'string').join(' ')
+      const sourceText = Object.entries(order).reduce<string[]>((texts, [key, value]) => {
+        if (key !== 'powerKw' && typeof value === 'string') texts.push(value)
+        return texts
+      }, []).join(' ')
       const sourcePower = sourceText.match(POWER_RE)?.[1]
       const power = currentPower && Number(currentPower) <= MAX_HISTORICAL_POWER_KW
         ? currentPower
