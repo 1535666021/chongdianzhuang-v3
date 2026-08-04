@@ -2,6 +2,9 @@
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
+import { getBrandLabel } from '@/constants/brands'
+import { getPlatformLabel, PLATFORM_NAMES } from '@/constants/platforms'
+import { getPowerLabel } from '@/constants/power'
 import {
   parseOrderTextDetailed,
   parsedItemsToOrders,
@@ -38,11 +41,14 @@ export function useBatchParser() {
     }
 
     const result = parseOrderTextDetailed(text)
-    const knownPlatforms = getKnownPlatforms()
+    const knownPlatforms = [...new Set([...PLATFORM_NAMES.filter((name) => name !== '其他'), ...getKnownPlatforms()])]
     result.items.forEach((item) => {
       const platform = item.platformName.trim()
+      if (item.brandName) item.brandName = getBrandLabel(item.brandName)
+      if (item.powerKw) item.powerKw = getPowerLabel(item.powerKw).replace(/kW$/, '')
       if (platform && platform !== '其他') {
-        addKnownPlatform(platform)
+        item.platformName = getPlatformLabel(platform)
+        addKnownPlatform(item.platformName)
         return
       }
       if (item.brandName && knownPlatforms.includes(item.brandName)) {

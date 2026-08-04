@@ -60,6 +60,11 @@ export function calcPlatformFee(receivable: number, rate: number) {
   return receivable * rate
 }
 
+export function calcOrderFinancials(customerPrice: number, materialCost: number, platformRate: number, serviceFee = 0) {
+  const platformFee = calcPlatformFee(customerPrice, platformRate)
+  return { platformFee, actualProfit: calcProfit(customerPrice, materialCost, platformFee, serviceFee) }
+}
+
 export function getServiceFee(orderNotes: string) {
   const notes = orderNotes || ''
   if (notes.includes('维修')) return SERVICE_FEE['维修']

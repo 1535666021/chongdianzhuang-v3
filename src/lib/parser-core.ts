@@ -3,6 +3,8 @@
  * ============================================================ */
 
 import type { Order } from '@/types';
+import { BRAND_NAMES } from '@/constants/brands';
+import { PLATFORM_NAMES } from '@/constants/platforms';
 
 /* --------------------------------------------------------------
  * 一、类型定义（新系统适配）
@@ -76,20 +78,10 @@ export const ADDRESS_HINTS = /(省|市|区|县|镇|乡|村|路|街|巷|道|小�
 export const STRONG_ADDRESS_HINTS = /(小区|栋|幢|单元|室|车位|车库|路|街|花园|苑|\d)/;
 
 /** 品牌词表（按词长降序） */
-export const BRAND_WORDS = [
-  '长城欧拉', '长城坦克', '长城皮卡',
-  '鸿蒙智行', '广汽埃安', '特来电', '比亚迪', '特斯拉', '零跑', '埃安',
-  '五菱', '公牛', '捷途', '吉利', '长城', '坦克', '欧拉', '奇瑞', 'icar',
-  '理想', '蔚来', '小鹏', '长安', '深蓝', '极氪', '问界', '小米', '传祺',
-  '华境', '奔驰', '宝马', '奥迪', '大众', '丰田', '本田', '日产', '皮卡',
-];
+export const BRAND_WORDS = [...BRAND_NAMES].sort((a, b) => b.length - a.length);
 
 /** 平台提示词表（按词长降序） */
-export const PLATFORM_HINT_WORDS = [
-  '西安领充', '苏宁易购', '上汽通用', '拼多多',
-  '京东', '苏宁', '天猫', '淘宝', '领充', '万帮', '挚达',
-  '妍伟', '空灵', '美团', '苹果',
-];
+export const PLATFORM_HINT_WORDS = [...PLATFORM_NAMES].filter((name) => name !== '其他').sort((a, b) => b.length - a.length);
 
 /** 姓名排除词 */
 export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申请|到货|加急|预约|京东|苏宁|挚达|维修|服务|套包|套餐|预排|上门|检测|拆桩|充电桩|联系|订单号|外联单|编号|地址|电话|备注|车架|用户|省市|小区|街道|工单|日期)/;

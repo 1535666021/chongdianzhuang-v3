@@ -8,10 +8,12 @@ import { InfoSection, InfoItem } from '@/shared/components/InfoSection'
 import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
-import { STATUS_COLORS, INSTALL_TYPE_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, Tag, Zap, Ruler, ShoppingCart, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy } from 'lucide-react'
-import { calcMaterialCost, calcProfit, calcPlatformFee, getServiceFee } from '@/shared/utils/orderCalc'
+import { STATUS_COLORS } from '@/constants/order'
+import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy } from 'lucide-react'
+import { calcMaterialCost, calcOrderFinancials, getServiceFee } from '@/shared/utils/orderCalc'
+import { getPlatformLabel } from '@/constants/platforms'
 import { toast } from '@/shared/hooks/useToast'
+import OrderCardTags from './OrderCardTags'
 import '../../../shared/components/OrderCard.css'
 import '../../../shared/components/Modal.css'
 
@@ -30,8 +32,6 @@ function dedupeAddress(address: string) {
   return address.replace(/^(.+?市)\1/, '$1')
 }
 
-const POWER_OPTIONS = ['3.5', '7', '11', '22']
-
 export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
@@ -42,14 +42,10 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const platformRate = getPlatformFeeRate(order.platform)
   const serviceFee = getServiceFee(order.notes || '')
   const { total: materialCost } = calcMaterialCost(order.materials || [])
-  const platformFee = calcPlatformFee(customerPrice, platformRate)
-  const profit = calcProfit(customerPrice, materialCost, platformFee, serviceFee)
+  const { platformFee, actualProfit: profit } = calcOrderFinancials(customerPrice, materialCost, platformRate, serviceFee)
   const materials = order.materials || []
-  const installType = order.installType || '其他'
-  const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
   const displayAddress = dedupeAddress(order.address || '')
   const platformDisplay = order.platformName || order.platform
-  const powerKw = order.powerKw?.toString().match(/\d+(?:\.\d+)?/)?.[0]
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const deleteOrder = useOrderStore((s) => s.deleteOrder)
   const navigate = useNavigate()
@@ -137,70 +133,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           </span>
         </div>
 
-        {/* 标签行 */}
-        <div className="order-card__tags">
-          {(order.serviceType?.includes('补桩') || order.remark?.includes('补桩') || order.notes?.includes('补桩') || order.rawText?.includes('补桩')) && (
-            <span className="order-card__tag order-card__tag--pile">
-              补桩
-            </span>
-          )}
-          {platformDisplay && (
-            <span
-              className="order-card__tag order-card__tag--platform"
-              style={{ cursor: 'pointer' }}
-              onClick={(event) => { event.stopPropagation(); onEditPlatform?.(order) }}
-            >
-              <ShoppingCart size={10} />
-              {platformDisplay}
-              {platformDisplay === '其他' && <span style={{ marginLeft: 2, fontSize: 10 }}>✎</span>}
-            </span>
-          )}
-          {order.brandName && (
-            <span className="order-card__tag order-card__tag--brand">
-              <Tag size={10} />
-              {order.brandName}
-            </span>
-          )}
-          {powerKw && (
-            <span className="order-card__tag order-card__tag--power">
-              <Zap size={10} />
-              {powerKw}kW
-            </span>
-          )}
-          {!powerKw && (
-            <span className="order-card__tag order-card__tag--power">
-              <Zap size={10} />
-              <select
-                aria-label="选择功率"
-                className="bg-transparent outline-none"
-                defaultValue=""
-                onClick={(event) => event.stopPropagation()}
-                onChange={(event) => {
-                  event.stopPropagation()
-                  updateOrder(order.id, { powerKw: event.target.value })
-                }}
-              >
-                <option value="" disabled>选择功率</option>
-                {POWER_OPTIONS.map((option) => <option key={option} value={option}>{option}kW</option>)}
-              </select>
-            </span>
-          )}
-          {order.packageMeters && (
-            <span className="order-card__tag order-card__tag--meters">
-              <Ruler size={10} />
-              {order.packageMeters}米
-            </span>
-          )}
-          {installType !== '其他' && (
-            <span
-              className="order-card__tag"
-              style={{ backgroundColor: typeColors.bg, color: typeColors.text }}
-            >
-              <Tag size={10} />
-              {installType}
-            </span>
-          )}
-        </div>
+        <OrderCardTags order={order} onEditPlatform={onEditPlatform} onPowerChange={(powerKw) => updateOrder(order.id, { powerKw })} />
 
         {/* 电话和地址 */}
         <div
@@ -264,7 +197,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               <ClipboardList size={14} />
               勘测
             </button>
-            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([platformDisplay, order.brandName, order.customerName].filter(Boolean).join(' '), '水印') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
+            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([platformDisplay ? getPlatformLabel(platformDisplay) : '', order.brandName, order.customerName].filter(Boolean).join(' '), '水印') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/order/complete/${order.id}`) }}
               className="order-card__btn order-card__btn--complete"

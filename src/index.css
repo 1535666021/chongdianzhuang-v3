@@ -6,6 +6,7 @@
   /* 色彩系统 */
   --color-primary: #2e7d5b;
   --color-primary-hover: #276b4e;
+  --color-primary-dark: #276b4e;
   --color-primary-active: #1f5a41;
   --color-primary-light: #e3f0ea;
   --color-secondary: #c99435;
@@ -20,7 +21,9 @@
   --color-divider: #eeeae1;
   --color-danger: #bf5340;
   --color-danger-light: #f8e7e3;
+  --color-danger-dark: #a24333;
   --color-info: #4a7ba6;
+  --color-info-dark: #3b668a;
   --color-info-light: #e6eef5;
   --color-success: #3e8e5a;
   --color-success-light: #e4f1e8;

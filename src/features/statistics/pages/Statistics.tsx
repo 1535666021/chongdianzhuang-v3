@@ -68,7 +68,7 @@ export default function Statistics() {
             <Metric label="客户总付费" value={stats.customerPay} color="text-purple-600" />
             <Metric label="扣点后收入" value={stats.netIncome} color="text-purple-600" />
           </div>
-          <div className="flex justify-between px-2 text-xs text-gray-400"><span>安装0/维修0</span><span>已扣平台点</span></div>
+          <div className="flex justify-between px-2 text-xs text-gray-400"><span>安装/维修：待数据支撑</span><span>已扣平台点</span></div>
           <div className="grid grid-cols-2 gap-4">
             <Metric label="对账利润（点击查看）" value={stats.reconciliationProfit} color="text-green-600" onClick={() => setDetailType('reconciliation')} />
             <Metric label="实际利润（点击查看）" value={stats.actualProfit} color="text-green-600" onClick={() => setDetailType('actual')} />
@@ -77,7 +77,7 @@ export default function Statistics() {
             <Metric label="平均利润" value={averageProfit} color="text-green-600" />
             <Metric label="台均增项" value={averageAddon} color="text-blue-600" />
           </div>
-          <div className="flex justify-between px-2 text-xs text-gray-400"><span>维修0台 ¥0.00</span><span>勘测0台 ¥0.00</span></div>
+          <div className="flex justify-between px-2 text-xs text-gray-400"><span>维修统计：待数据支撑</span><span>勘测统计：待数据支撑</span></div>
           <button type="button" onClick={() => exportReconciliationCsv(selectedOrders, selectedMonth)} className="w-full rounded-xl bg-green-600 py-3 text-sm font-medium text-white">导出Excel对账单</button>
         </div>
 

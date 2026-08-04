@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import type { Order } from '@/types'
+import { getPlatformLabel } from '@/constants/platforms'
 
 interface PlatformStats {
   platform: string
@@ -18,7 +19,7 @@ export default function PlatformBreakdown({ orders }: Props) {
   const stats = useMemo(() => {
     const map = new Map<string, PlatformStats>()
     orders.forEach((o) => {
-      const platform = o.platformName || o.platform
+      const platform = getPlatformLabel(o.platformName || o.platform)
       const s = map.get(platform) || { platform, orderCount: 0, materialCost: 0, laborCost: 0, platformFee: 0, actualProfit: 0 }
       s.orderCount += 1
       s.materialCost += o.materialCost || 0
