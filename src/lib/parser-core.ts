@@ -192,9 +192,7 @@ export function stripWordFromText(text: string, word: string): string {
 
 export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
   if (!item.phone) item.phone = extractPhone(blockText);
-  /* ---- 姓名后补：从备注或原始文本中提取 ---- */
   if (!item.customerName) {
-    // 尝试从键值对格式的原始文本中提取姓名
     const nameKv = blockText.match(/(?:客户姓名|联系人|车主姓名|姓名|用户姓名|车主|客户|姓名信息|联系人姓名)[:：]\s*([^\n\r]{2,6})/);
     if (nameKv && nameKv[1]) {
       const name = nameKv[1].trim();
@@ -204,12 +202,17 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
     }
   }
   if (!item.customerName) {
-    // 尝试从备注中提取可能的姓名（2-4个汉字，不含数字和排除词）
-    const remark = item.remark || '';
-    const nameMatch = remark.match(/([\u4e00-\u9fa5]{2,4})(?:先生|女士|小姐|师傅)?/);
-    if (nameMatch && nameMatch[1] && !NAME_EXCLUDE_RE.test(nameMatch[1]) && !/\d/.test(nameMatch[1])) {
-      item.customerName = nameMatch[1];
+    const names = `${item.remark}\n${blockText}`.matchAll(/([\u4e00-\u9fa5]{2,4})(?:先生|女士|小姐|师傅)?/g);
+    for (const match of names) {
+      if (!NAME_EXCLUDE_RE.test(match[1])) {
+        item.customerName = match[1];
+        break;
+      }
     }
+  }
+  if (!item.address) {
+    const addresses = blockText.split(/\r?\n/).map(cleanAddressText).filter((line) => ADDRESS_HINTS.test(line) && STRONG_ADDRESS_HINTS.test(line));
+    item.address = addresses.sort((a, b) => b.length - a.length)[0] || '';
   }
   if (!item.vin) {
     const all = blockText.match(VIN_SEARCH_RE) ?? [];
@@ -227,7 +230,7 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
     const m = item.packageMeters.match(/(\d+)/);
     if (m) item.packageMeters = m[1];
   } else {
-    const m = (item.serviceType + ' ' + item.remark).match(METERS_RE);
+    const m = (item.serviceType + ' ' + item.remark).match(METERS_RE) ?? blockText.match(METERS_RE);
     if (m) item.packageMeters = m[1];
   }
   if (!item.brandName) {
