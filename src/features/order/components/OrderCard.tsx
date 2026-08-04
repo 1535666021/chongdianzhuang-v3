@@ -48,6 +48,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
   const displayAddress = dedupeAddress(order.address || '')
+  const platformDisplay = order.platformName || order.platform
   const powerKw = order.powerKw?.toString().match(/\d+(?:\.\d+)?/)?.[0]
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const deleteOrder = useOrderStore((s) => s.deleteOrder)
@@ -143,15 +144,15 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               补桩
             </span>
           )}
-          {order.platformName && (
+          {platformDisplay && (
             <span
               className="order-card__tag order-card__tag--platform"
               style={{ cursor: 'pointer' }}
               onClick={(event) => { event.stopPropagation(); onEditPlatform?.(order) }}
             >
               <ShoppingCart size={10} />
-              {order.platformName}
-              {order.platformName === '其他' && <span style={{ marginLeft: 2, fontSize: 10 }}>✎</span>}
+              {platformDisplay}
+              {platformDisplay === '其他' && <span style={{ marginLeft: 2, fontSize: 10 }}>✎</span>}
             </span>
           )}
           {order.brandName && (
@@ -263,7 +264,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               <ClipboardList size={14} />
               勘测
             </button>
-            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([order.platform, order.brandName, order.customerName].filter(Boolean).join(' '), '水印') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
+            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([platformDisplay, order.brandName, order.customerName].filter(Boolean).join(' '), '水印') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/order/complete/${order.id}`) }}
               className="order-card__btn order-card__btn--complete"
