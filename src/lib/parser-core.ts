@@ -211,8 +211,12 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
     }
   }
   if (!item.address) {
-    const addresses = blockText.split(/\r?\n/).map(cleanAddressText).filter((line) => ADDRESS_HINTS.test(line) && STRONG_ADDRESS_HINTS.test(line));
-    item.address = addresses.sort((a, b) => b.length - a.length)[0] || '';
+    const addressCandidates = blockText.split(/\r?\n/).map((line) => {
+      const start = line.search(/(?:[\u4e00-\u9fa5]{2,4}省)?[\u4e00-\u9fa5]{2,4}市/);
+      return cleanAddressText(start >= 0 ? line.slice(start) : line);
+    }).filter((line) => ADDRESS_HINTS.test(line) && STRONG_ADDRESS_HINTS.test(line));
+    const remarkCandidates = item.remark.split(/\r?\n/).map(cleanAddressText).filter((line) => ADDRESS_HINTS.test(line) && STRONG_ADDRESS_HINTS.test(line));
+    item.address = addressCandidates.sort((a, b) => b.length - a.length)[0] || remarkCandidates.sort((a, b) => b.length - a.length)[0] || '';
   }
   if (!item.vin) {
     const all = blockText.match(VIN_SEARCH_RE) ?? [];
