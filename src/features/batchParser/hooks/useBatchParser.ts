@@ -1,9 +1,9 @@
 ﻿import { useState, useCallback } from 'react'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
-import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
+import { addKnownPlatform } from '@/shared/storage/platformStorage'
 import { getBrandLabel } from '@/constants/brands'
-import { getPlatformLabel, PLATFORM_NAMES } from '@/constants/platforms'
+import { getPlatformLabel } from '@/constants/platforms'
 import { getPowerLabel } from '@/constants/power'
 import {
   parseOrderTextDetailed,
@@ -42,24 +42,14 @@ export function useBatchParser() {
     }
 
     const result = parseOrderTextDetailed(text)
-    const knownPlatforms = [...new Set([...PLATFORM_NAMES.filter((name) => name !== '其他'), ...getKnownPlatforms()])]
     result.items.forEach((item) => {
-      const platform = item.platformName.trim()
       if (item.brandName) item.brandName = getBrandLabel(item.brandName)
       if (item.powerKw) item.powerKw = getPowerLabel(item.powerKw).replace(/kW$/, '')
-      if (platform && platform !== '其他') {
-        item.platformName = getPlatformLabel(platform)
+      if (item.platformName && item.platformName !== '其他') {
+        item.platformName = getPlatformLabel(item.platformName)
         addKnownPlatform(item.platformName)
-        return
       }
-      if (item.brandName && knownPlatforms.includes(item.brandName)) {
-        item.platformName = item.brandName
-      } else if (knownPlatforms.length === 1) {
-        item.platformName = knownPlatforms[0]
-      } else if (knownPlatforms.length > 1) {
-        const choice = window.prompt(`请选择平台：${knownPlatforms.join('、')}`)
-        if (choice && knownPlatforms.includes(choice)) item.platformName = choice
-      }
+      if (!item.platformName) item.platformName = '其他'
     })
     setParsedOrders(result.items)
     setBlockCount(result.blockCount)
@@ -78,11 +68,7 @@ export function useBatchParser() {
       ...order,
       nature: (parsedOrders[index] as ParsedOrderWithNature).nature || '安装',
     }))
-    const duplicates = orders.filter((order) => isDuplicate(order, existingOrders))
-    if (duplicates.length && !window.confirm(`本月已有 ${duplicates.length} 条同客户同性质订单，是否仍要导入？`)) {
-      return orders.filter((order) => !isDuplicate(order, existingOrders))
-    }
-    return orders
+    return orders.filter((order) => !isDuplicate(order, existingOrders))
   }, [existingOrders, parsedOrders])
 
   return {
