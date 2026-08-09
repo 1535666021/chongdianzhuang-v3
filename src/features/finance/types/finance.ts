@@ -25,14 +25,19 @@ export interface OrderMaterialDetail {
   unit: string
   unitPrice: number
   subtotal: number
+  costUnitPrice: number
+  costSubtotal: number
 }
 
 export interface OrderCostDetail {
   orderId: string
   customerName: string
   materials: OrderMaterialDetail[]
+  customerPrice: number
+  serviceFee: number
+  customerPay: number
   materialCost: number
-  laborCost: number
   platformDeduction: number
+  platformRate: number
   actualProfit: number
 }

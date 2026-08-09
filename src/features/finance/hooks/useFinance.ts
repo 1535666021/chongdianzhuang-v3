@@ -1,10 +1,12 @@
 import { useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { getCompletedOrderFinancials, getOrderBusinessDate } from '@/shared/utils/orderCalc'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { getCompletedOrderFinancials, getOrderBusinessDate, resolveCostPrice } from '@/shared/utils/orderCalc'
 import type { MonthlyReconciliation, ReceivableOrder, OrderCostDetail } from '../types/finance'
 
 export function useFinance() {
   const { orders, updateOrder } = useOrderStore()
+  const getPlatformFeeRate = useSettingsStore(state => state.getPlatformFeeRate)
 
   const completedOrders = useMemo(
     () => orders.filter(o => o.status === '已完成'),
@@ -74,19 +76,30 @@ export function useFinance() {
         const d = getOrderBusinessDate(o)
         return d.slice(0, 7) === month
       })
-      .map(o => ({
-        orderId: o.id,
-        customerName: o.customerName,
-        materials: (o.materials || []).map(m => ({
-          ...m,
-          subtotal: (m.unitPrice || 0) * (m.quantity || 0),
-        })),
-        materialCost: o.materialCost,
-        laborCost: o.laborCost,
-        platformDeduction: o.platformFee,
-        actualProfit: o.actualProfit,
-      }))
-  }, [completedOrders])
+      .map(o => {
+        const financials = getCompletedOrderFinancials(o)
+        return {
+          orderId: o.id,
+          customerName: o.customerName,
+          materials: (o.materials || []).map(m => {
+            const costUnitPrice = resolveCostPrice(m.name)
+            return {
+              ...m,
+              subtotal: (m.unitPrice || 0) * (m.quantity || 0),
+              costUnitPrice,
+              costSubtotal: costUnitPrice * (m.quantity || 0),
+            }
+          }),
+          customerPrice: financials.customerPrice,
+          serviceFee: financials.serviceFee,
+          customerPay: financials.customerPay,
+          materialCost: financials.materialCost,
+          platformDeduction: financials.platformFee,
+          platformRate: getPlatformFeeRate(o.platform),
+          actualProfit: financials.actualProfit,
+        }
+      })
+  }, [completedOrders, getPlatformFeeRate])
 
   return {
     availableMonths,
