@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Trash2, Edit2, PackageOpen } from 'lucide-react'
+import { Plus, Trash2, Edit2, PackageOpen, Upload } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
 import { UsageForm } from '../components/UsageForm'
+import { ImportMaterialModal } from '../components/ImportMaterialModal'
 import type { MaterialUsageRecord } from '@/types'
 import { EmptyState } from '@/shared/components/EmptyState'
 import '../../../shared/components/MaterialList.css'
@@ -13,6 +14,7 @@ export default function MaterialList() {
   const [showForm, setShowForm] = useState(false)
   const [editRecord, setEditRecord] = useState<MaterialUsageRecord | undefined>(undefined)
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [showImport, setShowImport] = useState(false)
 
   const groupedByMonth = useMemo(() => {
     const groups: Record<string, { records: MaterialUsageRecord[]; total: number }> = {}
@@ -60,6 +62,12 @@ export default function MaterialList() {
       <div className="material-list__header">
         <h1 className="material-list__title">材料领用</h1>
         <div className="material-list__actions">
+          <button
+            onClick={() => setShowImport(true)}
+            className="material-list__btn material-list__btn--inventory"
+          >
+            <Upload size={14} /> 导入
+          </button>
           <button
             onClick={() => navigate('/inventory')}
             className="material-list__btn material-list__btn--inventory"
@@ -119,6 +127,10 @@ export default function MaterialList() {
 
       {showForm && (
         <UsageForm record={editRecord} onClose={handleCloseForm} />
+      )}
+
+      {showImport && (
+        <ImportMaterialModal onClose={() => setShowImport(false)} />
       )}
 
       {deleteId && (
