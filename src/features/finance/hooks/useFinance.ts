@@ -1,12 +1,10 @@
 import { useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { getCompletedOrderFinancials, getOrderBusinessDate, resolveCostPrice } from '@/shared/utils/orderCalc'
 import type { MonthlyReconciliation, ReceivableOrder, OrderCostDetail } from '../types/finance'
 
 export function useFinance() {
   const { orders, updateOrder } = useOrderStore()
-  const getPlatformFeeRate = useSettingsStore(state => state.getPlatformFeeRate)
 
   const completedOrders = useMemo(
     () => orders.filter(o => o.status === '已完成'),
@@ -95,11 +93,11 @@ export function useFinance() {
           customerPay: financials.customerPay,
           materialCost: financials.materialCost,
           platformDeduction: financials.platformFee,
-          platformRate: getPlatformFeeRate(o.platform),
+          platformRate: financials.customerPrice > 0 ? financials.platformFee / financials.customerPrice : 0,
           actualProfit: financials.actualProfit,
         }
       })
-  }, [completedOrders, getPlatformFeeRate])
+  }, [completedOrders])
 
   return {
     availableMonths,
