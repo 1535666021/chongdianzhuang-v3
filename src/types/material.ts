@@ -56,4 +56,5 @@ export interface MaterialUsageRecord {
   costPrice: number
   quantity: number
   total: number
+  merged?: boolean
 }

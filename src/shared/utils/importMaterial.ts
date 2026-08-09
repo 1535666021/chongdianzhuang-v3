@@ -126,7 +126,7 @@ export function parseImportFile(content: string, fileName: string): ImportResult
   }
 
   const records: MaterialUsageRecord[] = []
-  const nameCount = new Map<string, number>()
+  const keyIndex = new Map<string, number>()
 
   for (let i = 0; i < rows.length; i++) {
     const normalized = normalizeRow(rows[i])
@@ -141,25 +141,31 @@ export function parseImportFile(content: string, fileName: string): ImportResult
     }
     if (rowErrors.length > 0) continue
 
-    const seen = nameCount.get(normalized.name) ?? 0
-    nameCount.set(normalized.name, seen + 1)
-    if (seen > 0) {
-      errors.push({ row: i + 2, message: `第${i + 2}行：「${normalized.name}」名称重复，将追加新记录` })
+    const date = normalized.date || new Date().toISOString().slice(0, 10)
+    const key = `${normalized.name}||${date}`
+    const existingIdx = keyIndex.get(key)
+
+    if (existingIdx !== undefined) {
+      const existing = records[existingIdx]
+      existing.quantity += normalized.quantity
+      existing.total = Math.round((existing.total + normalized.quantity * normalized.costPrice) * 100) / 100
+      existing.merged = true
+    } else {
+      const quantity = normalized.quantity
+      const costPrice = normalized.costPrice
+      const total = Math.round(quantity * costPrice * 100) / 100
+
+      keyIndex.set(key, records.length)
+      records.push({
+        id: `import_${Date.now()}_${records.length}`,
+        date,
+        name: normalized.name,
+        unit: normalized.unit,
+        costPrice,
+        quantity,
+        total,
+      })
     }
-
-    const quantity = normalized.quantity
-    const costPrice = normalized.costPrice
-    const total = Math.round(quantity * costPrice * 100) / 100
-
-    records.push({
-      id: `import_${Date.now()}_${i}`,
-      date: normalized.date || new Date().toISOString().slice(0, 10),
-      name: normalized.name,
-      unit: normalized.unit,
-      costPrice,
-      quantity,
-      total,
-    })
   }
 
   return { records, errors }

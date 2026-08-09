@@ -112,6 +112,7 @@ export function ImportMaterialModal({ onClose }: Props) {
                     <thead className="bg-gray-50 sticky top-0">
                       <tr>
                         <th className="text-left px-2 py-1.5 text-gray-600">材料名称</th>
+                        <th className="text-left px-2 py-1.5 text-gray-600">日期</th>
                         <th className="text-right px-2 py-1.5 text-gray-600">数量</th>
                         <th className="text-left px-2 py-1.5 text-gray-600">单位</th>
                         <th className="text-right px-2 py-1.5 text-gray-600">单价</th>
@@ -121,7 +122,11 @@ export function ImportMaterialModal({ onClose }: Props) {
                     <tbody>
                       {result.records.map((r) => (
                         <tr key={r.id} className="border-t border-gray-50 hover:bg-gray-50">
-                          <td className="px-2 py-1 text-gray-800">{r.name}</td>
+                          <td className="px-2 py-1 text-gray-800">
+                            {r.name}
+                            {r.merged && <span className="ml-1 text-xs text-blue-500">已合并</span>}
+                          </td>
+                          <td className="px-2 py-1 text-gray-500">{r.date}</td>
                           <td className="px-2 py-1 text-right">{r.quantity}</td>
                           <td className="px-2 py-1 text-gray-500">{r.unit}</td>
                           <td className="px-2 py-1 text-right">{r.costPrice > 0 ? `¥${r.costPrice}` : '-'}</td>
@@ -130,17 +135,6 @@ export function ImportMaterialModal({ onClose }: Props) {
                       ))}
                     </tbody>
                   </table>
-                </div>
-              </div>
-            )}
-
-            {errorCount > 0 && (
-              <div className="px-3 pb-2">
-                <div className="text-xs text-red-500 mb-1">以下行解析失败：</div>
-                <div className="max-h-24 overflow-y-auto">
-                  {result.errors.filter((e: ImportError) => e.row > 0).map((e, i) => (
-                    <div key={i} className="text-xs text-red-400 pl-2">{e.message}</div>
-                  ))}
                 </div>
               </div>
             )}
