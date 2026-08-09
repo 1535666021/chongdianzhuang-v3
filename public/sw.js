@@ -6,10 +6,11 @@ const STATIC_ASSETS = [
   './icon-192.png',
   './icon-512.png',
 ]
+const PRECACHE_ASSETS = (self.__WB_MANIFEST || []).map((entry) => entry.url)
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll([...new Set([...STATIC_ASSETS, ...PRECACHE_ASSETS])]))
   )
 })
 
@@ -32,20 +33,17 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
+  const requestUrl = new URL(event.request.url)
+  if (requestUrl.origin !== self.location.origin || requestUrl.pathname.endsWith('/version.json')) return
+
+  const updateCache = fetch(event.request).then((response) => {
+    if (response.ok) {
+      event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone())))
+    }
+    return response
+  })
+
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response.ok && new URL(event.request.url).origin === self.location.origin) {
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, response.clone()))
-        }
-        return response
-      })
-      .catch(async () => {
-        const cached = await caches.match(event.request)
-        return cached || new Response('离线中，请检查网络', {
-          status: 503,
-          headers: { 'Content-Type': 'text/plain' },
-        })
-      })
+    caches.match(event.request).then((cached) => cached || updateCache).catch(() => updateCache)
   )
 })

@@ -3,7 +3,7 @@ import { backupLocalData } from '@/shared/storage/dataMigration'
 
 declare const __APP_VERSION__: string
 
-const CHECK_DATE_KEY = 'cdz_version_check_date'
+const CHECK_DATE_KEY = 'cdz_last_update_check'
 const VERSION_URL = `${import.meta.env.BASE_URL}version.json`
 
 export function useVersionCheck() {
@@ -13,6 +13,7 @@ export function useVersionCheck() {
   const checkVersion = useCallback(async (force = false) => {
     const today = new Date().toISOString().slice(0, 10)
     if (!force && localStorage.getItem(CHECK_DATE_KEY) === today) return false
+    if (!navigator.onLine) return false
     try {
       const url = force ? `${VERSION_URL}?t=${Date.now()}` : VERSION_URL
       const response = await fetch(url, { cache: 'no-store' })
@@ -48,6 +49,7 @@ export function useVersionCheck() {
 
   const handleUpdate = async () => {
     backupLocalData()
+    localStorage.removeItem(CHECK_DATE_KEY)
     const reload = () => window.location.reload()
     if (!('serviceWorker' in navigator)) return reload()
     navigator.serviceWorker.addEventListener('controllerchange', reload, { once: true })

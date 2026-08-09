@@ -4,6 +4,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
+import { useOfflineStatus } from '@/shared/hooks/useOfflineStatus'
 import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
 import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
@@ -25,6 +26,7 @@ export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
   const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
+  const isOffline = useOfflineStatus()
   const orders = useOrderStore((s) => s.orders)
   const setOrders = useOrderStore((s) => s.setOrders)
   const { toast: appToast, toasts, removeToast } = useToast()
@@ -61,7 +63,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col" data-network={isOffline ? 'offline' : 'online'}>
       {/* 离线状态提示 */}
       <OfflineIndicator />
 

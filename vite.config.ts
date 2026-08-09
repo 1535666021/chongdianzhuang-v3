@@ -20,9 +20,6 @@ export default defineConfig({
       strategies: 'injectManifest',
       srcDir: 'public',
       filename: 'sw.js',
-      injectManifest: {
-        injectionPoint: undefined,
-      },
       manifest: {
         name: '充电桩订单助手',
         short_name: '充电桩助手',

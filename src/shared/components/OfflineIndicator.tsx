@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
+import { useOfflineStatus } from '@/shared/hooks/useOfflineStatus'
 import './OfflineIndicator.css'
 
 /**
@@ -10,42 +11,14 @@ import './OfflineIndicator.css'
  * - 带关闭按钮，关闭后本次会话不再显示
  */
 export function OfflineIndicator() {
-  const [showPending, setShowPending] = useState(false)
+  const isOffline = useOfflineStatus()
   const [dismissed, setDismissed] = useState(false)
-
-  useEffect(() => {
-    const handleOnline = () => {
-      setShowPending(false)
-    }
-    const handleOffline = () => {
-      // 3 秒延迟显示
-      const timer = setTimeout(() => {
-        if (!dismissed) setShowPending(true)
-      }, 3000)
-      return () => clearTimeout(timer)
-    }
-
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-
-    // 初始化检查
-    if (!navigator.onLine && !dismissed) {
-      const timer = setTimeout(() => setShowPending(true), 3000)
-      return () => clearTimeout(timer)
-    }
-
-    return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [dismissed])
 
   const handleClose = () => {
     setDismissed(true)
-    setShowPending(false)
   }
 
-  if (!showPending) return null
+  if (!isOffline || dismissed) return null
 
   return (
     <div className="offline-indicator">
