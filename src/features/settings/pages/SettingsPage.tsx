@@ -112,7 +112,6 @@ export default function SettingsPage() {
             <h3 className="text-lg font-bold text-gray-800">{APP_NAME}</h3>
             <button type="button" disabled={isChecking} onClick={handleVersionCheck} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{isChecking ? '检测中...' : `版本 v${APP_VERSION}`}</button>
             <p className="text-xs text-gray-400 mt-4">专为充电桩安装工打造</p>
-            <p className="text-xs text-gray-400">工程师：谢责强</p>
           </div>
         )
       default:
