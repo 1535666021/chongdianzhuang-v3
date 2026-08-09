@@ -26,8 +26,8 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
   const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
 
-  const filter = activeFilter === '全部' ? undefined : { status: activeFilter as any }
-  const { orders, stats } = useOrderList(filter)
+  const filter = activeFilter === '全部' ? undefined : { status: activeFilter as Order['status'] }
+  const { orders } = useOrderList(filter)
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
   const updateOrder = useOrderStore((state) => state.updateOrder)
   const knownPlatforms = getKnownPlatforms()
@@ -36,14 +36,14 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
 
   const displayOrders = useMemo(() => {
     const filtered = searchKw
-      ? orders.filter((o: any) =>
+      ? orders.filter((o) =>
           o.customerName?.includes(searchKw) ||
           o.phone?.includes(searchKw) ||
           o.address?.includes(searchKw)
         )
       : orders
-    const todayOrders = filtered.filter((o: any) => o.appointmentDate === today)
-    const otherOrders = filtered.filter((o: any) => o.appointmentDate !== today)
+    const todayOrders = filtered.filter((o) => o.appointmentDate === today)
+    const otherOrders = filtered.filter((o) => o.appointmentDate !== today)
     return [...todayOrders, ...otherOrders]
   }, [orders, searchKw, today])
 
@@ -53,46 +53,8 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
 
   const emptyText = activeFilter === '全部' ? '暂无订单' : `暂无${activeFilter}订单`
 
-  const handleStatClick = (status: string) => {
-    if (!fixedStatus) {
-      setActiveFilter(status === '全部' ? '全部' : status)
-    }
-  }
-
   return (
     <div className="order-list-page">
-      {/* 状态概览条 */}
-      <div className="order-list__stats">
-        <div
-          className={`order-list__stat ${activeFilter === '全部' || !fixedStatus ? 'active' : ''}`}
-          onClick={() => handleStatClick('全部')}
-        >
-          <div className="order-list__stat-value">{stats.total}</div>
-          <div className="order-list__stat-label">全部</div>
-        </div>
-        <div
-          className={`order-list__stat ${activeFilter === '待办' ? 'active' : ''}`}
-          onClick={() => handleStatClick('待办')}
-        >
-          <div className="order-list__stat-value order-list__stat-value--pending">{stats.pending}</div>
-          <div className="order-list__stat-label">待办</div>
-        </div>
-        <div
-          className={`order-list__stat ${activeFilter === '已预约' ? 'active' : ''}`}
-          onClick={() => handleStatClick('已预约')}
-        >
-          <div className="order-list__stat-value order-list__stat-value--scheduled">{stats.scheduled}</div>
-          <div className="order-list__stat-label">已预约</div>
-        </div>
-        <div
-          className={`order-list__stat ${activeFilter === '已完成' ? 'active' : ''}`}
-          onClick={() => handleStatClick('已完成')}
-        >
-          <div className="order-list__stat-value order-list__stat-value--completed">{stats.completed}</div>
-          <div className="order-list__stat-label">已完成</div>
-        </div>
-      </div>
-
       {/* 搜索栏 + 操作按钮 */}
       <div className="order-list__toolbar">
         <div className="order-list__search">
@@ -155,7 +117,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
           />
         ) : (
           <>
-            {displayOrders.slice(0, showCount).map((order: any) => (
+            {displayOrders.slice(0, showCount).map((order) => (
               <OrderCard
                 key={order.id}
                 order={order}
