@@ -43,8 +43,8 @@ export default function Statistics() {
     const financials = getCompletedOrderFinancials(order)
     return {
       orderCount: total.orderCount + 1,
-      customerPay: total.customerPay + financials.customerPay,
-      netIncome: total.netIncome + financials.actualIncome,
+      customerPay: total.customerPay + financials.customerPrice,
+      netIncome: total.netIncome + financials.customerPrice - financials.platformFee,
       reconciliationProfit: total.reconciliationProfit + financials.actualProfit + financials.platformFee,
       actualProfit: total.actualProfit + financials.actualProfit,
       addonCost: total.addonCost + financials.materialCost + (order.laborCost || 0),
