@@ -3,13 +3,15 @@ import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
 import SurveyModal from '../components/SurveyModal'
 import ScriptEditorModal from '../components/ScriptEditorModal'
-import { useState, useMemo } from 'react'
-import type { Order } from '@/types'
+import { useState, useMemo, useEffect } from 'react'
+import type { Order, OrderFilter } from '@/types'
 import { ORDER_STATUSES } from '@/constants/order'
 import { Search, Plus, FileText } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
+import OrderFilters, { type GroupMode } from '../components/OrderFilters'
+import { groupOrders } from '../components/GroupedOrderCards'
 import '../../../shared/components/OrderList.css'
 
 interface Props {
@@ -21,33 +23,33 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
   const navigate = useNavigate()
   const [activeFilter, setActiveFilter] = useState<string>(fixedStatus ?? '全部')
   const [searchKw, setSearchKw] = useState('')
+  const [advancedFilter, setAdvancedFilter] = useState<OrderFilter>({ sortBy: 'createdAt', sortOrder: 'desc' })
+  const [groupMode, setGroupMode] = useState<GroupMode>('smart')
   const [showCount, setShowCount] = useState(50)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
   const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
   const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
 
-  const filter = activeFilter === '全部' ? undefined : { status: activeFilter as Order['status'] }
-  const { orders } = useOrderList(filter)
+  const filter = useMemo<OrderFilter>(() => ({
+    ...advancedFilter,
+    keyword: searchKw || undefined,
+    status: activeFilter === '全部' ? undefined : activeFilter as Order['status'],
+  }), [activeFilter, advancedFilter, searchKw])
+  const { orders, filterOptions } = useOrderList(filter)
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
   const updateOrder = useOrderStore((state) => state.updateOrder)
   const knownPlatforms = getKnownPlatforms()
 
   const today = new Date().toISOString().slice(0, 10)
 
-  const displayOrders = useMemo(() => {
-    const filtered = searchKw
-      ? orders.filter((o) =>
-          o.customerName?.includes(searchKw) ||
-          o.phone?.includes(searchKw) ||
-          o.address?.includes(searchKw)
-        )
-      : orders
-    const todayOrders = filtered.filter((o) => o.appointmentDate === today)
-    const otherOrders = filtered.filter((o) => o.appointmentDate !== today)
-    return [...todayOrders, ...otherOrders]
-  }, [orders, searchKw, today])
+  const displayOrders = useMemo(() => orders.slice(0, showCount), [orders, showCount])
+  const orderGroups = useMemo(() => groupOrders(displayOrders, groupMode), [displayOrders, groupMode])
 
-  const filterOptions = fixedStatus
+  useEffect(() => {
+    setShowCount(50)
+  }, [filter, groupMode])
+
+  const statusFilterOptions = fixedStatus
     ? [fixedStatus, ...(allowTrash ? ['回收站'] : [])]
     : ['全部', ...ORDER_STATUSES]
 
@@ -87,7 +89,7 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
 
       {/* 状态筛选 */}
       <div className="order-list__filters">
-        {filterOptions.map((s) => (
+        {statusFilterOptions.map((s) => (
           <button
             key={s}
             onClick={() => setActiveFilter(s)}
@@ -98,9 +100,17 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
         ))}
       </div>
 
+        <OrderFilters
+          filter={advancedFilter}
+          onFilterChange={(changes) => setAdvancedFilter((current) => ({ ...current, ...changes }))}
+          groupMode={groupMode}
+          onGroupModeChange={setGroupMode}
+          options={filterOptions}
+        />
+
       {/* 订单列表 */}
       <div className="order-list__content">
-        {displayOrders.length === 0 ? (
+        {orders.length === 0 ? (
           <EmptyState
             type="orders"
             title={emptyText}
@@ -117,25 +127,30 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
           />
         ) : (
           <>
-            {displayOrders.slice(0, showCount).map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                showMenu={fixedStatus === '待办' || fixedStatus === '已预约'}
-                isToday={order.appointmentDate === today}
-                onClick={() => navigate(`/orders/${order.id}`)}
-                onSurvey={setSurveyOrder}
-                onGenerateScript={setScriptOrder}
-                onDelete={(item) => deleteOrder(item.id)}
-                onEditPlatform={setEditPlatformOrder}
-              />
+            {orderGroups.map((group) => (
+              <section className="order-list__group" key={group.label}>
+                <h2 className="order-list__group-title">{group.label} ({group.orders.length})</h2>
+                {group.orders.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    showMenu={fixedStatus === '待办' || fixedStatus === '已预约'}
+                    isToday={order.appointmentDate === today}
+                    onClick={() => navigate(`/orders/${order.id}`)}
+                    onSurvey={setSurveyOrder}
+                    onGenerateScript={setScriptOrder}
+                    onDelete={(item) => deleteOrder(item.id)}
+                    onEditPlatform={setEditPlatformOrder}
+                  />
+                ))}
+              </section>
             ))}
-            {displayOrders.length > showCount && (
+            {orders.length > showCount && (
               <button
                 onClick={() => setShowCount((n) => n + 50)}
                 className="order-list__load-more"
               >
-                加载更多（剩余 {displayOrders.length - showCount} 条）
+                加载更多（剩余 {orders.length - showCount} 条）
               </button>
             )}
           </>

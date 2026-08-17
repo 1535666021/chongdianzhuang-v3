@@ -49,8 +49,12 @@ export interface Order extends BaseEntity {
 }
 export interface OrderFilter {
   status?: OrderStatus
-  platform?: Platform
+  platform?: string
   region?: Region
   dateRange?: [string, string]
   keyword?: string
+  installType?: InstallType
+  brand?: string
+  sortBy?: 'createdAt' | 'appointmentDate' | 'completeDate' | 'customerName'
+  sortOrder?: 'asc' | 'desc'
 }
