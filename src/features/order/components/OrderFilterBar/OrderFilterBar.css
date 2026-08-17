@@ -1,0 +1,237 @@
+/* 模块容器 */
+.ofb {
+  background: white;
+  padding: 0 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* 状态概览迷你条 */
+.ofb-status {
+  display: flex;
+  justify-content: space-around;
+  padding: 12px 16px;
+  background: white;
+}
+
+.ofb-status__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ofb-status__item--active {
+  background: #eff6ff;
+}
+
+.ofb-status__value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.ofb-status__label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+/* 维度切换 + 智能分组按钮 */
+.ofb-group-toggle {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.ofb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 9999px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+}
+
+.ofb-btn--blue {
+  background: #3b82f6;
+}
+
+.ofb-btn--green {
+  background: #10b981;
+}
+
+.ofb-btn--blue:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.ofb-btn--active {
+  box-shadow: 0 0 0 2px #065f46;
+}
+
+/* 标签云（区域/时间） */
+.ofb-tag-cloud {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ofb-tag-cloud::-webkit-scrollbar {
+  display: none;
+}
+
+.ofb-tag {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #374151;
+  flex: 0 0 auto;
+}
+
+.ofb-tag--active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* 安装类型标签（选中紫色） */
+.ofb-tag--purple-active {
+  background: #8b5cf6;
+  color: white;
+  border-color: #8b5cf6;
+}
+
+/* 品牌 / 平台下拉 */
+.ofb-select-row {
+  display: flex;
+  gap: 4%;
+  padding: 8px 0;
+}
+
+.ofb-select {
+  position: relative;
+  width: 48%;
+  height: 40px;
+}
+
+.ofb-select__trigger {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 0 32px 0 12px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+  text-align: left;
+}
+
+.ofb-select__value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ofb-select__placeholder {
+  color: #9ca3af;
+}
+
+.ofb-select__arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+/* 搜索框 + 排序 */
+.ofb-search-sort {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.ofb-search {
+  flex: 1;
+  position: relative;
+}
+
+.ofb-search__icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+}
+
+.ofb-search__input {
+  width: 100%;
+  height: 44px;
+  padding: 0 16px 0 40px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+}
+
+.ofb-search__clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  padding: 0;
+  display: flex;
+}
+
+.ofb-sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 8px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.ofb-sort select {
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #374151;
+  outline: none;
+  max-width: 96px;
+}
+
+.ofb-sort__dir {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}

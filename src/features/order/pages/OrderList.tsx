@@ -1,17 +1,16 @@
 import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import type { Order, OrderFilter, OrderStatus } from '@/types'
 import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
 import SurveyModal from '../components/SurveyModal'
 import ScriptEditorModal from '../components/ScriptEditorModal'
-import { useState, useMemo, useEffect } from 'react'
-import type { Order, OrderFilter } from '@/types'
-import { ORDER_STATUSES } from '@/constants/order'
-import { Search, Plus, FileText } from 'lucide-react'
+import OrderFilterBar from '../components/OrderFilterBar'
+import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
+import { Plus, FileText } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
-import OrderFilters, { type GroupMode } from '../components/OrderFilters'
-import { groupOrders } from '../components/GroupedOrderCards'
 import '../../../shared/components/OrderList.css'
 
 interface Props {
@@ -19,56 +18,42 @@ interface Props {
   allowTrash?: boolean
 }
 
-export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
+export default function OrderList({ fixedStatus }: Props) {
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState<string>(fixedStatus ?? '全部')
-  const [searchKw, setSearchKw] = useState('')
-  const [advancedFilter, setAdvancedFilter] = useState<OrderFilter>({ sortBy: 'createdAt', sortOrder: 'desc' })
-  const [groupMode, setGroupMode] = useState<GroupMode>('smart')
+  const initialStatus: OrderStatus | 'all' =
+    fixedStatus === '待办' || fixedStatus === '已预约' || fixedStatus === '已完成' ? fixedStatus : 'all'
+  const [filter, setFilter] = useState<OrderFilter>({
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    status: initialStatus === 'all' ? undefined : initialStatus,
+  })
   const [showCount, setShowCount] = useState(50)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
   const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
   const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
 
-  const filter = useMemo<OrderFilter>(() => ({
-    ...advancedFilter,
-    keyword: searchKw || undefined,
-    status: activeFilter === '全部' ? undefined : activeFilter as Order['status'],
-  }), [activeFilter, advancedFilter, searchKw])
-  const { orders, filterOptions } = useOrderList(filter)
+  const allOrders = useOrderStore((state) => state.orders)
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
   const updateOrder = useOrderStore((state) => state.updateOrder)
+  const { orders } = useOrderList(filter)
   const knownPlatforms = getKnownPlatforms()
 
   const today = new Date().toISOString().slice(0, 10)
 
   const displayOrders = useMemo(() => orders.slice(0, showCount), [orders, showCount])
-  const orderGroups = useMemo(() => groupOrders(displayOrders, groupMode), [displayOrders, groupMode])
+  const groupMode = filter.groupMode ?? 'region'
+  const orderGroups = useMemo(() => groupOrdersByTag(displayOrders, groupMode), [displayOrders, groupMode])
 
   useEffect(() => {
     setShowCount(50)
-  }, [filter, groupMode])
+  }, [filter])
 
-  const statusFilterOptions = fixedStatus
-    ? [fixedStatus, ...(allowTrash ? ['回收站'] : [])]
-    : ['全部', ...ORDER_STATUSES]
-
-  const emptyText = activeFilter === '全部' ? '暂无订单' : `暂无${activeFilter}订单`
+  const emptyText = filter.status ? `暂无${filter.status}订单` : '暂无订单'
 
   return (
     <div className="order-list-page">
-      {/* 搜索栏 + 操作按钮 */}
+      {/* 操作按钮 */}
       <div className="order-list__toolbar">
-        <div className="order-list__search">
-          <Search size={16} className="order-list__search-icon" />
-          <input
-            type="text"
-            placeholder="搜索客户/电话/地址"
-            value={searchKw}
-            onChange={(e) => setSearchKw(e.target.value)}
-            className="order-list__search-input"
-          />
-        </div>
         <div className="order-list__actions">
           <button
             onClick={() => navigate('/order/new')}
@@ -87,26 +72,8 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
         </div>
       </div>
 
-      {/* 状态筛选 */}
-      <div className="order-list__filters">
-        {statusFilterOptions.map((s) => (
-          <button
-            key={s}
-            onClick={() => setActiveFilter(s)}
-            className={`order-list__filter ${activeFilter === s ? 'active' : ''}`}
-          >
-            {s}
-          </button>
-        ))}
-      </div>
-
-        <OrderFilters
-          filter={advancedFilter}
-          onFilterChange={(changes) => setAdvancedFilter((current) => ({ ...current, ...changes }))}
-          groupMode={groupMode}
-          onGroupModeChange={setGroupMode}
-          options={filterOptions}
-        />
+      {/* 多维筛选与分组 */}
+      <OrderFilterBar orders={allOrders} initialStatus={initialStatus} onFilterChange={setFilter} />
 
       {/* 订单列表 */}
       <div className="order-list__content">
@@ -115,14 +82,12 @@ export default function OrderList({ fixedStatus, allowTrash = false }: Props) {
             type="orders"
             title={emptyText}
             action={
-              activeFilter !== '回收站' && (
-                <button
-                  onClick={() => navigate('/order/new')}
-                  className="order-list__empty-btn"
-                >
-                  新增第一单
-                </button>
-              )
+              <button
+                onClick={() => navigate('/order/new')}
+                className="order-list__empty-btn"
+              >
+                新增第一单
+              </button>
             }
           />
         ) : (

@@ -47,14 +47,18 @@ export interface Order extends BaseEntity {
   completionNotes?: string
   nature?: string
 }
+export type GroupMode = 'region' | 'time' | 'smart'
+
 export interface OrderFilter {
   status?: OrderStatus
-  platform?: string
-  region?: Region
+  platform?: string | null
+  region?: string
+  areaTag?: string | null
   dateRange?: [string, string]
   keyword?: string
-  installType?: InstallType
-  brand?: string
+  installType?: InstallType | null
+  brand?: string | null
   sortBy?: 'createdAt' | 'appointmentDate' | 'completeDate' | 'customerName'
   sortOrder?: 'asc' | 'desc'
+  groupMode?: GroupMode
 }
