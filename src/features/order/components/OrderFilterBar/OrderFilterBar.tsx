@@ -3,7 +3,6 @@ import type { Order, OrderFilter, OrderStatus } from '@/types'
 import { extractBrandOptions, extractPlatformOptions, filterOrders } from '../../hooks/useOrderList'
 import { useFilterState } from './useFilterState'
 import { useTagCounts } from './useTagCounts'
-import StatusOverview from './StatusOverview'
 import GroupToggle from './GroupToggle'
 import TagCloud from './TagCloud'
 import TypeFilter from './TypeFilter'
@@ -22,7 +21,6 @@ export default function OrderFilterBar({ orders, initialStatus = 'all', onFilter
     state,
     filter,
     isSmart,
-    setStatusFilter,
     setSelectedTag,
     setInstallType,
     setBrand,
@@ -45,21 +43,12 @@ export default function OrderFilterBar({ orders, initialStatus = 'all', onFilter
     [orders, filter],
   )
 
-  const stats = useMemo(() => {
-    const total = orders.length
-    const pending = orders.filter((o) => o.status === '待办').length
-    const scheduled = orders.filter((o) => o.status === '已预约').length
-    const completed = orders.filter((o) => o.status === '已完成').length
-    return { total, pending, scheduled, completed }
-  }, [orders])
-
   useEffect(() => {
     onFilterChange?.(filter)
   }, [filter, onFilterChange])
 
   return (
     <div className="ofb">
-      <StatusOverview stats={stats} value={state.statusFilter} onChange={setStatusFilter} />
       <GroupToggle
         groupMode={state.groupMode}
         isSmart={isSmart}
