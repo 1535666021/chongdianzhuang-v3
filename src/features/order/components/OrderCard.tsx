@@ -132,12 +132,17 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           </span>
         </div>
 
-        <OrderCardTags order={order} onEditPlatform={onEditPlatform} onPowerChange={(powerKw) => updateOrder(order.id, { powerKw })} />
+        <OrderCardTags
+          order={order}
+          onEditPlatform={onEditPlatform}
+          onPowerChange={(powerKw) => updateOrder(order.id, { powerKw })}
+          onRestockToggle={(restockStatus) => updateOrder(order.id, { restockStatus })}
+        />
 
-        {/* 电话和地址 */}
+        {/* 电话：点按拨号 / 长按复制 */}
         <div
           className="order-card__phone"
-          onClick={(event) => { event.stopPropagation(); void copyToClipboard(order.phone, '电话') }}
+          onClick={(event) => { event.stopPropagation(); window.location.href = `tel:${order.phone}` }}
           onMouseDown={() => handleLongPressStart(order.phone)}
           onMouseUp={handleLongPressEnd}
           onMouseLeave={handleLongPressEnd}
@@ -148,9 +153,10 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           <span>{order.phone}</span>
         </div>
 
+        {/* 地址：点按导航 / 长按复制 */}
         <div
           className="order-card__address"
-          onClick={(event) => { event.stopPropagation(); void copyToClipboard(displayAddress, '地址') }}
+          onClick={(event) => { event.stopPropagation(); window.open(`https://uri.amap.com/search?keyword=${encodeURIComponent(displayAddress)}&callnative=1`, '_blank') }}
           onMouseDown={() => handleLongPressStart(displayAddress)}
           onMouseUp={handleLongPressEnd}
           onMouseLeave={handleLongPressEnd}
@@ -305,7 +311,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           order={order}
           onClose={() => setShowMenuPanel(false)}
           onEditAppointment={() => setShowAppointment(true)}
-          onNavigate={() => { window.open(`https://uri.amap.com/marker?position=${encodeURIComponent(order.address)}`, '_blank') }}
+          onNavigate={() => { window.open(`https://uri.amap.com/search?keyword=${encodeURIComponent(order.address)}&callnative=1`, '_blank') }}
           onDelete={() => { setShowMenuPanel(false); setShowConfirmDelete(true) }}
         />
       )}

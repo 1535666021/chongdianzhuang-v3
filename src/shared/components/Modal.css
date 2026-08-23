@@ -378,3 +378,24 @@ body.modal-open {
   gap: var(--space-sm);
   margin-top: var(--space-sm);
 }
+
+/* 一键补桩弹窗样式 */
+.modal-btn--sm {
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 var(--space-md);
+  border-radius: 8px;
+  font-size: var(--fs-aux);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+}
+
+.restock-preview {
+  min-height: 120px;
+  white-space: pre-wrap;
+}
+
+.restock-qty {
+  flex: 0 0 72px;
+}

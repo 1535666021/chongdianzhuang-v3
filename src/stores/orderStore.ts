@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Order, OrderFilter } from '@/types'
 import { LocalStorageAdapter } from '@/shared/storage'
 import { initMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
+import { generateSeedOrders } from '@/features/order/seed/seedOrders'
 
 /** 金额字段清单：补全更新时只动这些字段，其他字段一律不覆盖 */
 const MONEY_KEYS = ['materialCost', 'laborCost', 'platformFee', 'actualProfit', 'customerPrice'] as const
@@ -21,8 +22,24 @@ interface OrderState {
 
 const storage = new LocalStorageAdapter<Order[]>('cdz_v3_orders_')
 
+/** 首次（无历史数据）时生成演示订单并持久化，避免空列表无法体验筛选功能。
+ *  兼容旧版 seed：若列表全为 seed 订单且都缺 restockStatus（旧版生成），重新生成覆盖。 */
+function loadInitialOrders(): Order[] {
+  const stored = storage.get('list')
+  if (stored !== null) {
+    const isStaleSeed =
+      stored.length > 0 &&
+      stored.every((o) => String(o.id).startsWith('seed_')) &&
+      stored.every((o) => o.restockStatus === undefined)
+    if (!isStaleSeed) return stored
+  }
+  const seed = generateSeedOrders()
+  storage.set('list', seed)
+  return seed
+}
+
 export const useOrderStore = create<OrderState>((set, get) => ({
-  orders: storage.get('list') || [],
+  orders: loadInitialOrders(),
   filter: {},
   setOrders: (orders) => {
     storage.set('list', orders)

@@ -5,9 +5,12 @@ import { useOrderList } from '../hooks/useOrderList'
 import OrderCard from '../components/OrderCard'
 import SurveyModal from '../components/SurveyModal'
 import ScriptEditorModal from '../components/ScriptEditorModal'
+import RestockDialog from '../components/RestockDialog'
+import BatchAppointmentDialog from '../components/BatchAppointmentDialog'
 import OrderFilterBar from '../components/OrderFilterBar'
 import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
-import { Plus, FileText } from 'lucide-react'
+import { isInstallOrder } from '../restock'
+import { Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
@@ -28,9 +31,12 @@ export default function OrderList({ fixedStatus }: Props) {
     status: initialStatus === 'all' ? undefined : initialStatus,
   })
   const [showCount, setShowCount] = useState(50)
+  const [resetKey, setResetKey] = useState(0)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
   const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
   const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
+  const [showRestock, setShowRestock] = useState(false)
+  const [showBatchAppointment, setShowBatchAppointment] = useState(false)
 
   const allOrders = useOrderStore((state) => state.orders)
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
@@ -48,7 +54,13 @@ export default function OrderList({ fixedStatus }: Props) {
     setShowCount(50)
   }, [filter])
 
-  const emptyText = filter.status ? `暂无${filter.status}订单` : '暂无订单'
+  const hasAnyOrder = allOrders.length > 0
+  const resetFilters = () => setResetKey((key) => key + 1)
+  const restockCount = useMemo(
+    () => allOrders.filter((o) => o.restockStatus === 'needed' && o.status !== '回收站' && o.status !== '已完成' && isInstallOrder(o)).length,
+    [allOrders],
+  )
+  const appointableOrders = useMemo(() => orders.filter((o) => o.status === '待办'), [orders])
 
   return (
     <div className="order-list-page">
@@ -69,27 +81,54 @@ export default function OrderList({ fixedStatus }: Props) {
             <FileText size={16} />
             批量解析
           </button>
+          <button
+            onClick={() => setShowRestock(true)}
+            className="order-list__btn order-list__btn--secondary"
+          >
+            <PackagePlus size={16} />
+            一键补桩
+            {restockCount > 0 && <span className="order-list__badge">{restockCount}</span>}
+          </button>
+          <button
+            onClick={() => setShowBatchAppointment(true)}
+            className="order-list__btn order-list__btn--secondary"
+            disabled={appointableOrders.length === 0}
+            style={appointableOrders.length === 0 ? { opacity: 0.5 } : undefined}
+          >
+            <CalendarPlus size={16} />
+            批量预约
+            {appointableOrders.length > 0 && <span className="order-list__badge">{appointableOrders.length}</span>}
+          </button>
         </div>
       </div>
 
       {/* 多维筛选与分组 */}
-      <OrderFilterBar orders={allOrders} initialStatus={initialStatus} onFilterChange={setFilter} />
+      <OrderFilterBar key={resetKey} orders={allOrders} initialStatus={initialStatus} onFilterChange={setFilter} />
 
       {/* 订单列表 */}
       <div className="order-list__content">
         {orders.length === 0 ? (
-          <EmptyState
-            type="orders"
-            title={emptyText}
-            action={
-              <button
-                onClick={() => navigate('/order/new')}
-                className="order-list__empty-btn"
-              >
-                新增第一单
-              </button>
-            }
-          />
+          hasAnyOrder ? (
+            <EmptyState
+              type="search"
+              title="没有符合筛选条件的订单"
+              action={
+                <button onClick={resetFilters} className="order-list__empty-btn">
+                  清空筛选条件
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              type="orders"
+              title="还没有订单"
+              action={
+                <button onClick={() => navigate('/order/new')} className="order-list__empty-btn">
+                  新增第一单
+                </button>
+              }
+            />
+          )
         ) : (
           <>
             {orderGroups.map((group) => (
@@ -128,6 +167,10 @@ export default function OrderList({ fixedStatus }: Props) {
         />
       )}
       {scriptOrder && <ScriptEditorModal order={scriptOrder} onClose={() => setScriptOrder(null)} />}
+      <RestockDialog open={showRestock} onClose={() => setShowRestock(false)} />
+      {showBatchAppointment && (
+        <BatchAppointmentDialog orders={appointableOrders} onClose={() => setShowBatchAppointment(false)} />
+      )}
       {editPlatformOrder && (
         <div className="modal-overlay" onClick={() => setEditPlatformOrder(null)}>
           <div className="modal-content" onClick={(event) => event.stopPropagation()}>

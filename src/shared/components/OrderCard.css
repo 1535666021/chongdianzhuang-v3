@@ -86,6 +86,13 @@
 .order-card__tag--pile {
   background: var(--color-danger-light);
   color: var(--color-danger);
+  cursor: pointer;
+}
+
+.order-card__tag--restock-done {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  cursor: pointer;
 }
 
 .order-card__tag--platform {

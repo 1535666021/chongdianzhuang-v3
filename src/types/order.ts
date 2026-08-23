@@ -46,6 +46,8 @@ export interface Order extends BaseEntity {
   surveyNote?: string
   completionNotes?: string
   nature?: string
+  /** 补桩状态（仅安装单）：needed=需补桩 / done=已补桩 */
+  restockStatus?: 'needed' | 'done'
 }
 export type GroupMode = 'region' | 'time' | 'smart'
 

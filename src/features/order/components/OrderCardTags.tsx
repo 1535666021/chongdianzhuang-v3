@@ -4,22 +4,41 @@ import { INSTALL_TYPE_COLORS } from '@/constants/order'
 import { getBrandLabel } from '@/constants/brands'
 import { getPlatformLabel } from '@/constants/platforms'
 import { getPowerLabel, POWER_OPTIONS } from '@/constants/power'
+import { isInstallOrder } from '../restock'
 
 interface OrderCardTagsProps {
   order: Order
   onEditPlatform?: (order: Order) => void
   onPowerChange: (powerKw: string) => void
+  onRestockToggle?: (status: 'needed' | 'done') => void
 }
 
-export default function OrderCardTags({ order, onEditPlatform, onPowerChange }: OrderCardTagsProps) {
+export default function OrderCardTags({ order, onEditPlatform, onPowerChange, onRestockToggle }: OrderCardTagsProps) {
   const powerKw = order.powerKw?.toString().match(/\d+(?:\.\d+)?/)?.[0]
   const installType = order.installType || '其他'
   const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
-  const isPileReplacement = order.serviceType?.includes('补桩') || order.remark?.includes('补桩') || order.notes?.includes('补桩') || order.rawText?.includes('补桩')
+  const isInstall = isInstallOrder(order)
 
   return (
     <div className="order-card__tags">
-      {isPileReplacement && <span className="order-card__tag order-card__tag--pile">补桩</span>}
+      {isInstall && order.restockStatus === 'needed' && (
+        <span
+          className="order-card__tag order-card__tag--pile"
+          title="点击标记为已补桩"
+          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('done') }}
+        >
+          需补桩
+        </span>
+      )}
+      {isInstall && order.restockStatus === 'done' && (
+        <span
+          className="order-card__tag order-card__tag--restock-done"
+          title="点击打回需补桩"
+          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('needed') }}
+        >
+          已补桩
+        </span>
+      )}
       <PlatformTag order={order} onEditPlatform={onEditPlatform} />
       <BrandTag brand={order.brandName} />
       <PowerTag powerKw={powerKw} onPowerChange={onPowerChange} />
