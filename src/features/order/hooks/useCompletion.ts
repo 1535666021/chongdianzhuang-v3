@@ -138,7 +138,7 @@ export function useCompletion(orderId: string) {
     }))
   }, [])
 
-  const canApplyWanbangTemplate = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform)
+  const canApplyWanbangTemplate = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
 
   const applyWanbangAddonTemplate = useCallback(() => {
     setForm((prev) => ({

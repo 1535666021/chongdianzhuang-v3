@@ -14,8 +14,10 @@ import { addonMaterials_batch11 } from './addonMaterialData_batch11_捷途_支�
 import { addonMaterials_batch12 } from './addonMaterialData_batch12_领克_阿维塔'
 import { addonMaterials_batch13 } from './addonMaterialData_batch13_长城_西安领充'
 import { addonMaterials_batch14 } from './addonMaterialData_batch14_广汽埃安_理想'
+import { WANBANG_GEELY_ADDON_MATERIALS } from './addonPrice_wanbang_geely'
 
 export const addonMaterialsData: Material[] = [
+  WANBANG_GEELY_ADDON_MATERIALS,
   addonMaterials_batch1,
   addonMaterials_batch2,
   addonMaterials_batch3,
@@ -38,7 +40,7 @@ export const allMaterialsData: Material[] = [
 ]
 
 export const brandList = [
-  '万帮星星充电', '上汽通用', '五菱', '公牛', '奇瑞iCAR', '小米',
+  '万帮吉利', '万帮星星充电', '上汽通用', '五菱', '公牛', '奇瑞iCAR', '小米',
   '广汽丰田', '比亚迪', '特来电', '空灵吉利', '空灵零跑',
   '捷途', '支付宝598', '领克', '阿维塔', '长城', '西安领充',
   '广汽埃安', '理想'

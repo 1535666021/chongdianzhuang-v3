@@ -1,3 +1,5 @@
+import type { Material, MaterialCategory, MaterialCategoryCode } from '@/types/material'
+
 export interface AddonPriceItem {
   id: string
   name: string
@@ -6,6 +8,20 @@ export interface AddonPriceItem {
   customerPrice: number
   category: string
   remark?: string
+}
+
+const CATEGORY_MAP: Record<string, { category: MaterialCategory; categoryCode: MaterialCategoryCode }> = {
+  服务: { category: '服务', categoryCode: 'SERVICE' },
+  线缆铺设: { category: '线缆', categoryCode: 'CABLE' },
+  开挖: { category: '路面', categoryCode: 'ROAD_OPEN' },
+  基础: { category: '基础', categoryCode: 'FOUNDATION' },
+  开孔: { category: '开孔', categoryCode: 'WALL_DRILL' },
+  桥架: { category: '桥架', categoryCode: 'BRIDGE' },
+  高空: { category: '高空', categoryCode: 'HIGH_ALTITUDE' },
+  接地: { category: '接地', categoryCode: 'GROUND' },
+  辅材: { category: '辅材', categoryCode: 'OTHER' },
+  保护箱: { category: '保护箱', categoryCode: 'BOX' },
+  立柱: { category: '立柱', categoryCode: 'POLE' },
 }
 
 export const WANBANG_GEELY_ADDON_PRICES: AddonPriceItem[] = [
@@ -42,8 +58,27 @@ export const WANBANG_GEELY_ADDON_PRICES: AddonPriceItem[] = [
   { id: 'wb-geely-31', name: '其他材料', spec: '', unit: '项', customerPrice: 0, category: '辅材', remark: '膨胀螺丝等免费' },
 ]
 
-export function isWanbangGeelyOrder(brand?: string, platform?: string): boolean {
-  const b = brand || ''
-  const p = platform || ''
-  return (b.includes('吉利') || b.includes('银河')) && p.includes('万帮')
+export function isWanbangGeelyOrder(brand?: string, platform?: string, extra?: string): boolean {
+  const text = `${brand || ''} ${platform || ''} ${extra || ''}`
+  return text.includes('万帮') && /吉利|银河|极氪/.test(text)
 }
+
+export const WANBANG_GEELY_ADDON_MATERIALS: Material[] = WANBANG_GEELY_ADDON_PRICES.map((item) => {
+  const mapped = CATEGORY_MAP[item.category] || { category: '其他' as MaterialCategory, categoryCode: 'OTHER' as MaterialCategoryCode }
+  return {
+    id: item.id,
+    name: item.name,
+    category: mapped.category,
+    categoryCode: mapped.categoryCode,
+    unit: item.unit,
+    costPrice: null,
+    settlementPrice: item.customerPrice,
+    customerPrice: item.customerPrice,
+    brand: '万帮吉利',
+    freeQuota: 0,
+    source: 'addon',
+    stock: 0,
+    minStock: 0,
+    isFixed: true,
+  }
+})

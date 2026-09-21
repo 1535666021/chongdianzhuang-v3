@@ -20,9 +20,12 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
 
+  const catalog = showWanbangTemplate
+    ? addonMaterialsData.filter((m) => m.brand === '万帮吉利')
+    : addonMaterialsData
   const filtered = searchQuery
-    ? addonMaterialsData.filter((m) => m.name.includes(searchQuery)).slice(0, 30)
-    : addonMaterialsData.slice(0, 20)
+    ? catalog.filter((m) => m.name.includes(searchQuery)).slice(0, 30)
+    : catalog.slice(0, 20)
 
   const selectMaterial = (index: number, material: typeof addonMaterialsData[0]) => {
     onUpdate(index, {

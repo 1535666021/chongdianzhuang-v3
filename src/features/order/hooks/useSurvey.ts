@@ -3,6 +3,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import { calcOverFee, calcSurveyTotal, getOrderServiceFee } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
+import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import type { Material } from '@/types/material'
 import type { Order } from '@/types'
 import type { SurveyFormData, SurveyMaterialItem } from '../types/survey'
@@ -36,21 +37,22 @@ export function useSurvey(order: Order) {
   }
 
   const brandAddons = useMemo<Material[]>(() => {
-    if (!effectiveBrand) return []
     const usageCount = materialUsageCount
-    return addonMaterialsData
-      .filter((m) => {
-        const b = m.brand || ''
-        const target = effectiveBrand || ''
-        return b.includes(target) || target.includes(b)
-      })
-      .sort((a, b) => {
-        const countA = usageCount[a.name] || 0
-        const countB = usageCount[b.name] || 0
-        if (countB !== countA) return countB - countA
-        return a.name.localeCompare(b.name)
-      })
-  }, [effectiveBrand, materialUsageCount])
+    const wanbangHit = isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
+    const source = wanbangHit
+      ? WANBANG_GEELY_ADDON_MATERIALS
+      : addonMaterialsData.filter((m) => {
+          if (!effectiveBrand) return false
+          const b = m.brand || ''
+          return b.includes(effectiveBrand) || effectiveBrand.includes(b)
+        })
+    return [...source].sort((a, b) => {
+      const countA = usageCount[a.name] || 0
+      const countB = usageCount[b.name] || 0
+      if (countB !== countA) return countB - countA
+      return a.name.localeCompare(b.name)
+    })
+  }, [effectiveBrand, materialUsageCount, order.brandName, order.platformName, order.platform, order.rawText])
 
   const totalEstimatedCost = useMemo(() => {
     const items = form.estimatedMaterials.map((m) => ({
