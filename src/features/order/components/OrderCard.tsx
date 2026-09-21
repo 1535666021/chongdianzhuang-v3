@@ -76,20 +76,26 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
     }
   }, [copyTimer])
 
-  const copyToClipboard = useCallback(async (text: string | undefined, label: string) => {
+  const identityText = [order.brandName, order.customerName].filter((v) => (v || '').trim()).join(' ').trim()
+
+  const copyToClipboard = useCallback(async (text: string | undefined, successMessage: string) => {
     if (!text) return
     try {
       await navigator.clipboard.writeText(text)
     } catch {
-      const input = document.createElement('input')
-      input.value = text
-      document.body.appendChild(input)
-      input.select()
-      const copied = document.execCommand('copy')
-      document.body.removeChild(input)
-      if (!copied) return
+      try {
+        const input = document.createElement('input')
+        input.value = text
+        document.body.appendChild(input)
+        input.select()
+        const copied = document.execCommand('copy')
+        document.body.removeChild(input)
+        if (!copied) return
+      } catch {
+        return
+      }
     }
-    toast.success(`${label}已复制`)
+    toast.success(successMessage)
   }, [])
 
   const openRawModal = useCallback((e: React.MouseEvent) => {
@@ -114,11 +120,11 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         <div className="order-card__header">
           <div
             className="order-card__name"
-            onClick={(event) => { event.stopPropagation(); void copyToClipboard(order.customerName, '姓名') }}
-            onMouseDown={() => handleLongPressStart(order.customerName)}
+            onClick={(event) => { event.stopPropagation(); void copyToClipboard(identityText, `已复制：${identityText}`) }}
+            onMouseDown={() => handleLongPressStart(identityText)}
             onMouseUp={handleLongPressEnd}
             onMouseLeave={handleLongPressEnd}
-            onTouchStart={() => handleLongPressStart(order.customerName)}
+            onTouchStart={() => handleLongPressStart(identityText)}
             onTouchEnd={handleLongPressEnd}
           >
             <User size={16} className="order-card__icon" />
@@ -202,7 +208,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               <ClipboardList size={14} />
               勘测
             </button>
-            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([platformDisplay ? getPlatformLabel(platformDisplay) : '', order.brandName, order.customerName].filter(Boolean).join(' '), '水印') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
+            <button onClick={(event) => { event.stopPropagation(); void copyToClipboard([platformDisplay ? getPlatformLabel(platformDisplay) : '', order.brandName, order.customerName].filter(Boolean).join(' '), '水印已复制') }} className="order-card__btn order-card__btn--watermark"><Copy size={14} />复制水印</button>
             <button
               onClick={(e) => { e.stopPropagation(); navigate(`/order/complete/${order.id}`) }}
               className="order-card__btn order-card__btn--complete"
