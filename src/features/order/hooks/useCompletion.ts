@@ -5,6 +5,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
+import { WANBANG_GEELY_ADDON_PRICES, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { BRAND_DEFAULTS, BREAKER_NAMES } from '@/constants/brands'
 import type { Order } from '@/types'
@@ -137,6 +138,28 @@ export function useCompletion(orderId: string) {
     }))
   }, [])
 
+  const canApplyWanbangTemplate = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform)
+
+  const applyWanbangAddonTemplate = useCallback(() => {
+    setForm((prev) => ({
+      ...prev,
+      materials: WANBANG_GEELY_ADDON_PRICES.map((item) => {
+        const cp = findCostPrice(item.name) ?? 0
+        return {
+          id: item.id,
+          name: item.name,
+          spec: item.spec,
+          quantity: 0,
+          unit: item.unit,
+          settlementPrice: item.customerPrice,
+          costPrice: cp,
+          customerSubtotal: 0,
+          costSubtotal: 0,
+        }
+      }),
+    }))
+  }, [])
+
   const [bindVersion, setBindVersion] = useState(0)
   const [dismissedMats, setDismissedMats] = useState<Set<string>>(new Set())
 
@@ -264,7 +287,8 @@ export function useCompletion(orderId: string) {
   }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown, bindVersion])
 
   const pendingCostBind = useMemo(() => {
-    const { unmatched } = calcMaterialCost(form.materials)
+    const chargeable = form.materials.filter((m) => m.name && m.quantity > 0)
+    const { unmatched } = calcMaterialCost(chargeable)
     const needsBind = unmatched.filter((n) => !isFreeQuotaMaterial(n) && !dismissedMats.has(n))
     return needsBind[0] || null
   }, [form.materials, bindVersion, dismissedMats])
@@ -274,7 +298,8 @@ export function useCompletion(orderId: string) {
   }, [])
 
   const handleCostBindClose = useCallback(() => {
-    const { unmatched } = calcMaterialCost(form.materials)
+    const chargeable = form.materials.filter((m) => m.name && m.quantity > 0)
+    const { unmatched } = calcMaterialCost(chargeable)
     const needsBind = unmatched.filter((n) => !isFreeQuotaMaterial(n) && !dismissedMats.has(n))
     const current = needsBind[0]
     if (current) {
@@ -317,7 +342,7 @@ export function useCompletion(orderId: string) {
     completeOrder(orderId, {
       actualInstallDate: form.actualInstallDate,
       installer: form.installer,
-      materials: form.materials.map((m) => ({
+      materials: form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({
         name: m.name,
         spec: m.spec,
         quantity: m.quantity,
@@ -336,7 +361,7 @@ export function useCompletion(orderId: string) {
     updateMaterialFrequency({
       ...order,
       status: '已完成',
-      materials: form.materials.map((m) => ({ name: m.name, quantity: m.quantity, unit: m.unit, unitPrice: m.settlementPrice })),
+      materials: form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({ name: m.name, quantity: m.quantity, unit: m.unit, unitPrice: m.settlementPrice })),
     })
     return true
   }, [order, orderId, form, profit, completeOrder, stockOut])
@@ -353,6 +378,8 @@ export function useCompletion(orderId: string) {
     updateMaterial,
     removeMaterial,
     updateFixedAux,
+    canApplyWanbangTemplate,
+    applyWanbangAddonTemplate,
     save,
     pendingCostBind,
     handleCostBound,

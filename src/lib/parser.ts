@@ -6,6 +6,7 @@ import type { Order, Platform, OrderStatus, Region, InstallType } from '@/types'
 import type { ParsedOrderItem, ParseTextResult } from './parser-core';
 import { splitOrderBlocks } from './parser-core';
 import { parseBlock, hasAnyField } from './parser-engines';
+import { REGIONS } from '@/constants/order';
 
 /* --------------------------------------------------------------
  * 八、对外入口
@@ -58,7 +59,8 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     rawText: it.rawText || '',
     /* ---- 必填字段默认值 ---- */
     platform: '其他' as Platform,
-    region: '其他' as Region,
+    region: (REGIONS.includes(it.region as Region) ? it.region : '其他') as Region,
+    appointmentDate: it.appointmentDate || undefined,
     notes: '',
     meterStatus: '未安装' as const,
     installType: (it.installType as InstallType) || '其他',

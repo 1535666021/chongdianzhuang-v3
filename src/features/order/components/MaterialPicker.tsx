@@ -12,9 +12,11 @@ interface Props {
   onUpdate: (index: number, updates: Partial<MaterialInput>) => void
   onRemove: (index: number) => void
   onUpdateFixedAux: (updates: Partial<FixedAuxInput>) => void
+  showWanbangTemplate?: boolean
+  onApplyWanbangTemplate?: () => void
 }
 
-export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux }: Props) {
+export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
 
@@ -47,12 +49,22 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
       <div>
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-sm font-semibold text-gray-700">增项材料</h3>
-          <button
-            onClick={onAdd}
-            className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg"
-          >
-            <Plus size={14} /> 添加
-          </button>
+          <div className="flex items-center gap-2">
+            {showWanbangTemplate && onApplyWanbangTemplate && (
+              <button
+                onClick={onApplyWanbangTemplate}
+                className="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg"
+              >
+                带入万帮增项表
+              </button>
+            )}
+            <button
+              onClick={onAdd}
+              className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg"
+            >
+              <Plus size={14} /> 添加
+            </button>
+          </div>
         </div>
 
         {materials.length === 0 && (

@@ -11,6 +11,7 @@ import {
   KV_FIELD_KEYS, KV_REMARK_KEYS, KV_DISCARD_KEYS, STANDALONE_DISCARD,
   emptyItem, extractPhone, pickKv, cleanAddressText, fillFallbacks,
 } from './parser-core';
+import { isWanbangBlock, parseWanbangBlock } from './parser-wanbang';
 
 /* --------------------------------------------------------------
  * 五、键值块解析
@@ -221,6 +222,12 @@ function inferNature(item: ParsedOrderItem): void {
 }
 
 export function parseBlock(block: string): ParsedOrderItem {
+  if (isWanbangBlock(block)) {
+    const item = parseWanbangBlock(block);
+    inferInstallType(item);
+    inferNature(item);
+    return item;
+  }
   const kvLineCount = block.split('\n').filter((l) => KEY_VALUE_RE.test(l.trim())).length;
   const item = kvLineCount >= 2 ? parseKeyValueBlock(block) : parseFlowBlock(block);
   inferInstallType(item);

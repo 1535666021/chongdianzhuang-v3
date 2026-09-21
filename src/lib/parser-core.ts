@@ -11,31 +11,20 @@ import { PLATFORM_NAMES } from '@/constants/platforms';
 
 /** 标准订单字段：识别不到的字段为空字符串 */
 export interface ParsedOrderItem {
-  /** 订单号 */
   orderNo: string;
-  /** 客户姓名 */
   customerName: string;
-  /** 手机号 */
   phone: string;
-  /** 安装地址 */
   address: string;
-  /** 服务品牌 */
   brandName: string;
-  /** 功率（kW 数值字符串，如 "7" / "3.5"） */
   powerKw: string;
-  /** 套包米数（数值字符串，如 "30"） */
   packageMeters: string;
-  /** 车架号（VIN） */
   vin: string;
-  /** 服务类型 */
   serviceType: string;
-  /** 平台原始文本 */
   platformName: string;
-  /** 备注 */
   remark: string;
-  /** 安装类型 */
   installType: string;
-  /** 原始报单块文本 */
+  appointmentDate: string;
+  region: string;
   rawText?: string;
 }
 
@@ -134,6 +123,8 @@ export function emptyItem(): ParsedOrderItem {
     platformName: '',
     remark: '',
     installType: '',
+    appointmentDate: '',
+    region: '',
   };
 }
 
