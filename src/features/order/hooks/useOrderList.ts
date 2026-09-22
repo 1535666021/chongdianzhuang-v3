@@ -1,15 +1,11 @@
 import { useMemo } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import type { InstallType, Order, OrderFilter } from '@/types'
+import { extractAreaTag, extractTimeTag } from '@/shared/utils/groupTags'
 
 export type TagMode = 'region' | 'time'
 
-/** 地址 → 片区标签：提取首个「XX街道/镇/乡」，失败归入「其他」 */
-const AREA_TAG_RE = /([^省市]{2,6}?(?:街道|镇|乡))/
-
-export function extractAreaTag(address: string): string {
-  return address.match(AREA_TAG_RE)?.[1] || '其他'
-}
+export { extractAreaTag }
 
 /** 按筛选条件过滤订单（不含排序） */
 export function filterOrders(orders: Order[], filter?: OrderFilter): Order[] {
@@ -18,7 +14,9 @@ export function filterOrders(orders: Order[], filter?: OrderFilter): Order[] {
     if (filter?.platform && (order.platformName || order.platform) !== filter.platform) return false
     if (filter?.region && order.region !== filter.region) return false
     if (filter?.areaTag) {
-      const matches = order.region === filter.areaTag || extractAreaTag(order.address) === filter.areaTag
+      const tag = filter.areaTag
+      // P0-095：标签同时兼容 区域字段 / 地址片区 / 时间月份 三种来源
+      const matches = order.region === tag || extractAreaTag(order.address) === tag || extractTimeTag(order) === tag
       if (!matches) return false
     }
     if (filter?.installType && order.installType !== filter.installType) return false
@@ -63,11 +61,11 @@ export function sortOrders(orders: Order[], filter?: OrderFilter): Order[] {
   })
 }
 
-/** 标签云计数：time 模式取 region 字段，region 模式从 address 提取街道 */
+/** 标签云计数：time 模式取月份标签，region 模式从 address 提取片区 */
 export function extractRegionTags(orders: Order[], mode: TagMode): { label: string; count: number }[] {
   const counts = new Map<string, number>()
   orders.forEach((order) => {
-    const label = mode === 'time' ? order.region || '其他' : extractAreaTag(order.address)
+    const label = mode === 'time' ? extractTimeTag(order) : extractAreaTag(order.address)
     counts.set(label, (counts.get(label) || 0) + 1)
   })
   return [...counts.entries()]

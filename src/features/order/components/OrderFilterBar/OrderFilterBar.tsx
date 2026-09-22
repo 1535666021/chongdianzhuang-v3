@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import type { Order, OrderFilter, OrderStatus } from '@/types'
+import type { GroupMode, Order, OrderFilter, OrderStatus } from '@/types'
 import { extractBrandOptions, extractPlatformOptions, filterOrders } from '../../hooks/useOrderList'
 import { useFilterState } from './useFilterState'
 import { useTagCounts } from './useTagCounts'
@@ -13,10 +13,11 @@ import './OrderFilterBar.css'
 export interface OrderFilterBarProps {
   orders: Order[]
   initialStatus?: OrderStatus | 'all'
+  initialGroupMode?: GroupMode
   onFilterChange?: (filter: OrderFilter) => void
 }
 
-export default function OrderFilterBar({ orders, initialStatus = 'all', onFilterChange }: OrderFilterBarProps) {
+export default function OrderFilterBar({ orders, initialStatus = 'all', initialGroupMode = 'region', onFilterChange }: OrderFilterBarProps) {
   const {
     state,
     filter,
@@ -30,7 +31,7 @@ export default function OrderFilterBar({ orders, initialStatus = 'all', onFilter
     setSortOrder,
     toggleDimension,
     toggleSmart,
-  } = useFilterState(initialStatus)
+  } = useFilterState(initialStatus, initialGroupMode)
 
   const { tagCounts, typeCounts } = useTagCounts(orders, state)
 

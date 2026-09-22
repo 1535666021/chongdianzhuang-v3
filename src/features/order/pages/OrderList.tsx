@@ -29,6 +29,8 @@ export default function OrderList({ fixedStatus }: Props) {
     sortBy: 'createdAt',
     sortOrder: 'desc',
     status: initialStatus === 'all' ? undefined : initialStatus,
+    // P0-095：已完成页首帧即按时间分组，与 OrderFilterBar 初始值一致
+    groupMode: fixedStatus === '已完成' ? 'time' : undefined,
   })
   const [showCount, setShowCount] = useState(50)
   const [resetKey, setResetKey] = useState(0)
@@ -103,7 +105,13 @@ export default function OrderList({ fixedStatus }: Props) {
       </div>
 
       {/* 多维筛选与分组 */}
-      <OrderFilterBar key={resetKey} orders={allOrders} initialStatus={initialStatus} onFilterChange={setFilter} />
+      <OrderFilterBar
+        key={resetKey}
+        orders={allOrders}
+        initialStatus={initialStatus}
+        initialGroupMode={fixedStatus === '已完成' ? 'time' : 'region'}
+        onFilterChange={setFilter}
+      />
 
       {/* 订单列表 */}
       <div className="order-list__content">

@@ -13,9 +13,10 @@ export interface FilterState {
   sortOrder: NonNullable<OrderFilter['sortOrder']>
 }
 
-export function useFilterState(initialStatus: OrderStatus | 'all' = 'all') {
+export function useFilterState(initialStatus: OrderStatus | 'all' = 'all', initialGroupMode: GroupMode = 'region') {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>(initialStatus)
-  const [groupMode, setGroupMode] = useState<GroupMode>('region')
+  // P0-095：已完成页由调用方传入 'time'，首页/已预约默认 'region' 不变
+  const [groupMode, setGroupMode] = useState<GroupMode>(initialGroupMode)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [installType, setInstallType] = useState<InstallType | null>(null)
   const [brand, setBrand] = useState<string | null>(null)
@@ -23,7 +24,7 @@ export function useFilterState(initialStatus: OrderStatus | 'all' = 'all') {
   const [keyword, setKeyword] = useState('')
   const [sortBy, setSortBy] = useState<NonNullable<OrderFilter['sortBy']>>('createdAt')
   const [sortOrder, setSortOrder] = useState<NonNullable<OrderFilter['sortOrder']>>('desc')
-  const prevModeRef = useRef<'region' | 'time'>('region')
+  const prevModeRef = useRef<'region' | 'time'>(initialGroupMode === 'time' ? 'time' : 'region')
 
   const isSmart = groupMode === 'smart'
 
