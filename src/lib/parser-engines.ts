@@ -200,7 +200,7 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
  * -------------------------------------------------------------- */
 
 const STREAM_ORDER_NO_RE = /^(?:D|HW)[A-Za-z0-9]+/;
-const STREAM_TOKEN_SPLIT_RE = /\t+| {3,}/;
+const STREAM_TOKEN_SPLIT_RE = /\t+| {2,}|　+/;
 const STREAM_CAR_MODEL_RE = /^[\u4e00-\u9fa5]{2,3}\d{1,2}$/;
 const STREAM_DATETIME_TOKEN_RE = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?/;
 const STREAM_PILE_NAME_RE = /桩产品名称[:：]\s*([^\s:：]+)/;
@@ -210,7 +210,7 @@ const STREAM_PLATFORM_RE = /(西安领充|领充|挚达|万帮|京东|天猫|拼
 
 export function isStreamTableRow(block: string): boolean {
   if (!STREAM_ORDER_NO_RE.test(block.trimStart())) return false;
-  if (!block.includes('\t') && !/ {3,}/.test(block)) return false;
+  if (!block.includes('\t') && !/ {2,}/.test(block) && !block.includes('　')) return false;
   if (!/桩产品名称[:：]|桩产品功率[:：]|套包信息[:：]/.test(block)) return false;
   return extractPhone(block) !== '';
 }
