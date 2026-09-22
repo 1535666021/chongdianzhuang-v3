@@ -58,9 +58,17 @@ export const WANBANG_GEELY_ADDON_PRICES: AddonPriceItem[] = [
   { id: 'wb-geely-31', name: '其他材料', spec: '', unit: '项', customerPrice: 0, category: '辅材', remark: '膨胀螺丝等免费' },
 ]
 
+/**
+ * 吉利系订单判定（勘测弹窗增项价表 / 完工页结算共用入口）。
+ * 口径与 src/shared/utils/orderCalc.ts 的 isGeelyBrand 完全一致：吉利/银河/极氪。
+ * 优先看 brandName；brandName 为空时才用平台/原文兜底二次判断；
+ * brandName 明确存在且非吉利系 → 一律不命中。平台词仅作辅助、不作门槛。
+ */
 export function isWanbangGeelyOrder(brand?: string, platform?: string, extra?: string): boolean {
-  const text = `${brand || ''} ${platform || ''} ${extra || ''}`
-  return text.includes('万帮') && /吉利|银河|极氪/.test(text)
+  const b = (brand || '').toLowerCase()
+  if (/吉利|银河|极氪/.test(b)) return true
+  if (b) return false
+  return /吉利|银河|极氪/.test(`${platform || ''} ${extra || ''}`)
 }
 
 export const WANBANG_GEELY_ADDON_MATERIALS: Material[] = WANBANG_GEELY_ADDON_PRICES.map((item) => {

@@ -9,7 +9,7 @@ import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy, StickyNote } from 'lucide-react'
 import { calcMaterialCost, calcOrderFinancials, getOrderServiceFee } from '@/shared/utils/orderCalc'
 import { getPlatformLabel } from '@/constants/platforms'
 import { toast } from '@/shared/hooks/useToast'
@@ -55,6 +55,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const [showAppointment, setShowAppointment] = useState(false)
   const [showMenuPanel, setShowMenuPanel] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
+  const [showFullRemark, setShowFullRemark] = useState(false)
   const [copyTimer, setCopyTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
 
   const handleLongPressStart = useCallback((text: string | undefined) => {
@@ -173,6 +174,17 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           <span>{displayAddress}</span>
         </div>
 
+        {/* 订单备注：单行截断，点击展开/收起 */}
+        {order.remark && (
+          <div
+            className="order-card__remark"
+            onClick={(event) => { event.stopPropagation(); setShowFullRemark((v) => !v) }}
+          >
+            <StickyNote size={14} className="order-card__icon order-card__icon--top" />
+            <span className={showFullRemark ? 'order-card__remark-text--full' : 'order-card__remark-text--clamp'}>{order.remark}</span>
+          </div>
+        )}
+
         {/* 预约信息 */}
         <div className="order-card__appointment">
           {order.appointmentDate ? (
@@ -268,7 +280,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             onClick={(e) => { e.stopPropagation(); setShowMenuPanel(true) }}
             className="order-card__menu-btn"
           >
-            <MoreVertical size={16} />
+            <MoreVertical size={20} />
           </button>
         )}
       </div>

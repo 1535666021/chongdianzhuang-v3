@@ -1,4 +1,4 @@
-import { Calendar, ClipboardList } from 'lucide-react'
+import { Calendar, ClipboardList, FileText } from 'lucide-react'
 import type { Order } from '@/types'
 
 export function OrderDetailInfoSections({ order }: { order: Order }) {
@@ -11,6 +11,12 @@ export function OrderDetailInfoSections({ order }: { order: Order }) {
           <div>电表: {order.meterStatus} {order.meterNumber ? `(${order.meterNumber})` : ''}</div>
         </div>
       </div>
+      {order.remark && (
+        <div className="bg-white p-4 border-b border-gray-200">
+          <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2"><FileText size={16} />订单备注</h2>
+          <div className="text-sm whitespace-pre-wrap text-gray-700">{order.remark}</div>
+        </div>
+      )}
       {order.survey && <SurveyDetail survey={order.survey} />}
     </>
   )
