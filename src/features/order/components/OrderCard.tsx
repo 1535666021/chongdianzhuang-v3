@@ -280,7 +280,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             onClick={(e) => { e.stopPropagation(); setShowMenuPanel(true) }}
             className="order-card__menu-btn"
           >
-            <MoreVertical size={20} />
+            <MoreVertical size={16} />
           </button>
         )}
       </div>
