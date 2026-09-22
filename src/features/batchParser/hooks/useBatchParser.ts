@@ -10,23 +10,27 @@ import {
   parsedItemsToOrders,
   type ParsedOrderItem,
 } from '@/lib/parser'
+import {
+  matchExistingDuplicate,
+  findBatchDuplicates,
+  type ExistingDupMatch,
+  type BatchDupMatch,
+} from './batchDedupe'
 
 type ParsedOrderWithNature = ParsedOrderItem & { nature?: string }
 
-function isDuplicate(order: Order, existingOrders: Order[]): boolean {
-  const currentMonth = new Date().toISOString().slice(0, 7)
-  return existingOrders.some((existing) => {
-    const createdAt = new Date(existing.createdAt)
-    const existingMonth = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString().slice(0, 7)
-    return existing.status !== '已完成' && existingMonth === currentMonth &&
-      (existing.customerName === order.customerName || (order.phone && existing.phone === order.phone)) &&
-      (existing.nature || '安装') === order.nature
-  })
+/** 预览条目：订单 + 判重状态（新增 / 库内重复 / 批内重复） */
+export interface PreviewEntry {
+  order: Order
+  status: 'new' | 'existing-dup' | 'batch-dup'
+  existingMatch?: ExistingDupMatch
+  batchMatch?: BatchDupMatch
 }
 
 export function useBatchParser() {
   const [rawText, setRawText] = useState('')
-  const [parsedOrders, setParsedOrders] = useState<ParsedOrderItem[]>([])
+  const [previewEntries, setPreviewEntries] = useState<PreviewEntry[]>([])
+  const [checked, setChecked] = useState<boolean[]>([])
   const [blockCount, setBlockCount] = useState(0)
   const [isParsing, setIsParsing] = useState(false)
   const existingOrders = useOrderStore((state) => state.orders)
@@ -35,7 +39,8 @@ export function useBatchParser() {
     setIsParsing(true)
     const text = rawText.trim()
     if (!text) {
-      setParsedOrders([])
+      setPreviewEntries([])
+      setChecked([])
       setBlockCount(0)
       setIsParsing(false)
       return []
@@ -51,34 +56,56 @@ export function useBatchParser() {
       }
       if (!item.platformName) item.platformName = '其他'
     })
-    setParsedOrders(result.items)
+    const orders = parsedItemsToOrders(result.items).map((order, index) => ({
+      ...order,
+      nature: (result.items[index] as ParsedOrderWithNature).nature || '安装',
+    }))
+    // P0-093：批内自查优先（同批重复只保留首条），首条再查库内重复
+    const batchDups = findBatchDuplicates(orders)
+    const entries: PreviewEntry[] = orders.map((order, index) => {
+      const batchMatch = batchDups[index]
+      if (batchMatch) return { order, status: 'batch-dup' as const, batchMatch }
+      const existingMatch = matchExistingDuplicate(order, existingOrders)
+      if (existingMatch) return { order, status: 'existing-dup' as const, existingMatch }
+      return { order, status: 'new' as const }
+    })
+    setPreviewEntries(entries)
+    // 重复项默认不勾选，允许手动勾选强制导入（老客户再装场景）
+    setChecked(entries.map((e) => e.status === 'new'))
     setBlockCount(result.blockCount)
     setIsParsing(false)
     return result.items
-  }, [rawText])
+  }, [rawText, existingOrders])
 
   const clear = useCallback(() => {
     setRawText('')
-    setParsedOrders([])
+    setPreviewEntries([])
+    setChecked([])
     setBlockCount(0)
   }, [])
 
-  const convertToOrders = useCallback((): Order[] => {
-    const orders = parsedItemsToOrders(parsedOrders).map((order, index) => ({
-      ...order,
-      nature: (parsedOrders[index] as ParsedOrderWithNature).nature || '安装',
-    }))
-    return orders.filter((order) => !isDuplicate(order, existingOrders))
-  }, [existingOrders, parsedOrders])
+  const toggleChecked = useCallback((index: number) => {
+    setChecked((prev) => prev.map((v, i) => (i === index ? !v : v)))
+  }, [])
+
+  const checkedCount = checked.filter(Boolean).length
+
+  /** 仅导出勾选项；重复项未勾选即跳过，与 importOrders 统计联动 */
+  const getCheckedOrders = useCallback((): Order[] => {
+    return previewEntries.filter((_, i) => checked[i]).map((e) => e.order)
+  }, [previewEntries, checked])
 
   return {
     rawText,
     setRawText,
-    parsedOrders,
+    previewEntries,
+    checked,
+    checkedCount,
     blockCount,
     isParsing,
     parse,
     clear,
-    convertToOrders,
+    toggleChecked,
+    getCheckedOrders,
   }
 }
