@@ -4,12 +4,45 @@ export const DEFAULT_PACKAGE_METERS = 30
 import { costMaterials } from '@/constants/materialData'
 import { matchCostName } from '@/features/material/hooks/useCostMatcher'
 import { getCostMapping } from '@/shared/storage/costMappingStorage'
+import type { Order } from '@/types'
 
 export const SERVICE_FEE: Record<string, number> = {
   安装: 300,
   维修: 60,
   勘察: 0,
   勘测: 0,
+}
+
+const GEELY_KEYWORDS = ['吉利', '银河', '极氪']
+
+export function isGeelyBrand(brand: string): boolean {
+  const b = (brand || '').toLowerCase()
+  return GEELY_KEYWORDS.some((k) => b.includes(k))
+}
+
+export function getGeelyServiceFee(packageMeters: number): number {
+  if (packageMeters === 20) return 230
+  if (packageMeters === 30) return 330
+  return SERVICE_FEE['安装']
+}
+
+export function getSettlementFee(order: Order): number {
+  const brand = order.brandName || ''
+  const pkg = parseFloat(order.packageMeters || '0')
+  if (isGeelyBrand(brand)) {
+    return getGeelyServiceFee(pkg)
+  }
+  return getOrderServiceFee(order)
+}
+
+export function getOrderPlatformFee(
+  order: Order,
+  customerReceivable: number,
+  getPlatformRate: (platform: string) => number
+): number {
+  if (isGeelyBrand(order.brandName || '')) return 0
+  const rate = getPlatformRate(order.platform)
+  return calcPlatformFee(customerReceivable, rate)
 }
 
 export interface OverFeeResult {
@@ -76,6 +109,8 @@ type OrderFinancialSource = {
   actualProfit?: number
   serviceFee?: number
   notes?: string
+  brandName?: string
+  packageMeters?: string
 }
 
 function isDateValue(value: string | undefined) {
@@ -98,8 +133,11 @@ export function getOrderServiceFee(order: Pick<OrderFinancialSource, 'serviceFee
 export function getCompletedOrderFinancials(order: OrderFinancialSource) {
   const customerPrice = order.customerPrice || 0
   const materialCost = order.materialCost || 0
-  const platformFee = order.platformFee || 0
-  const serviceFee = getOrderServiceFee(order)
+  const geely = isGeelyBrand(order.brandName || '')
+  const platformFee = geely ? 0 : order.platformFee || 0
+  const serviceFee = geely
+    ? getGeelyServiceFee(parseFloat(order.packageMeters || '0'))
+    : getOrderServiceFee(order)
   const customerPay = customerPrice + serviceFee
   const actualIncome = customerPay - platformFee
   const actualProfit = order.actualProfit ?? actualIncome - materialCost
@@ -183,4 +221,55 @@ export function calcSurveyTotal(materials: CalcSurveyItem[], cableCost: number):
     .filter((m) => !m.isCable)
     .reduce((sum, m) => sum + m.quantity * m.unitPrice, 0)
   return nonCableTotal + cableCost
+}
+
+/** 临时工资计算器输入 */
+export interface SalaryEstimateInput {
+  brand: string
+  packageMeters: number
+  actualMeters: number
+  platformRate: number
+  materials: Array<{ name: string; quantity: number; settlementPrice: number }>
+}
+
+/** 临时工资计算器结果 */
+export interface SalaryEstimate {
+  isGeely: boolean
+  settlementFee: number
+  overMeters: number
+  overFee: number
+  addonFee: number
+  materialCost: number
+  platformFee: number
+  salary: number
+}
+
+/** 工资估算：结算费 + 增项费用 - 材料成本 - 平台扣点（复用统一计算入口） */
+export function calcSalaryEstimate(input: SalaryEstimateInput): SalaryEstimate {
+  const { brand, packageMeters, actualMeters, platformRate, materials } = input
+  const geely = isGeelyBrand(brand)
+
+  const settlementFee = geely ? getGeelyServiceFee(packageMeters) : SERVICE_FEE['安装']
+
+  const cable = materials.find((m) => isFreeQuotaMaterial(m.name))
+  const overPrice = cable?.settlementPrice || DEFAULT_OVER_PRICE
+  const { overMeters, overFee } = calcOverFee(actualMeters, packageMeters, overPrice)
+
+  const nonCable = materials.filter((m) => !isFreeQuotaMaterial(m.name))
+  const addonNonCable = nonCable.reduce((s, m) => s + m.quantity * m.settlementPrice, 0)
+  const addonFee = Math.round((overFee + addonNonCable) * 100) / 100
+
+  const costItems = [
+    { name: '电缆', quantity: actualMeters },
+    { name: 'PVC', quantity: actualMeters },
+    { name: '漏保盒', quantity: 1 },
+    ...nonCable.map((m) => ({ name: m.name, quantity: m.quantity })),
+  ]
+  const materialCost = Math.round(calcMaterialCost(costItems).total * 100) / 100
+
+  const platformFee = geely ? 0 : Math.round(calcPlatformFee(addonFee, platformRate) * 100) / 100
+
+  const salary = Math.round((settlementFee + addonFee - materialCost - platformFee) * 100) / 100
+
+  return { isGeely: geely, settlementFee, overMeters, overFee, addonFee, materialCost, platformFee, salary }
 }

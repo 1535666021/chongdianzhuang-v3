@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getOrderServiceFee, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
+import { DEFAULT_PACKAGE_METERS, getSettlementFee, getOrderPlatformFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -185,7 +185,7 @@ export function useCompletion(orderId: string) {
     }
     const breakerTypeCost = breakerCostPrice[form.fixedAux.breakerType] || 0
     const fixedCost =
-      (form.fixedAux.cableMeters * (cable?.costPrice || 16)) +
+      (form.fixedAux.cableMeters * (cable?.costPrice || 17.9)) +
       (form.fixedAux.pvcMeters * (pvc?.costPrice || 1)) +
       (form.fixedAux.breakerCount * (breaker?.costPrice || 5)) +
       breakerTypeCost
@@ -195,12 +195,17 @@ export function useCompletion(orderId: string) {
     const { total: addonCost } = calcMaterialCost(chargeableMaterials)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
-    // 平台扣点
-    const platformRate = order ? getPlatformFeeRate(order.platform) : 0.2
-    const platformFee = Math.round(calcPlatformFee(customerReceivable, platformRate) * 100) / 100
+    // 平台扣点（吉利品牌无扣点）
+    const geelyOrder = isGeelyBrand(order?.brandName || '')
+    const platformRate = geelyOrder ? 0 : (order ? getPlatformFeeRate(order.platform) : 0.2)
+    const platformFee = order
+      ? Math.round(getOrderPlatformFee(order, customerReceivable, getPlatformFeeRate) * 100) / 100
+      : Math.round(calcPlatformFee(customerReceivable, 0.2) * 100) / 100
 
-    // 服务费
-    const serviceFee = order ? getOrderServiceFee(order) : 300
+    // 服务费（吉利品牌按套餐米数计算结算费）
+    const serviceFee = order
+      ? getSettlementFee({ ...order, packageMeters: String(packageMeters) })
+      : 300
 
     // 利润
     const actualProfit = Math.round(calcProfit(customerReceivable, materialCost, platformFee, serviceFee) * 100) / 100
@@ -225,7 +230,7 @@ export function useCompletion(orderId: string) {
       }
     }
 
-    const fixedCableCost = form.fixedAux.cableMeters * (cable?.costPrice || 16)
+    const fixedCableCost = form.fixedAux.cableMeters * (cable?.costPrice || 17.9)
     const fixedPvcCost = form.fixedAux.pvcMeters * (pvc?.costPrice || 1)
     const fixedBreakerBoxCost = form.fixedAux.breakerCount * (breaker?.costPrice || 5)
 
@@ -233,7 +238,7 @@ export function useCompletion(orderId: string) {
     if (form.fixedAux.cableMeters > 0) {
       materialItems.push({
         name: '电缆',
-        calc: `电缆 ${form.fixedAux.cableMeters}米 × ¥${cable?.costPrice || 16}/米`,
+        calc: `电缆 ${form.fixedAux.cableMeters}米 × ¥${cable?.costPrice || 17.9}/米`,
         amount: fixedCableCost,
       })
     }

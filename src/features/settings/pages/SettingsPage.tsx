@@ -17,6 +17,7 @@ import {
   List,
   Sparkles,
   MapPin,
+  Calculator,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION } from '@/constants/common'
 import CostSheetManager from '../components/CostSheetManager'
@@ -30,6 +31,7 @@ import WatermarkTemplate from '../components/WatermarkTemplate'
 import LingpaoTemplate from '../components/LingpaoTemplate'
 import ScriptManager from '../components/ScriptManager'
 import AmapConfig from '../components/AmapConfig'
+import SalaryCalculator from '../components/SalaryCalculator'
 type SettingSection =
   | 'cost'
   | 'addon'
@@ -44,6 +46,7 @@ type SettingSection =
   | 'lingpao'
   | 'scripts'
   | 'map'
+  | 'salary'
   | null
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingSection>(null)
@@ -63,6 +66,7 @@ export default function SettingsPage() {
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
     { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
+    { id: 'salary' as const, label: '工资计算器', icon: Calculator, desc: '快速估算单笔订单工资' },
     { id: 'reset' as const, label: '恢复出厂设置', icon: RotateCcw, desc: '清空所有本地数据' },
     { id: 'about' as const, label: '关于', icon: Info, desc: `${APP_NAME} v${APP_VERSION}` },
   ] as const
@@ -101,6 +105,8 @@ export default function SettingsPage() {
         return <ScriptManager />
       case 'map':
         return <AmapConfig />
+      case 'salary':
+        return <SalaryCalculator />
       case 'reset':
         return <RestoreFactory />
       case 'about':
