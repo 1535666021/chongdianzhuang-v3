@@ -4,7 +4,7 @@
 
 import type { ParsedOrderItem } from './parser-core';
 import {
-  PHONE_RE, VIN_SEARCH_RE, POWER_RE,
+  PHONE_RE, VIN_SEARCH_RE, VIN_FULL_RE, POWER_RE,
   TIMESTAMP_PREFIX_RE, KEY_VALUE_RE,
   ADDRESS_HINTS, STRONG_ADDRESS_HINTS, NAME_EXCLUDE_RE,
   BRAND_WORDS, PLATFORM_HINT_WORDS,
@@ -196,10 +196,93 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
 }
 
 /* --------------------------------------------------------------
+ * 六-B、流式表格行解析（挚达/万帮吉利单：D/HW订单号 + 制表符分隔 + 行内键值子字段）
+ * -------------------------------------------------------------- */
+
+const STREAM_ORDER_NO_RE = /^(?:D|HW)[A-Za-z0-9]+/;
+const STREAM_TOKEN_SPLIT_RE = /\t+| {3,}/;
+const STREAM_CAR_MODEL_RE = /^[\u4e00-\u9fa5]{2,3}\d{1,2}$/;
+const STREAM_DATETIME_TOKEN_RE = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?/;
+const STREAM_PILE_NAME_RE = /桩产品名称[:：]\s*([^\s:：]+)/;
+const STREAM_PILE_POWER_RE = /桩产品功率[:：]\s*(\d+(?:\.\d+)?)/;
+const STREAM_PACKAGE_RE = /套包信息[:：]\s*(\d+)\s*米/;
+const STREAM_PLATFORM_RE = /(西安领充|领充|挚达|万帮|京东|天猫|拼多多|抖音|淘宝|苏宁|苏宁易购|均胜|妍伟|空灵|美团|苹果)/;
+
+export function isStreamTableRow(block: string): boolean {
+  if (!STREAM_ORDER_NO_RE.test(block.trimStart())) return false;
+  if (!block.includes('\t') && !/ {3,}/.test(block)) return false;
+  if (!/桩产品名称[:：]|桩产品功率[:：]|套包信息[:：]/.test(block)) return false;
+  return extractPhone(block) !== '';
+}
+
+export function parseStreamTableRow(block: string): ParsedOrderItem {
+  const item = emptyItem();
+  const tokens = block.trim().split(STREAM_TOKEN_SPLIT_RE).map((t) => t.trim()).filter(Boolean);
+  const remarks: string[] = [];
+  const addressTokens: string[] = [];
+  let phoneIndex = -1;
+  let addressOpen = false;
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+    if (i === 0) { item.orderNo = token; continue; }
+    if (phoneIndex === -1) {
+      if (PHONE_RE.test(token)) {
+        item.phone = extractPhone(token);
+        phoneIndex = i;
+        addressOpen = true;
+        const nameToken = tokens[i - 1] ?? '';
+        if (/^[\u4e00-\u9fa5]{2,4}$/.test(nameToken) && !NAME_EXCLUDE_RE.test(nameToken)) {
+          item.customerName = nameToken;
+        }
+      }
+      continue;
+    }
+    if (addressOpen) {
+      const isStopSignal = STREAM_CAR_MODEL_RE.test(token) || VIN_FULL_RE.test(token)
+        || STREAM_PILE_NAME_RE.test(token) || STREAM_DATETIME_TOKEN_RE.test(token);
+      if (!isStopSignal) { addressTokens.push(token); continue; }
+      addressOpen = false;
+    }
+    if (STREAM_CAR_MODEL_RE.test(token)) continue; // 车型token：终止地址且不入备注
+    if (!item.vin && VIN_FULL_RE.test(token)) { item.vin = token; continue; }
+    const pileName = token.match(STREAM_PILE_NAME_RE);
+    if (pileName) {
+      if (!item.brandName) item.brandName = pileName[1].split('-')[0].trim();
+      const power = token.match(STREAM_PILE_POWER_RE);
+      if (power && !item.powerKw) item.powerKw = power[1];
+      const pkg = token.match(STREAM_PACKAGE_RE);
+      if (pkg && !item.packageMeters) item.packageMeters = pkg[1];
+      continue;
+    }
+    if (STREAM_DATETIME_TOKEN_RE.test(token)) {
+      const d = token.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/);
+      if (d && !item.appointmentDate) item.appointmentDate = d[0].replace(/\//g, '-');
+      continue;
+    }
+    remarks.push(token.replace(/\s{2,}/g, ' ').trim());
+  }
+  item.address = addressTokens.join(' ').trim();
+  const tail = remarks.join(' ');
+  if (!item.brandName && tail.includes('吉利')) item.brandName = '吉利';
+  const platformMatch = tail.match(STREAM_PLATFORM_RE);
+  if (platformMatch) {
+    item.platformName = platformMatch[1];
+  } else {
+    const fb = (remarks[0] ?? '').match(/^[\u4e00-\u9fa5]{2}/);
+    if (fb) item.platformName = fb[0];
+  }
+  if (tail.includes('安装')) item.installType = '安装';
+  if (remarks.length > 0) item.remark = remarks.join('\n');
+  fillFallbacks(item, block);
+  return item;
+}
+
+/* --------------------------------------------------------------
  * 七、分发器
  * -------------------------------------------------------------- */
 
 function inferInstallType(item: ParsedOrderItem): void {
+  if (item.installType) return;
   const st = (item.serviceType || '').toLowerCase();
   const rm = (item.remark || '').toLowerCase();
   if (st.includes('带桩') || rm.includes('带桩上门')) { item.installType = '带桩上门'; return; }
@@ -229,7 +312,11 @@ export function parseBlock(block: string): ParsedOrderItem {
     return item;
   }
   const kvLineCount = block.split('\n').filter((l) => KEY_VALUE_RE.test(l.trim())).length;
-  const item = kvLineCount >= 2 ? parseKeyValueBlock(block) : parseFlowBlock(block);
+  const item = kvLineCount >= 2
+    ? parseKeyValueBlock(block)
+    : isStreamTableRow(block)
+      ? parseStreamTableRow(block)
+      : parseFlowBlock(block);
   inferInstallType(item);
   inferNature(item);
   return item;
