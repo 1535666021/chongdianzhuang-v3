@@ -351,3 +351,19 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+/* P0-096 C：查看原始记录入口 */
+.order-card__rawview {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+}
+.order-card__rawview:hover { color: #2563eb; }
+.modal-rawtext-empty { font-size: 13px; color: #9ca3af; text-align: center; padding: 24px 0; margin: 0; }

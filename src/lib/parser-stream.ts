@@ -75,8 +75,14 @@ export function sanitizeStreamLikeAddress(line: string, remarks: string[]): stri
   return addr.join(' ').trim();
 }
 
-/** R2-D 姓名清洗：乱码token跳过；剥离尾部粘连车型词（如 荣光v/星耀8） */
+/**
+ * P0-096 姓名token双类型识别：
+ * ① 2-4个汉字（保留剥离尾部粘连车型词，如 荣光v/星耀8）
+ * ② 4~18位字母数字用户名（如 llb5FNmyUJ）——排除纯数字/电话格式/17位VIN/D|HW单号
+ */
 function cleanNameToken(token: string): string {
+  if (/^[A-Za-z0-9]{4,18}$/.test(token) && /[A-Za-z]/.test(token)
+    && !ORDER_NO_PREFIX_RE.test(token) && !VIN_FULL_RE.test(token)) return token;
   if (!/^[一-龥]/.test(token)) return '';
   if (NAME_EXCLUDE_RE.test(token)) return '';
   const m = token.match(/^([一-龥]{2,4}?)([一-龥]{1,2}[A-Za-z0-9]{1,2})$/);

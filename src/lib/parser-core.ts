@@ -183,19 +183,17 @@ export function stripWordFromText(text: string, word: string): string {
 
 export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
   if (!item.phone) item.phone = extractPhone(blockText);
+  // P0-096：姓名候选/兜底统一排除品牌词与平台词（引用既有常量），禁止冒充姓名
+  const isForbiddenName = (w: string) => NAME_EXCLUDE_RE.test(w) || BRAND_WORDS.some((b) => w.includes(b) || b.includes(w)) || PLATFORM_HINT_WORDS.some((p) => w.includes(p) || p.includes(w));
   if (!item.customerName) {
     const nameKv = blockText.match(/(?:客户姓名|联系人|车主姓名|姓名|用户姓名|车主|客户|姓名信息|联系人姓名)[:：]\s*([^\n\r]{2,6})/);
-    if (nameKv && nameKv[1]) {
-      const name = nameKv[1].trim();
-      if (name.length >= 2 && name.length <= 6 && !/\d/.test(name) && !NAME_EXCLUDE_RE.test(name)) {
-        item.customerName = name;
-      }
-    }
+    const name = nameKv?.[1]?.trim() ?? '';
+    if (name.length >= 2 && name.length <= 6 && !/\d/.test(name) && !isForbiddenName(name)) item.customerName = name;
   }
   if (!item.customerName) {
     const names = `${item.remark}\n${blockText}`.matchAll(/([\u4e00-\u9fa5]{2,4})(?:先生|女士|小姐|师傅)?/g);
     for (const match of names) {
-      if (!NAME_EXCLUDE_RE.test(match[1])) {
+      if (!isForbiddenName(match[1])) {
         item.customerName = match[1];
         break;
       }

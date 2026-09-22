@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
@@ -9,7 +9,7 @@ import AppointmentModal from './AppointmentModal'
 import OrderCardMenu from './OrderCardMenu'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS } from '@/constants/order'
-import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy, StickyNote } from 'lucide-react'
+import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle, ChevronDown, ChevronUp, Copy, StickyNote, FileText } from 'lucide-react'
 import { calcMaterialCost, calcOrderFinancials, getOrderServiceFee } from '@/shared/utils/orderCalc'
 import { getPlatformLabel } from '@/constants/platforms'
 import { toast } from '@/shared/hooks/useToast'
@@ -57,10 +57,15 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [showFullRemark, setShowFullRemark] = useState(false)
   const [copyTimer, setCopyTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
+  const [showRawView, setShowRawView] = useState(false)
+  const longPressFiredRef = useRef(false)
+  const touchStartRef = useRef(0)
 
   const handleLongPressStart = useCallback((text: string | undefined) => {
     if (!text) return
+    longPressFiredRef.current = false
     const timer = setTimeout(async () => {
+      longPressFiredRef.current = true
       try {
         await navigator.clipboard.writeText(text)
       } catch {
@@ -77,7 +82,8 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
     }
   }, [copyTimer])
 
-  const identityText = [order.brandName, order.customerName].filter((v) => (v || '').trim()).join(' ').trim()
+  // P0-096：空姓名退化为品牌或单号，绝不复制空串
+  const identityText = [order.brandName, order.customerName].filter((v) => (v || '').trim()).join(' ').trim() || order.orderNo || ''
 
   const copyToClipboard = useCallback(async (text: string | undefined, successMessage: string) => {
     if (!text) return
@@ -121,15 +127,26 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         <div className="order-card__header">
           <div
             className="order-card__name"
-            onClick={(event) => { event.stopPropagation(); void copyToClipboard(identityText, `已复制：${identityText}`) }}
+            onClick={(event) => {
+              event.stopPropagation()
+              if (longPressFiredRef.current) { longPressFiredRef.current = false; return } // 长按已复制，跳过点按
+              void copyToClipboard(identityText, `已复制：${identityText}`)
+            }}
             onMouseDown={() => handleLongPressStart(identityText)}
             onMouseUp={handleLongPressEnd}
             onMouseLeave={handleLongPressEnd}
-            onTouchStart={() => handleLongPressStart(identityText)}
-            onTouchEnd={handleLongPressEnd}
+            onTouchStart={() => { touchStartRef.current = Date.now(); handleLongPressStart(identityText) }}
+            onTouchEnd={(event) => {
+              handleLongPressEnd()
+              // 移动端 tap<300ms 直接复制并阻断合成 click，防吞防双触发
+              if (longPressFiredRef.current || Date.now() - touchStartRef.current >= 300) return
+              event.preventDefault()
+              event.stopPropagation()
+              void copyToClipboard(identityText, `已复制：${identityText}`)
+            }}
           >
             <User size={16} className="order-card__icon" />
-            <span>{order.customerName}</span>
+            <span>{order.customerName || '未填写姓名'}</span>
           </div>
           <span
             className="order-card__status"
@@ -202,6 +219,16 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             </div>
           )}
         </div>
+
+        {/* 原始记录查看入口（只读，与编辑通道互不冲突） */}
+        <button
+          type="button"
+          className="order-card__rawview"
+          onClick={(e) => { e.stopPropagation(); setShowRawView(true) }}
+        >
+          <FileText size={14} />
+          <span>查看原始记录</span>
+        </button>
 
         {/* 底部按钮区 */}
         {isScheduled ? (
@@ -315,6 +342,28 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               <button onClick={handleSaveRaw} className="modal-btn modal-btn--primary">
                 保存
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showRawView && (
+        <div className="modal-overlay" onClick={() => setShowRawView(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="modal-title">原始记录</h2>
+              <button onClick={() => setShowRawView(false)} className="modal-close"><ChevronUp size={20} className="rotate-180" /></button>
+            </div>
+            <div className="modal-body">
+              {order.rawText
+                ? <textarea readOnly value={order.rawText} className="modal-textarea" />
+                : <p className="modal-rawtext-empty">无原始记录</p>}
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowRawView(false)} className="modal-btn modal-btn--secondary">关闭</button>
+              {order.rawText && (
+                <button onClick={() => void copyToClipboard(order.rawText, '原文已复制')} className="modal-btn modal-btn--primary">复制原文</button>
+              )}
             </div>
           </div>
         </div>
