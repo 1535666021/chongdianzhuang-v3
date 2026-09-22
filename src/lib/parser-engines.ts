@@ -1,17 +1,22 @@
 /* ============================================================
  * 解析引擎：键值块解析 + 流式块解析 + 分发器
+ * 流式表格行解析器已拆至 parser-stream.ts（P0-090-R2）
  * ============================================================ */
 
 import type { ParsedOrderItem } from './parser-core';
 import {
-  PHONE_RE, VIN_SEARCH_RE, VIN_FULL_RE, POWER_RE,
-  TIMESTAMP_PREFIX_RE, KEY_VALUE_RE, TIME_TOKEN_RE,
+  PHONE_RE, VIN_SEARCH_RE, POWER_RE,
+  TIMESTAMP_PREFIX_RE, KEY_VALUE_RE,
   ADDRESS_HINTS, STRONG_ADDRESS_HINTS, NAME_EXCLUDE_RE,
   BRAND_WORDS, PLATFORM_HINT_WORDS,
   KV_FIELD_KEYS, KV_REMARK_KEYS, KV_DISCARD_KEYS, STANDALONE_DISCARD,
   emptyItem, extractPhone, pickKv, cleanAddressText, fillFallbacks,
 } from './parser-core';
 import { isWanbangBlock, parseWanbangBlock } from './parser-wanbang';
+import { isStreamTableRow, parseStreamTableRow, sanitizeStreamLikeAddress, STREAM_PILE_ANY_KV_RE } from './parser-stream';
+
+/* R2-B 单号保护：D/HW 开头的字母数字串是订单号，不得入 VIN */
+const ORDER_NO_PREFIX_RE = /^(?:D|HW)/;
 
 /* --------------------------------------------------------------
  * 五、键值块解析
@@ -36,7 +41,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
         if (phoneInInfo) {
           const namePart = value.replace(phoneInInfo, '').trim();
           if (namePart) {
-            const isChineseOnly = /^[\u4e00-\u9fa5]+$/.test(namePart);
+            const isChineseOnly = /^[一-龥]+$/.test(namePart);
             if (!isChineseOnly || !NAME_EXCLUDE_RE.test(namePart)) {
               kv.set('_userinfo_name', namePart);
             }
@@ -44,7 +49,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
         } else {
           const trimmed = value.trim();
           if (trimmed) {
-            const isChineseOnly = /^[\u4e00-\u9fa5]+$/.test(trimmed);
+            const isChineseOnly = /^[一-龥]+$/.test(trimmed);
             if (!isChineseOnly || !NAME_EXCLUDE_RE.test(trimmed)) {
               kv.set('_userinfo_name', trimmed);
             }
@@ -71,7 +76,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
     }
     if (VIN_SEARCH_RE.test(line) && !kv.has('车架号')) {
       const all = line.match(VIN_SEARCH_RE) ?? [];
-      const found = all.find((v) => v !== item.orderNo);
+      const found = all.find((v) => v !== item.orderNo && !ORDER_NO_PREFIX_RE.test(v));
       if (found) kv.set('车架号', found);
       continue;
     }
@@ -111,7 +116,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
 
 function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
   const text = block.replace(/\s+/g, ' ').trim();
-  const identity = text.match(/(?:^|\s)(\d{10,20})\s+([\u4e00-\u9fa5]{2,4})\s+(1[3-9]\d{9})\s+(.+)$/);
+  const identity = text.match(/(?:^|\s)(\d{10,20})\s+([一-龥]{2,4})\s+(1[3-9]\d{9})\s+(.+)$/);
   if (!identity || identity.index === undefined) return null;
   const [, orderNo, customerName, phone, tail] = identity;
   const addressAndRemark = tail.match(/^(.+?)\s+(?:是|否)\s+(.+)$/);
@@ -127,36 +132,6 @@ function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
   item.remark = addressAndRemark[2].trim();
   fillFallbacks(item, text);
   return item;
-}
-
-/**
- * A2 兜底加固：parseFlowBlock 地址候选行若疑似未命中的流式表格行
- * （行内含桩产品键值），先剥离非地址子段再入地址，剥离部分并入备注。
- * 仅对含桩产品键值的行启用，普通微信流式地址行原样返回，零误伤。
- */
-function sanitizeStreamLikeAddress(line: string, remarks: string[]): string {
-  if (!line || !STREAM_PILE_ANY_KV_RE.test(line)) return line;
-  let text = line;
-  const kvStart = text.search(STREAM_PILE_ANY_KV_RE);
-  const kvSeg = text.slice(kvStart);
-  const pkgEnd = kvSeg.match(/套包信息[:：][\s\S]*?套包/);
-  const kvEnd = pkgEnd ? kvStart + (pkgEnd.index ?? 0) + pkgEnd[0].length : text.length;
-  remarks.push(text.slice(kvStart, kvEnd).trim());
-  text = `${text.slice(0, kvStart)} ${text.slice(kvEnd)}`;
-  text = text.replace(VIN_SEARCH_RE, ' ');
-  text = text.replace(/\d{4}[-/]\d{1,2}[-/]\d{1,2}([ T]\d{1,2}:\d{2}(:\d{2})?)?/g, ' ');
-  const pm = text.match(PHONE_RE);
-  if (pm && pm.index !== undefined) text = text.slice(pm.index + pm[0].length);
-  const addr: string[] = [];
-  const extras: string[] = [];
-  let open = true;
-  for (const t of text.split(/\s+/).filter(Boolean)) {
-    if (open && STREAM_CAR_MODEL_RE.test(t)) { open = false; continue; }
-    if (open && addr.length > 0 && (STREAM_REMARK_HINT_RE.test(t) || STREAM_PLATFORM_LEAD_RE.test(t))) open = false;
-    (open ? addr : extras).push(t);
-  }
-  remarks.push(...extras);
-  return addr.join(' ').trim();
 }
 
 export function parseFlowBlock(block: string): ParsedOrderItem {
@@ -184,7 +159,7 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
     if (VIN_SEARCH_RE.test(line)) {
       const all = line.match(VIN_SEARCH_RE) ?? [];
       for (const v of all) {
-        if (!vinCandidates.includes(v)) vinCandidates.push(v);
+        if (!vinCandidates.includes(v) && !ORDER_NO_PREFIX_RE.test(v)) vinCandidates.push(v);
       }
       continue;
     }
@@ -230,112 +205,6 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
       item.remark = [item.remark, ...extraRemarks].filter(Boolean).join('\n');
     }
   }
-  return item;
-}
-
-/* --------------------------------------------------------------
- * 六-B、流式表格行解析（挚达/万帮吉利单：D/HW订单号 + 制表符分隔 + 行内键值子字段）
- * -------------------------------------------------------------- */
-
-const STREAM_ORDER_NO_RE = /^(?:D|HW)[A-Za-z0-9]+/;
-const STREAM_TOKEN_SPLIT_RE = /\t+| {2,}|　+/;
-const STREAM_CAR_MODEL_RE = /^[\u4e00-\u9fa5]{2,3}\d{1,2}$/;
-const STREAM_DATETIME_TOKEN_RE = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?/;
-const STREAM_PILE_NAME_RE = /桩产品名称[:：]\s*([^\s:：]+)/;
-const STREAM_PILE_POWER_RE = /桩产品功率[:：]\s*(\d+(?:\.\d+)?)/;
-const STREAM_PACKAGE_RE = /套包信息[:：]\s*(\d+)\s*米/;
-const STREAM_PLATFORM_RE = /(西安领充|领充|挚达|万帮|京东|天猫|拼多多|抖音|淘宝|苏宁|苏宁易购|均胜|妍伟|空灵|美团|苹果)/;
-const STREAM_PILE_ANY_KV_RE = /桩产品名称[:：]|桩产品功率[:：]|套包信息[:：]/;
-const STREAM_REMARK_HINT_RE = /已安装|漏保|彩打/;
-/* 平台词终止信号：必须以平台词开头且紧跟品牌词边界或括号/结尾，
- * 防止"京东苑小区"这类地址被"包含匹配"误截 */
-const STREAM_PLATFORM_LEAD_RE = /^(?:挚达|万帮|京东|天猫|拼多多|抖音|淘宝)[\u4e00-\u9fa5]{0,4}(?:[（(]|$)/;
-
-export function isStreamTableRow(block: string): boolean {
-  if (!STREAM_ORDER_NO_RE.test(block.trimStart())) return false;
-  if (!block.includes('\t') && !/ {2,}/.test(block) && !block.includes('　')) return false;
-  if (!STREAM_PILE_ANY_KV_RE.test(block)) return false;
-  return extractPhone(block) !== '';
-}
-
-export function parseStreamTableRow(block: string): ParsedOrderItem {
-  const item = emptyItem();
-  let tokens = block.trim().split(STREAM_TOKEN_SPLIT_RE).map((t) => t.trim()).filter(Boolean);
-  // 单空格降级：切分后token过少且首token内仍含手机号/桩产品键值，
-  // 说明真实分隔符退化为单空格，按单空格再切（地址完整性靠终止信号保证）
-  if (tokens.length > 0 && tokens.length < 6 && (PHONE_RE.test(tokens[0]) || STREAM_PILE_ANY_KV_RE.test(tokens[0]))) {
-    tokens = tokens.flatMap((t) => t.split(/\s+/)).filter(Boolean);
-  }
-  const remarks: string[] = [];
-  const addressTokens: string[] = [];
-  let phoneIndex = -1;
-  let addressOpen = false;
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-    if (i === 0) { item.orderNo = token; continue; }
-    if (phoneIndex === -1) {
-      if (PHONE_RE.test(token)) {
-        item.phone = extractPhone(token);
-        phoneIndex = i;
-        addressOpen = true;
-        const nameToken = tokens[i - 1] ?? '';
-        if (/^[\u4e00-\u9fa5]{2,4}$/.test(nameToken) && !NAME_EXCLUDE_RE.test(nameToken)) {
-          item.customerName = nameToken;
-        }
-      }
-      continue;
-    }
-    if (addressOpen) {
-      // 误截断防护：平台词类终止信号仅在地址已收集到省/市/区/县锚点后才生效
-      const hasRegionAnchor = addressTokens.some((t) => /(省|市|区|县)/.test(t));
-      const isStopSignal = STREAM_CAR_MODEL_RE.test(token) || VIN_FULL_RE.test(token)
-        || STREAM_PILE_ANY_KV_RE.test(token) || STREAM_DATETIME_TOKEN_RE.test(token)
-        || STREAM_REMARK_HINT_RE.test(token)
-        || (hasRegionAnchor && STREAM_PLATFORM_LEAD_RE.test(token));
-      if (!isStopSignal) { addressTokens.push(token); continue; }
-      addressOpen = false;
-    }
-    if (STREAM_CAR_MODEL_RE.test(token)) continue; // 车型token：终止地址且不入备注
-    if (!item.vin && VIN_FULL_RE.test(token)) { item.vin = token; continue; }
-    const pileName = token.match(STREAM_PILE_NAME_RE);
-    if (pileName) {
-      if (!item.brandName) item.brandName = pileName[1].split('-')[0].trim();
-      const power = token.match(STREAM_PILE_POWER_RE);
-      if (power && !item.powerKw) item.powerKw = power[1];
-      const pkg = token.match(STREAM_PACKAGE_RE);
-      if (pkg && !item.packageMeters) item.packageMeters = pkg[1];
-      continue;
-    }
-    const powerOnly = token.match(STREAM_PILE_POWER_RE);
-    if (powerOnly) {
-      if (!item.powerKw) item.powerKw = powerOnly[1];
-      const pkg0 = token.match(STREAM_PACKAGE_RE);
-      if (pkg0 && !item.packageMeters) item.packageMeters = pkg0[1];
-      continue;
-    }
-    const pkgOnly = token.match(STREAM_PACKAGE_RE);
-    if (pkgOnly) { if (!item.packageMeters) item.packageMeters = pkgOnly[1]; continue; }
-    if (STREAM_DATETIME_TOKEN_RE.test(token)) {
-      const d = token.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/);
-      if (d && !item.appointmentDate) item.appointmentDate = d[0].replace(/\//g, '-');
-      continue;
-    }
-    if (TIME_TOKEN_RE.test(token)) continue; // 裸时间token：日期已取其日期部分，不污染备注
-    remarks.push(token.replace(/\s{2,}/g, ' ').trim());
-  }
-  item.address = addressTokens.join(' ').trim();
-  const tail = remarks.join(' ');
-  if (!item.brandName && tail.includes('吉利')) item.brandName = '吉利';
-  const platformMatch = tail.match(STREAM_PLATFORM_RE);
-  if (platformMatch) {
-    item.platformName = platformMatch[1];
-  } else {
-    const fb = (remarks[0] ?? '').match(/^[\u4e00-\u9fa5]{2}/);
-    if (fb) item.platformName = fb[0];
-  }
-  if (tail.includes('安装')) item.installType = '安装';
-  if (remarks.length > 0) item.remark = remarks.join('\n');
-  fillFallbacks(item, block);
   return item;
 }
 

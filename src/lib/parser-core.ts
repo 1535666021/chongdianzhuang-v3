@@ -44,7 +44,7 @@ export interface ParseTextResult {
 export const PHONE_RE = /(^|[^A-Za-z0-9])(1[3-9]\d{9})(?!\d)/;
 
 /** VIN：整 token 17 位且至少含一个字母 */
-export const VIN_FULL_RE = /^(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}$/;
+export const VIN_FULL_RE = /^(?!D|HW)(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}$/;
 /** VIN：全文搜索用 */
 export const VIN_SEARCH_RE = /(?=[A-HJ-NPR-Z0-9]*[A-HJ-NPR-Z])[A-HJ-NPR-Z0-9]{17}/g;
 /** 功率：数字 + kW/千瓦 */
@@ -211,9 +211,17 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
   }
   if (!item.vin) {
     const all = blockText.match(VIN_SEARCH_RE) ?? [];
-    const found = all.find((v) => v !== item.orderNo);
+    const found = all.find((v) => v !== item.orderNo && !/^(?:D|HW)/.test(v));
     if (found) item.vin = found;
   }
+  // R2-C：桩产品/套包/日期统一回填（对流式与兜底路径均生效）
+  if (!item.powerKw) item.powerKw = blockText.match(/桩产品功率[:：]\s*(\d+(?:\.\d+)?)/)?.[1] ?? '';
+  if (!item.packageMeters) item.packageMeters = blockText.match(/套包信息[:：]\s*(\d+)\s*米/)?.[1] ?? '';
+  if (!item.brandName) {
+    const m = blockText.match(/桩产品名称[:：]\s*([^\s:：]+)/);
+    if (m) item.brandName = extractBrandName(m[1]) || m[1].split('-')[0].trim();
+  }
+  if (!item.appointmentDate) item.appointmentDate = blockText.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/)?.[0].replace(/\//g, '-') ?? '';
   if (item.powerKw) {
     const m = item.powerKw.match(/(\d+(?:\.\d+)?)/);
     if (m) item.powerKw = m[1];
