@@ -56,34 +56,15 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
   const [showMenuPanel, setShowMenuPanel] = useState(false)
   const [showConfirmDelete, setShowConfirmDelete] = useState(false)
   const [showFullRemark, setShowFullRemark] = useState(false)
-  const [copyTimer, setCopyTimer] = useState<ReturnType<typeof setTimeout> | null>(null)
   const [showRawView, setShowRawView] = useState(false)
   const longPressFiredRef = useRef(false)
-  const touchStartRef = useRef(0)
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartPosRef = useRef<{ x: number; y: number } | null>(null)
 
-  const handleLongPressStart = useCallback((text: string | undefined) => {
-    if (!text) return
-    longPressFiredRef.current = false
-    const timer = setTimeout(async () => {
-      longPressFiredRef.current = true
-      try {
-        await navigator.clipboard.writeText(text)
-      } catch {
-        // ignore
-      }
-    }, 500)
-    setCopyTimer(timer)
-  }, [])
-
-  const handleLongPressEnd = useCallback(() => {
-    if (copyTimer) {
-      clearTimeout(copyTimer)
-      setCopyTimer(null)
-    }
-  }, [copyTimer])
-
-  // P0-096：空姓名退化为品牌或单号，绝不复制空串
-  const identityText = [order.brandName, order.customerName].filter((v) => (v || '').trim()).join(' ').trim() || order.orderNo || ''
+  // P0-096/P0-101：复制格式"品牌 姓名"；空品牌补"未知"，空姓名退化为品牌或单号，绝不复制空串
+  const customerPart = (order.customerName || '').trim()
+  const brandPart = (order.brandName || '').trim()
+  const identityText = customerPart ? `${brandPart || '未知'} ${customerPart}` : brandPart || order.orderNo || ''
 
   const copyToClipboard = useCallback(async (text: string | undefined, successMessage: string) => {
     if (!text) return
@@ -104,6 +85,23 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
     }
     toast.success(successMessage)
   }, [])
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = null
+  }, [])
+
+  // P0-101：长按统一走 copyToClipboard（带toast）；定时器存 ref，避免 state 闭包清不掉导致长按误触发
+  const handleLongPressStart = useCallback((text: string | undefined) => {
+    if (!text) return
+    longPressFiredRef.current = false
+    clearLongPressTimer()
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null
+      longPressFiredRef.current = true
+      void copyToClipboard(text, `已复制：${text}`)
+    }, 500)
+  }, [clearLongPressTimer, copyToClipboard])
 
   const openRawModal = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
@@ -133,17 +131,19 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
               void copyToClipboard(identityText, `已复制：${identityText}`)
             }}
             onMouseDown={() => handleLongPressStart(identityText)}
-            onMouseUp={handleLongPressEnd}
-            onMouseLeave={handleLongPressEnd}
-            onTouchStart={() => { touchStartRef.current = Date.now(); handleLongPressStart(identityText) }}
-            onTouchEnd={(event) => {
-              handleLongPressEnd()
-              // 移动端 tap<300ms 直接复制并阻断合成 click，防吞防双触发
-              if (longPressFiredRef.current || Date.now() - touchStartRef.current >= 300) return
-              event.preventDefault()
-              event.stopPropagation()
-              void copyToClipboard(identityText, `已复制：${identityText}`)
+            onMouseUp={clearLongPressTimer}
+            onMouseLeave={clearLongPressTimer}
+            onTouchStart={(event) => {
+              const t = event.touches[0]
+              if (t) touchStartPosRef.current = { x: t.clientX, y: t.clientY }
+              handleLongPressStart(identityText)
             }}
+            onTouchMove={(event) => {
+              const s = touchStartPosRef.current, t = event.touches[0]
+              if (s && t && (Math.abs(t.clientX - s.x) > 10 || Math.abs(t.clientY - s.y) > 10)) clearLongPressTimer() // 移动超10px取消长按
+            }}
+            onTouchEnd={clearLongPressTimer}
+            onTouchCancel={clearLongPressTimer}
           >
             <User size={16} className="order-card__icon" />
             <span>{order.customerName || '未填写姓名'}</span>
@@ -168,10 +168,10 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           className="order-card__phone"
           onClick={(event) => { event.stopPropagation(); window.location.href = `tel:${order.phone}` }}
           onMouseDown={() => handleLongPressStart(order.phone)}
-          onMouseUp={handleLongPressEnd}
-          onMouseLeave={handleLongPressEnd}
+          onMouseUp={clearLongPressTimer}
+          onMouseLeave={clearLongPressTimer}
           onTouchStart={() => handleLongPressStart(order.phone)}
-          onTouchEnd={handleLongPressEnd}
+          onTouchEnd={clearLongPressTimer}
         >
           <Phone size={14} className="order-card__icon" />
           <span>{order.phone}</span>
@@ -182,10 +182,10 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           className="order-card__address"
           onClick={(event) => { event.stopPropagation(); window.open(`https://uri.amap.com/search?keyword=${encodeURIComponent(displayAddress)}&callnative=1`, '_blank') }}
           onMouseDown={() => handleLongPressStart(displayAddress)}
-          onMouseUp={handleLongPressEnd}
-          onMouseLeave={handleLongPressEnd}
+          onMouseUp={clearLongPressTimer}
+          onMouseLeave={clearLongPressTimer}
           onTouchStart={() => handleLongPressStart(displayAddress)}
-          onTouchEnd={handleLongPressEnd}
+          onTouchEnd={clearLongPressTimer}
         >
           <MapPin size={16} className="order-card__icon order-card__icon--top" />
           <span>{displayAddress}</span>
