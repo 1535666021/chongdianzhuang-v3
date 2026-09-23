@@ -4,6 +4,7 @@ export const DEFAULT_PACKAGE_METERS = 30
 import { costMaterials } from '@/constants/materialData'
 import { matchCostName } from '@/features/material/hooks/useCostMatcher'
 import { getCostMapping } from '@/shared/storage/costMappingStorage'
+import { BRAND_DEFAULTS } from '@/constants/brands'
 import type { Order } from '@/types'
 
 export const SERVICE_FEE: Record<string, number> = {
@@ -11,6 +12,14 @@ export const SERVICE_FEE: Record<string, number> = {
   维修: 60,
   勘察: 0,
   勘测: 0,
+}
+
+/** 解析订单减免套餐米数：优先订单解析值，其次品牌默认配置，兜底 0（无套餐全额计费） */
+export function resolveOrderPackageMeters(order: { brandName?: string; packageMeters?: string }): number {
+  const parsed = parseFloat(order.packageMeters || '')
+  if (!Number.isNaN(parsed) && parsed > 0) return parsed
+  const brandDefault = order.brandName ? BRAND_DEFAULTS[order.brandName]?.packageMeters : undefined
+  return brandDefault ?? 0
 }
 
 const GEELY_KEYWORDS = ['吉利', '银河', '极氪']

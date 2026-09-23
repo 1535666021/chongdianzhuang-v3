@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { calcOverFee, calcSurveyTotal, getOrderServiceFee } from '@/shared/utils/orderCalc'
+import { calcOverFee, calcSurveyTotal, getOrderServiceFee, resolveOrderPackageMeters } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
@@ -36,6 +36,13 @@ export function useSurvey(order: Order) {
     return mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))
   }
 
+  const calcCableCost = (name: string, distance: number) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    if (!mat) return 0
+    const { overFee } = calcOverFee(distance, resolveOrderPackageMeters(order), mat.settlementPrice)
+    return overFee
+  }
+
   const brandAddons = useMemo<Material[]>(() => {
     const usageCount = materialUsageCount
     const wanbangHit = isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
@@ -61,8 +68,10 @@ export function useSurvey(order: Order) {
       unitPrice: m.unitPrice,
       isCable: isCableMat(m.name) || false,
     }))
-    return calcSurveyTotal(items, form.estimatedCableCost)
-  }, [form.estimatedMaterials, form.estimatedCableCost])
+    const cableItem = form.estimatedMaterials.find((m) => isCableMat(m.name))
+    const cableCost = cableItem ? calcCableCost(cableItem.name, form.cableDistance || 0) : 0
+    return calcSurveyTotal(items, cableCost)
+  }, [form.estimatedMaterials, form.cableDistance, order])
 
   const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
@@ -98,13 +107,6 @@ export function useSurvey(order: Order) {
       estimatedMaterials: prev.estimatedMaterials.filter((m) => m.name !== name),
     }))
   }, [])
-
-  const calcCableCost = (name: string, distance: number) => {
-    const mat = addonMaterialsData.find((a) => a.name === name)
-    if (!mat) return 0
-    const { overFee } = calcOverFee(distance, mat.freeQuota || 0, mat.settlementPrice)
-    return overFee
-  }
 
   const updateForm = useCallback((updates: Partial<SurveyFormData>) => {
     setForm((prev) => {

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { DEFAULT_PACKAGE_METERS, getSettlementFee, getOrderPlatformFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
+import { getSettlementFee, getOrderPlatformFee, resolveOrderPackageMeters, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -46,16 +46,7 @@ export function useCompletion(orderId: string) {
   const stockOut = useInventoryStore((s) => s.stockOut)
   const recordMaterialUsage = useSettingsStore((s) => s.recordMaterialUsage)
 
-  const [packageMeters, setPackageMeters] = useState(() => {
-    if (order?.packageMeters) {
-      const pm = parseFloat(order.packageMeters)
-      if (!isNaN(pm) && pm > 0) return pm
-    }
-    if (order?.brandName && BRAND_DEFAULTS[order.brandName]?.packageMeters) {
-      return BRAND_DEFAULTS[order.brandName].packageMeters!
-    }
-    return DEFAULT_PACKAGE_METERS
-  })
+  const [packageMeters, setPackageMeters] = useState(() => resolveOrderPackageMeters(order ?? {}))
 
   const [form, setForm] = useState<CompletionFormData>({
     completeDate: new Date().toISOString().slice(0, 10),

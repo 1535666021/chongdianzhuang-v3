@@ -9,7 +9,7 @@ import { X } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
-import { calcOverFee, DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
+import { calcOverFee, resolveOrderPackageMeters } from '@/shared/utils/orderCalc'
 import { SurveyProfitPreview } from './SurveyProfitPreview'
 import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
@@ -55,10 +55,12 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     return mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))
   }
 
+  const orderPackageMeters = resolveOrderPackageMeters(order)
+
   const calcCableDisplayFee = (name: string, distance: number) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
     if (!mat) return 0
-    return calcOverFee(distance, mat.freeQuota || DEFAULT_PACKAGE_METERS, mat.settlementPrice).overFee
+    return calcOverFee(distance, orderPackageMeters, mat.settlementPrice).overFee
   }
 
   const handleSave = () => {
@@ -81,8 +83,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
       for (const m of form.estimatedMaterials) {
         const mat = addonMaterialsData.find((a) => a.name === m.name)
         const short = mat ? getShortName(mat.name, mat.category) : m.name
-        const isCable = isCableMat(m.name), distance = form.cableDistance || 0, overMeters = Math.max(0, distance - (mat?.freeQuota || DEFAULT_PACKAGE_METERS))
-        const subtotal = isCable && mat ? form.estimatedCableCost || 0 : m.unitPrice * m.quantity
+        const isCable = isCableMat(m.name), distance = form.cableDistance || 0, overMeters = Math.max(0, distance - orderPackageMeters)
+        const subtotal = isCable && mat ? calcCableDisplayFee(m.name, distance) : m.unitPrice * m.quantity
         lines.push(isCable && mat
           ? `${short} ${distance}米（超${overMeters}米）× ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`
           : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`)
@@ -96,7 +98,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     lines.push(`勘测备注：${form.locationInfo || ''}`)
     lines.push(`以上勘测情况请您回复"确认"，谢谢`)
     return lines.join('\n')
-  }, [form, engineerName, engineerPhone, totalEstimatedCost])
+  }, [form, engineerName, engineerPhone, totalEstimatedCost, orderPackageMeters])
 
   const handleCopyReport = async () => {
     try {
