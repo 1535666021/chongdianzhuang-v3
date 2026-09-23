@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { calcOverFee, calcSurveyTotal, getOrderServiceFee, resolveOrderPackageMeters } from '@/shared/utils/orderCalc'
+import { calcOverFee, calcSurveyTotal, getOrderServiceFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
@@ -31,15 +31,17 @@ export function useSurvey(order: Order) {
   const platformRate = useSettingsStore((s) => s.getPlatformFeeRate(order.platform))
   const serviceFee = getOrderServiceFee(order)
 
+  // P0-103：万帮"线缆 X*Ymm²"行与电缆同口径（按布线距离超米计费），勘测/完工全链路同源
   const isCableMat = (name: string) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
-    return mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))
+    return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
   }
 
   const calcCableCost = (name: string, distance: number) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
-    if (!mat) return 0
-    const { overFee } = calcOverFee(distance, resolveOrderPackageMeters(order), mat.settlementPrice)
+    const unitPrice = mat?.settlementPrice ?? findWanbangMeteredCable(name)?.customerPrice
+    if (!unitPrice) return 0
+    const { overFee } = calcOverFee(distance, resolveOrderPackageMeters(order), unitPrice)
     return overFee
   }
 

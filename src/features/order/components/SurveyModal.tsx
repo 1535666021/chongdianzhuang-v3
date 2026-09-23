@@ -9,7 +9,7 @@ import { X } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
-import { calcOverFee, resolveOrderPackageMeters } from '@/shared/utils/orderCalc'
+import { calcOverFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
 import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { SurveyProfitPreview } from './SurveyProfitPreview'
 import { SurveyReportModal } from './SurveyReportModal'
@@ -21,7 +21,7 @@ interface SurveyModalProps {
 }
 
 const POWER_OPTIONS = ['国网取电', '物业配电', '自家电表', '其他'] as const
-const CABLE_SPECS = ['3*6', '3*10', '3*16', '4*6', '4*10', '5*6', '5*10', '5*16', '2*4', '2*6', '其他']
+const CABLE_SPECS = ['3*6', '3*10', '3*16', '4*6', '4*10', '5*6', '5*10', '5*16', '2*4', '2*6', '其他'] as const
 const INSTALL_OPTIONS = ['壁挂安装', '立柱安装', '吊装', '其他'] as const
 const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
 const BLUEPRINT_OPTIONS = ['是', '否'] as const
@@ -54,7 +54,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const isCableMat = (name: string) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
-    return mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))
+    return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
   }
 
   const orderPackageMeters = resolveOrderPackageMeters(order)

@@ -5,6 +5,7 @@ import { costMaterials } from '@/constants/materialData'
 import { matchCostName } from '@/features/material/hooks/useCostMatcher'
 import { getCostMapping } from '@/shared/storage/costMappingStorage'
 import { BRAND_DEFAULTS } from '@/constants/brands'
+import { WANBANG_GEELY_ADDON_PRICES } from '@/constants/addonPrice_wanbang_geely'
 import type { Order } from '@/types'
 
 export const SERVICE_FEE: Record<string, number> = {
@@ -174,8 +175,14 @@ export function buildAddonSummary(customerTotal: number, actualProfit: number) {
 
 const FREE_QUOTA_KEYWORDS = ['电缆', 'PVC', 'YJV', 'yjv']
 
+/** 万帮价表"按米线缆"条目（"线缆 3*6mm²"等：主表查无、名字不含电缆/YJV 的漏网命名；unit必须为米，排除按次的升级项） */
+export function findWanbangMeteredCable(name: string) {
+  const item = WANBANG_GEELY_ADDON_PRICES.find((a) => a.name === name)
+  return item && item.category === '线缆铺设' && item.unit === '米' ? item : null
+}
+
 export function isFreeQuotaMaterial(name: string) {
-  return FREE_QUOTA_KEYWORDS.some((k) => name.includes(k))
+  return FREE_QUOTA_KEYWORDS.some((k) => name.includes(k)) || !!findWanbangMeteredCable(name)
 }
 
 /** 漏保本体判定（别名：漏保/漏电保护器/漏保开关）：含"漏保/漏电保护"且非"漏保盒"（盒为安装辅材，厂家不提供） */
