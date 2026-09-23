@@ -90,6 +90,11 @@ function pickMeters(text: string): string {
   return m ? m[1] : '';
 }
 
+// P0-101：品牌取"服务品牌"字段优先（"吉利极氪20米"→吉利），该字段无品牌词才回退工单描述"品牌：XXX"
+function resolveWanbangBrand(kv: Map<string, string>, desc: Map<string, string>): string {
+  return extractBrandName(kv.get('服务品牌') || '') || desc.get('品牌') || '';
+}
+
 export function parseWanbangBlock(block: string): ParsedOrderItem {
   const item = emptyItem();
   const kv = collectKv(block);
@@ -106,7 +111,7 @@ export function parseWanbangBlock(block: string): ParsedOrderItem {
     if (found) item.vin = found[0];
   }
 
-  item.brandName = desc.get('品牌') || extractBrandName(kv.get('服务品牌') || '') || '';
+  item.brandName = resolveWanbangBrand(kv, desc);
   item.packageMeters = pickMeters(desc.get('套包类型') || '');
   const delivery = desc.get('配送方式') || '';
   if (delivery) item.serviceType = delivery;
@@ -123,6 +128,6 @@ export function parseWanbangBlock(block: string): ParsedOrderItem {
   if (!item.platformName) item.platformName = footer.platformName || '万帮';
   if (!item.appointmentDate) item.appointmentDate = footer.appointmentDate;
   if (!item.region) item.region = parseWanbangRegion(item.address);
-  if (!item.brandName) item.brandName = desc.get('品牌') || extractBrandName(kv.get('服务品牌') || '') || '';
+  if (!item.brandName) item.brandName = resolveWanbangBrand(kv, desc);
   return item;
 }
