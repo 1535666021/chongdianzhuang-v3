@@ -10,6 +10,7 @@ import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/mater
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
 import { calcOverFee, resolveOrderPackageMeters } from '@/shared/utils/orderCalc'
+import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { SurveyProfitPreview } from './SurveyProfitPreview'
 import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
@@ -143,7 +144,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowDropdown(!showDropdown)}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-white border rounded-lg text-sm"
+                      className="w-full flex items-center justify-between px-4 py-2 bg-white border rounded-lg text-sm"
                       style={{ borderRadius: '8px', borderColor: 'var(--color-border)' }}
                     >
                       <span style={{ color: 'var(--color-text-secondary)' }}>
@@ -373,6 +374,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               materials={form.estimatedMaterials}
               serviceFee={serviceFee}
               platformRate={platformRate}
+              geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
             />
           </div>
 
