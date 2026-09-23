@@ -9,6 +9,7 @@ import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
 import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
 import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
+import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
 
 // 导出全局 toast
 export { toast }
@@ -35,6 +36,7 @@ export default function App() {
     migrateData()
     const migratedOrders = migratePowerKw()
     if (migratedOrders) setOrders(migratedOrders)
+    runBrandBackfillOnce() // P0-102：品牌识别一次性回溯（标记幂等）
   }, [setOrders])
 
   useEffect(() => {
