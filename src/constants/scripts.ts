@@ -38,7 +38,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     scene: '勘测完成',
     content: `勘测完成时间：{{surveyDate}}
 勘测详情：{{installType}}
-勘测工程师及电话：{{installer}} / {{phone}}
+勘测工程师及电话：{{installer}} / {{engineerPhone}}
 用电方式：{{powerSource}}
 电表状态：{{meterStatus}}
 布线距离：{{cableDistance}} 米
@@ -59,7 +59,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     scene: '安装完成',
     content: `完工总结：已完成安装
 完工时间：{{completeDate}}
-品牌：{{platformBrand}}
+品牌：{{brand}}
 用户信息：{{customerName}}
 联系电话：{{phone}}
 地址：{{address}}
@@ -67,7 +67,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
 安装详情：{{installDetail}}
 使用电缆 {{actualCable}} 米。{{addonSummary}}
 安装工程师：{{installer}}
-电话：{{phone}}`,
+电话：{{engineerPhone}}`,
     variables: DEFAULT_SCRIPT_VARIABLES,
   },
   {
@@ -95,7 +95,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     scene: '上门前',
     content: `尊敬的理想车主您好，如我们所约{{appointmentDate}}{{timeSlot}}上门为您勘测
 安装工程师：{{installer}}
-电话：{{phone}}
+电话：{{engineerPhone}}
 预计{{appointmentDate}}{{timeSlot}}左右到达，请您知悉，如遇到堵车、交通意外或者其他突发情况我们会第一时间与您联系告知，若有任何问题，请随时联系我们`,
     variables: DEFAULT_SCRIPT_VARIABLES,
   },
@@ -127,7 +127,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
 客户姓名：{{customerName}}
 客户手机：{{phone}}
 安装城市：{{city}}
-品牌：{{platformBrand}}
+品牌：{{brand}}
 安装地址：{{address}}
 电源点性质：{{powerSource}}
 安装方式：{{installType}}
@@ -143,7 +143,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     content: `{{customerName}}您好，我是比亚迪充电桩安装工程师{{installer}}。
 预约时间：{{appointmentDate}} {{timeSlot}}
 安装地址：{{address}}
-联系电话：{{phone}}
+联系电话：{{engineerPhone}}
 费用说明：{{amount}}元（材料+人工+服务费）
 请提前准备：
 1. 车位使用证明
@@ -180,10 +180,10 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
 完工时间：{{completeDate}}
 客户：{{customerName}} {{phone}}
 地址：{{address}}
-品牌：{{platformBrand}}
+品牌：{{brand}}
 电缆用量：{{actualCable}}米
 {{addonSummary}}
-安装工程师：{{installer}} {{phone}}
+安装工程师：{{installer}} {{engineerPhone}}
 质保期：4年
 如有问题请随时联系，祝您用车愉快！`,
     variables: DEFAULT_SCRIPT_VARIABLES,
@@ -193,7 +193,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     brand: '小米',
     scene: '上门前',
     content: `{{customerName}}您好，小米充电桩安装服务。
-工程师：{{installer}}（{{phone}}）
+工程师：{{installer}}（{{engineerPhone}}）
 上门时间：{{appointmentDate}} {{timeSlot}}
 安装地点：{{address}}
 费用：{{amount}}元
@@ -232,10 +232,10 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
 安装时间：{{completeDate}}
 客户：{{customerName}} {{phone}}
 地址：{{address}}
-品牌：{{platformBrand}}
+品牌：{{brand}}
 电缆：{{actualCable}}米
 {{addonSummary}}
-工程师：{{installer}} {{phone}}
+工程师：{{installer}} {{engineerPhone}}
 质保4年，有问题随时联系！`,
     variables: DEFAULT_SCRIPT_VARIABLES,
   },
@@ -243,7 +243,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     id: 'lingpao-pre-visit',
     brand: '零跑',
     scene: '上门前',
-    content: `您好{{customerName}}，我是零跑充电桩安装工程师{{installer}}，电话{{phone}}。
+    content: `您好{{customerName}}，我是零跑充电桩安装工程师{{installer}}，电话{{engineerPhone}}。
 {{appointmentDate}}{{timeSlot}}前往{{address}}为您安装充电桩，请确保：
 1. 车位可正常进入
 2. 配电室有施工空间
@@ -279,7 +279,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     content: `{{customerName}}您好，零跑充电桩已安装完成！
 安装地址：{{address}}
 安装品牌：{{brand}}
-安装工程师：{{installer}} {{phone}}
+安装工程师：{{installer}} {{engineerPhone}}
 已完成项目：
 - 充电桩主机安装
 - 电缆敷设
@@ -297,7 +297,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     content: `{{customerName}}您好，充电桩安装预约提醒。
 预约时间：{{appointmentDate}} {{timeSlot}}
 安装地址：{{address}}
-工程师：{{installer}} {{phone}}
+工程师：{{installer}} {{engineerPhone}}
 请确保：
 1. 车位可用
 2. 配电室可进入
