@@ -362,7 +362,7 @@ export function useCompletion(orderId: string) {
     updateMaterialFrequency({
       ...order,
       status: '已完成',
-      materials: form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({ name: m.name, quantity: m.quantity, unitPrice: m.unitPrice })),
+      materials: form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({ name: m.name, quantity: m.quantity, unit: m.unit, unitPrice: m.settlementPrice })),
     })
     return true
   }, [order, orderId, form, profit, completeOrder, stockOut])

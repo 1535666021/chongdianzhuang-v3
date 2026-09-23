@@ -144,7 +144,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     <button
                       type="button"
                       onClick={() => setShowDropdown(!showDropdown)}
-                      className="w-full flex items-center justify-between px-4 py-2 bg-white border rounded-lg text-sm"
+                      className="w-full flex items-center justify-between px-3 py-2 bg-white border rounded-lg text-sm"
                       style={{ borderRadius: '8px', borderColor: 'var(--color-border)' }}
                     >
                       <span style={{ color: 'var(--color-text-secondary)' }}>
