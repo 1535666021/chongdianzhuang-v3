@@ -178,6 +178,11 @@ export function isFreeQuotaMaterial(name: string) {
   return FREE_QUOTA_KEYWORDS.some((k) => name.includes(k))
 }
 
+/** 漏保本体判定（别名：漏保/漏电保护器/漏保开关）：含"漏保/漏电保护"且非"漏保盒"（盒为安装辅材，厂家不提供） */
+export function isBreakerMaterial(name: string) {
+  return /漏电保护|漏保/.test(name) && !/盒/.test(name)
+}
+
 export function extractCableMeters(materials: Array<{ name: string; quantity: number }>) {
   const cable = materials.find((m) => m.name.includes('电缆') || m.name.includes('YJV') || m.name.includes('yjv'))
   return cable ? cable.quantity : 0

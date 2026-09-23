@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { CollapsePanel } from '@/shared/components/CollapsePanel'
 import { formatCurrency } from '@/shared/utils/format'
-import { calcMaterialCost, calcPlatformFee, calcProfit } from '@/shared/utils/orderCalc'
+import { calcMaterialCost, calcPlatformFee, calcProfit, isBreakerMaterial } from '@/shared/utils/orderCalc'
 import type { SurveyMaterialItem } from '../types/survey'
 import './SurveyProfitPreview.css'
 
@@ -11,6 +11,8 @@ interface SurveyProfitPreviewProps {
   materials: SurveyMaterialItem[]
   serviceFee: number
   platformRate: number
+  /** P0-100：吉利品牌单漏保厂家提供，预估材料成本剔除漏保行（客户价照列） */
+  geelyExemptBreaker?: boolean
 }
 
 export function SurveyProfitPreview({
@@ -18,9 +20,11 @@ export function SurveyProfitPreview({
   materials,
   serviceFee,
   platformRate,
+  geelyExemptBreaker = false,
 }: SurveyProfitPreviewProps) {
   const { customerReceivable, platformFee, materialCost, profit } = useMemo(() => {
-    const costResult = calcMaterialCost(materials)
+    const costMaterials = geelyExemptBreaker ? materials.filter((m) => !isBreakerMaterial(m.name)) : materials
+    const costResult = calcMaterialCost(costMaterials)
     const receivable = estimatedCost
     const fee = calcPlatformFee(estimatedCost, platformRate)
     return {
@@ -29,7 +33,7 @@ export function SurveyProfitPreview({
       materialCost: costResult.total,
       profit: calcProfit(receivable, costResult.total, fee, serviceFee),
     }
-  }, [estimatedCost, materials, platformRate, serviceFee])
+  }, [estimatedCost, materials, platformRate, serviceFee, geelyExemptBreaker])
 
   return (
     <CollapsePanel
