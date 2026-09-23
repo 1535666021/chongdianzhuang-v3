@@ -38,6 +38,11 @@ export function filterOrders(orders: Order[], filter?: OrderFilter): Order[] {
 function getSortValue(order: Order, sortBy: NonNullable<OrderFilter['sortBy']>) {
   if (sortBy === 'customerName') return order.customerName || ''
   if (sortBy === 'createdAt') return order.createdAt || 0
+  // P0-099：完工排序统一为时间戳比较；completeDate 为空的历史单回退 createdAt，不沉底不报错
+  if (sortBy === 'completeDate') {
+    const ts = Date.parse(order.completeDate || '')
+    return Number.isNaN(ts) ? order.createdAt || 0 : ts
+  }
   return order[sortBy] || ''
 }
 

@@ -19,7 +19,7 @@ import {
   MapPin,
   Calculator,
 } from 'lucide-react'
-import { APP_NAME, APP_VERSION } from '@/constants/common'
+import { APP_NAME, APP_VERSION, APP_BUILD_TIME } from '@/constants/common'
 import CostSheetManager from '../components/CostSheetManager'
 import ExtraItemManager from '../components/ExtraItemManager'
 import EngineerInfo from '../components/EngineerInfo'
@@ -117,6 +117,7 @@ export default function SettingsPage() {
             </div>
             <h3 className="text-lg font-bold text-gray-800">{APP_NAME}</h3>
             <button type="button" disabled={isChecking} onClick={handleVersionCheck} style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{isChecking ? '检测中...' : `版本 v${APP_VERSION}`}</button>
+            {APP_BUILD_TIME && <p className="text-xs text-gray-400">构建时间：{APP_BUILD_TIME}</p>}
             <p className="text-xs text-gray-400 mt-4">专为充电桩安装工打造</p>
           </div>
         )

@@ -13,7 +13,11 @@ export interface FilterState {
   sortOrder: NonNullable<OrderFilter['sortOrder']>
 }
 
-export function useFilterState(initialStatus: OrderStatus | 'all' = 'all', initialGroupMode: GroupMode = 'region') {
+export function useFilterState(
+  initialStatus: OrderStatus | 'all' = 'all',
+  initialGroupMode: GroupMode = 'region',
+  initialSortBy: NonNullable<OrderFilter['sortBy']> = 'createdAt',
+) {
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>(initialStatus)
   // P0-095：已完成页由调用方传入 'time'，首页/已预约默认 'region' 不变
   const [groupMode, setGroupMode] = useState<GroupMode>(initialGroupMode)
@@ -22,7 +26,8 @@ export function useFilterState(initialStatus: OrderStatus | 'all' = 'all', initi
   const [brand, setBrand] = useState<string | null>(null)
   const [platform, setPlatform] = useState<string | null>(null)
   const [keyword, setKeyword] = useState('')
-  const [sortBy, setSortBy] = useState<NonNullable<OrderFilter['sortBy']>>('createdAt')
+  // P0-099：已完成页由调用方传入 'completeDate'，其他 Tab 默认 'createdAt' 不变
+  const [sortBy, setSortBy] = useState<NonNullable<OrderFilter['sortBy']>>(initialSortBy)
   const [sortOrder, setSortOrder] = useState<NonNullable<OrderFilter['sortOrder']>>('desc')
   const prevModeRef = useRef<'region' | 'time'>(initialGroupMode === 'time' ? 'time' : 'region')
 

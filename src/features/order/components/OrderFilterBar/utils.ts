@@ -6,7 +6,7 @@ export { extractAreaTag }
 export const SORT_OPTIONS = [
   { value: 'createdAt', label: '按创建时间' },
   { value: 'appointmentDate', label: '按预约时间' },
-  { value: 'completeDate', label: '按完成时间' },
+  { value: 'completeDate', label: '按完工时间' },
   { value: 'customerName', label: '按客户姓名' },
 ] as const
 

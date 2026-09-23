@@ -14,10 +14,11 @@ export interface OrderFilterBarProps {
   orders: Order[]
   initialStatus?: OrderStatus | 'all'
   initialGroupMode?: GroupMode
+  initialSortBy?: NonNullable<OrderFilter['sortBy']>
   onFilterChange?: (filter: OrderFilter) => void
 }
 
-export default function OrderFilterBar({ orders, initialStatus = 'all', initialGroupMode = 'region', onFilterChange }: OrderFilterBarProps) {
+export default function OrderFilterBar({ orders, initialStatus = 'all', initialGroupMode = 'region', initialSortBy = 'createdAt', onFilterChange }: OrderFilterBarProps) {
   const {
     state,
     filter,
@@ -31,7 +32,7 @@ export default function OrderFilterBar({ orders, initialStatus = 'all', initialG
     setSortOrder,
     toggleDimension,
     toggleSmart,
-  } = useFilterState(initialStatus, initialGroupMode)
+  } = useFilterState(initialStatus, initialGroupMode, initialSortBy)
 
   const { tagCounts, typeCounts } = useTagCounts(orders, state)
 
