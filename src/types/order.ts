@@ -48,6 +48,16 @@ export interface Order extends BaseEntity {
   nature?: string
   /** 补桩状态（仅安装单）：needed=需补桩 / done=已补桩 */
   restockStatus?: 'needed' | 'done'
+  /** 结算编辑最后时间（完工单事后修改留痕） */
+  lastEditedAt?: number
+  /** 结算编辑次数 */
+  editCount?: number
+  /** 完工结算-电缆米数（编辑态回填用） */
+  completionCableMeters?: number
+  /** 完工结算-PVC米数 */
+  completionPvcMeters?: number
+  /** 完工结算-漏保型号 */
+  completionBreakerType?: string
 }
 export type GroupMode = 'region' | 'time' | 'smart'
 

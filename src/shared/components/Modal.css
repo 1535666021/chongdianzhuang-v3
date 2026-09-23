@@ -396,6 +396,4 @@ body.modal-open {
   white-space: pre-wrap;
 }
 
-.restock-qty {
-  flex: 0 0 72px;
-}
+.restock-qty { flex: 0 0 72px; }

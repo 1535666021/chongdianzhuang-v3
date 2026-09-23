@@ -20,7 +20,7 @@ import '../../../shared/components/OrderComplete.css'
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { order, form, profit, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, canApplyWanbangTemplate, applyWanbangAddonTemplate, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
+  const { order, form, profit, isEditMode, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, canApplyWanbangTemplate, applyWanbangAddonTemplate, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const settings = useSettingsStore()
   const toast = useToast()
@@ -42,7 +42,12 @@ export default function OrderComplete() {
   const handleSave = () => {
     updateOrder(order.id, { completionNotes: form.notes })
     if (save()) {
-      navigate('/completed')
+      toast.toast.success(isEditMode ? '结算已修改保存' : '完工已保存')
+      if (isEditMode) {
+        navigate(`/orders/${id}`)
+      } else {
+        navigate('/completed')
+      }
     }
   }
 
@@ -75,7 +80,7 @@ export default function OrderComplete() {
           <button onClick={() => navigate(-1)} className="order-complete__back">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="order-complete__title">标记完成</h1>
+          <h1 className="order-complete__title">{isEditMode ? '修改完工结算' : '标记完成'}</h1>
         </div>
 
         <div className="order-complete__content">
@@ -168,6 +173,48 @@ export default function OrderComplete() {
                 placeholder="完工备注（会带入话术，允许为空）"
                 rows={2}
                 className="order-complete__textarea"
+              />
+            </div>
+
+            <div className="order-complete__form-item">
+              <label className="order-complete__label">
+                <span>💰</span>
+                工资（元）
+              </label>
+              <input
+                type="number"
+                value={form.laborCost}
+                onChange={(e) => updateForm({ laborCost: parseFloat(e.target.value) || 0 })}
+                placeholder="安装工工资，从利润中扣除"
+                className="order-complete__input"
+              />
+            </div>
+
+            <div className="order-complete__form-item">
+              <label className="order-complete__label">
+                <span>🏢</span>
+                平台扣点（元）
+              </label>
+              <input
+                type="number"
+                value={form.platformFeeOverride ?? profit.platformFee}
+                onChange={(e) => updateForm({ platformFeeOverride: parseFloat(e.target.value) })}
+                placeholder="留空自动计算"
+                className="order-complete__input"
+              />
+            </div>
+
+            <div className="order-complete__form-item">
+              <label className="order-complete__label">
+                <span>🚗</span>
+                车企服务费（元）
+              </label>
+              <input
+                type="number"
+                value={form.serviceFeeOverride ?? profit.serviceFee}
+                onChange={(e) => updateForm({ serviceFeeOverride: parseFloat(e.target.value) })}
+                placeholder="留空自动计算"
+                className="order-complete__input"
               />
             </div>
           </div>
@@ -263,7 +310,7 @@ export default function OrderComplete() {
           {/* 确认按钮 */}
           <button onClick={handleSave} className="order-complete__btn order-complete__btn--primary">
             <CheckCircle size={18} />
-            确认完成
+            {isEditMode ? '保存修改' : '确认完成'}
           </button>
         </div>
       </div>

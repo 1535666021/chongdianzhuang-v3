@@ -108,6 +108,7 @@ export function ProfitPreview({ data, onRefresh }: Props) {
           <BreakdownLine label="平台扣点" amount={'-' + fmt(data.platformFee)} color="text-red-400" />
           <BreakdownLine label="车企服务费" amount={'+' + fmt(data.serviceFee)} color="text-blue-400" />
           <BreakdownLine label="材料成本" amount={'-' + fmt(data.materialCost)} color="text-orange-400" />
+          <BreakdownLine label="工资" amount={'-' + fmt(data.laborCost)} color="text-purple-400" />
           <div className="border-t border-dashed border-gray-200 pt-0.5">
             <BreakdownLine label="=" amount={fmt(data.actualProfit)} color={isProfit ? 'text-green-600 font-medium' : 'text-red-500 font-medium'} />
           </div>

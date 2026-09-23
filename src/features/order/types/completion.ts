@@ -37,6 +37,7 @@ export interface ProfitPreview {
   platformFee: number
   materialCost: number
   serviceFee: number
+  laborCost: number
   actualProfit: number
   breakdown: ProfitBreakdown
 }
@@ -47,5 +48,8 @@ export interface CompletionFormData {
   installer: string
   materials: MaterialInput[]
   fixedAux: FixedAuxInput
+  laborCost: number
+  platformFeeOverride?: number
+  serviceFeeOverride?: number
   notes: string
 }

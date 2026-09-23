@@ -270,7 +270,7 @@ export default function OrderDetail() {
             </button>
             {expandedSections.profit && (
               <div className="px-3 py-2 text-sm text-green-700 border-t border-green-200">
-                计算公式：客户应收 - 平台扣点 + 车企服务费 - 材料成本
+                计算公式：客户应收 - 平台扣点 + 车企服务费 - 材料成本 - 工资
               </div>
             )}
           </div>
@@ -332,6 +332,14 @@ export default function OrderDetail() {
         )}
         {order.status === '已完成' && (
           <div className="flex gap-2">
+            <button
+              onClick={() => navigate(`/order/complete/${id}`)}
+              className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg text-sm font-medium"
+              style={{ height: '48px' }}
+            >
+              <FileText size={16} />
+              修改结算
+            </button>
             <button
               onClick={handleEdit}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
