@@ -11,14 +11,27 @@ import type { Order } from '@/types'
  * 前缀排除 省/市/区/县 与空白字符，防止"博望区 丹阳镇"被误并为长名。
  */
 const AREA_TAG_STREET_RE = /([^\s省市区县]{2,8}?(?:镇|街道|乡))/
-/** 二级：XX区/县。前缀排除"市"字，"马鞍山市"类地级市不会命中 */
-const AREA_TAG_DISTRICT_RE = /([^\s省市]{2,8}?(?:区|县))/
+/**
+ * 二级：XX区/县（P0-099 收紧）。
+ * 前缀排除 省/市/空白/数字/字母/连字符：防"丰收佳苑3区"吃数字成垃圾组、
+ * 防"安徽省-马鞍山市-花山区"产出"-花山区"；"马鞍山市"类地级市不会命中。
+ * 后行断言排除"区小区/区社区"粘连场景。
+ */
+const AREA_TAG_DISTRICT_RE = /([^省市\s0-9A-Za-z\-]{2,8}?(?:区|县))(?!小区|社区)/
+
+/** 防御性剥除标签首尾非汉字字符（如连字符前缀） */
+function stripNonHanEdges(text: string): string {
+  return text.replace(/^[^一-龥]+/, '').replace(/[^一-龥]+$/, '')
+}
 
 /** 地址 → 片区标签：镇/街道/乡优先，其次区/县，均无命中归「其他」 */
 export function extractAreaTag(address: string): string {
   const street = address.match(AREA_TAG_STREET_RE)?.[1]
-  if (street) return street
-  return address.match(AREA_TAG_DISTRICT_RE)?.[1] || '其他'
+  if (street) return stripNonHanEdges(street) || '其他'
+  const district = stripNonHanEdges(address.match(AREA_TAG_DISTRICT_RE)?.[1] || '')
+  // "XX小区/XX社区"是住宅小区名而非行政区（如"江南人家小区"），归「其他」
+  if (district && !/(?:小区|社区)$/.test(district)) return district
+  return '其他'
 }
 
 /** 订单 → 时间维度分组标签：完工日期 > 预约日期 > 创建时间，取 YYYY-MM */

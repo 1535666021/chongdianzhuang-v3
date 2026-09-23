@@ -7,16 +7,22 @@ const appVersion = process.env.GITHUB_SHA?.slice(0, 7)
   || process.env.VITE_APP_VERSION
   || Date.now().toString()
 
+// P0-099：构建时间注入（"我的"页版本区块 + 启动日志）
+const appBuildTime = new Date().toLocaleString('zh-CN')
+
 export default defineConfig({
   base: './',
   define: {
     __APP_VERSION__: JSON.stringify(appVersion),
+    __APP_BUILD_TIME__: JSON.stringify(appBuildTime),
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(appVersion),
+    'import.meta.env.VITE_APP_BUILD_TIME': JSON.stringify(appBuildTime),
   },
   plugins: [
     react(),
     VitePWA({
       injectRegister: false,
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       strategies: 'injectManifest',
       srcDir: 'public',
       filename: 'sw.js',

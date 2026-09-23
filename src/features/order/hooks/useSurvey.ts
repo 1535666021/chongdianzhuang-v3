@@ -165,6 +165,7 @@ export function useSurvey(order: Order) {
     removeAddon,
     updateQuantity,
     totalEstimatedCost,
+    calcCableCost,
     serviceFee,
     platformRate,
     save,

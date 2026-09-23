@@ -12,6 +12,8 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll([...new Set([...STATIC_ASSETS, ...PRECACHE_ASSETS])]))
   )
+  // P0-099 autoUpdate：新 SW 安装完成立即激活，配合 activate 清旧缓存，重部署后打开即新版
+  self.skipWaiting()
 })
 
 self.addEventListener('activate', (event) => {

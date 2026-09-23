@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { backupLocalData } from '@/shared/storage/dataMigration'
 
-declare const __APP_VERSION__: string
-
 const CHECK_DATE_KEY = 'cdz_last_update_check'
 const VERSION_URL = `${import.meta.env.BASE_URL}version.json`
 
