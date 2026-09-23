@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { getSettlementFee, getOrderPlatformFee, resolveOrderPackageMeters, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
+import { getSettlementFee, getOrderPlatformFee, resolveOrderPackageMeters, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcProfit, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -174,7 +174,9 @@ export function useCompletion(orderId: string) {
     const breakerCostPrice: Record<string, number> = {
       'C25': 26.8, 'C40': 26.8, 'C40A': 46.5, '': 0,
     }
-    const breakerTypeCost = breakerCostPrice[form.fixedAux.breakerType] || 0
+    // P0-100：吉利品牌单漏保由厂家随车提供，安装方不承担漏保本体成本（判定单点 isWanbangGeelyOrder，禁止重写）
+    const geelyBreakerFree = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
+    const breakerTypeCost = geelyBreakerFree ? 0 : (breakerCostPrice[form.fixedAux.breakerType] || 0)
     const fixedCost =
       (form.fixedAux.cableMeters * (cable?.costPrice || 17.9)) +
       (form.fixedAux.pvcMeters * (pvc?.costPrice || 1)) +
@@ -182,7 +184,7 @@ export function useCompletion(orderId: string) {
       breakerTypeCost
 
     // 电缆、PVC 已由固定辅材按勘测距离计入，增项材料只累计其余项目。
-    const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name))
+    const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name) && !(geelyBreakerFree && isBreakerMaterial(m.name)))
     const { total: addonCost } = calcMaterialCost(chargeableMaterials)
     const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
 
@@ -248,18 +250,21 @@ export function useCompletion(orderId: string) {
     if (form.fixedAux.breakerType) {
       materialItems.push({
         name: '漏保',
-        calc: `漏保 ${form.fixedAux.breakerType} 1个 × ¥${breakerTypeCost}`,
+        calc: geelyBreakerFree
+          ? `漏保 ${form.fixedAux.breakerType} 1个（厂家提供）`
+          : `漏保 ${form.fixedAux.breakerType} 1个 × ¥${breakerTypeCost}`,
         amount: breakerTypeCost,
       })
     }
     for (const m of form.materials) {
       if (isFreeQuotaMaterial(m.name)) continue
-      const unitCost = resolveCostPrice(m.name)
+      const breakerFree = geelyBreakerFree && isBreakerMaterial(m.name)
+      const unitCost = breakerFree ? 0 : resolveCostPrice(m.name)
       const amount = Math.round(unitCost * m.quantity * 100) / 100
-      if (amount > 0) {
+      if (amount > 0 || breakerFree) {
         materialItems.push({
           name: m.name,
-          calc: `${m.name} ${m.quantity}${m.unit} × ¥${unitCost}`,
+          calc: breakerFree ? `${m.name} ${m.quantity}${m.unit}（厂家提供）` : `${m.name} ${m.quantity}${m.unit} × ¥${unitCost}`,
           amount,
           materialName: m.name,
         })
@@ -357,7 +362,7 @@ export function useCompletion(orderId: string) {
     updateMaterialFrequency({
       ...order,
       status: '已完成',
-      materials: form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({ name: m.name, quantity: m.quantity, unit: m.unit, unitPrice: m.settlementPrice })),
+      materials: form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({ name: m.name, quantity: m.quantity, unitPrice: m.unitPrice })),
     })
     return true
   }, [order, orderId, form, profit, completeOrder, stockOut])
