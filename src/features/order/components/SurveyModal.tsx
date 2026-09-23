@@ -31,6 +31,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     form, brandList, brandAddons,
     selectedBrand, setSelectedBrand,
     updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
+    calcCableCost,
     serviceFee, platformRate, save,
   } = useSurvey(order)
 
@@ -57,12 +58,6 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const orderPackageMeters = resolveOrderPackageMeters(order)
 
-  const calcCableDisplayFee = (name: string, distance: number) => {
-    const mat = addonMaterialsData.find((a) => a.name === name)
-    if (!mat) return 0
-    return calcOverFee(distance, orderPackageMeters, mat.settlementPrice).overFee
-  }
-
   const handleSave = () => {
     save()
     updateOrder(order.id, { surveyNote })
@@ -83,10 +78,12 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
       for (const m of form.estimatedMaterials) {
         const mat = addonMaterialsData.find((a) => a.name === m.name)
         const short = mat ? getShortName(mat.name, mat.category) : m.name
-        const isCable = isCableMat(m.name), distance = form.cableDistance || 0, overMeters = Math.max(0, distance - orderPackageMeters)
-        const subtotal = isCable && mat ? calcCableDisplayFee(m.name, distance) : m.unitPrice * m.quantity
-        lines.push(isCable && mat
-          ? `${short} ${distance}米（超${overMeters}米）× ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`
+        // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
+        const isCable = isCableMat(m.name), distance = form.cableDistance || 0
+        const over = isCable && mat ? calcOverFee(distance, orderPackageMeters, mat.settlementPrice) : null
+        const subtotal = over ? over.overFee : m.unitPrice * m.quantity
+        lines.push(over
+          ? `${short} ${distance}米（超${over.overMeters}米）× ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`
           : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`)
       }
       lines.push('')
@@ -203,8 +200,9 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     <div className="modal-material-list">
                       {form.estimatedMaterials.map((m) => {
                         const isCable = isCableMat(m.name)
+                        // P0-099：材料行超米费与预估费用同一函数同一输入（form.cableDistance），天然相等
                         const displayFee = isCable
-                          ? calcCableDisplayFee(m.name, m.quantity)
+                          ? calcCableCost(m.name, form.cableDistance || 0)
                           : (m.quantity || 0) * m.unitPrice
                         return (
                           <div

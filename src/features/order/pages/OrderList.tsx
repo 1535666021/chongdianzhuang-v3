@@ -26,7 +26,8 @@ export default function OrderList({ fixedStatus }: Props) {
   const initialStatus: OrderStatus | 'all' =
     fixedStatus === '待办' || fixedStatus === '已预约' || fixedStatus === '已完成' ? fixedStatus : 'all'
   const [filter, setFilter] = useState<OrderFilter>({
-    sortBy: 'createdAt',
+    // P0-099：已完成页首帧即按完工时间倒序，与 OrderFilterBar 初始值一致；其他 Tab 创建时间不变
+    sortBy: fixedStatus === '已完成' ? 'completeDate' : 'createdAt',
     sortOrder: 'desc',
     status: initialStatus === 'all' ? undefined : initialStatus,
     // P0-095：已完成页首帧即按时间分组，与 OrderFilterBar 初始值一致
@@ -110,6 +111,7 @@ export default function OrderList({ fixedStatus }: Props) {
         orders={allOrders}
         initialStatus={initialStatus}
         initialGroupMode={fixedStatus === '已完成' ? 'time' : 'region'}
+        initialSortBy={fixedStatus === '已完成' ? 'completeDate' : 'createdAt'}
         onFilterChange={setFilter}
       />
 
