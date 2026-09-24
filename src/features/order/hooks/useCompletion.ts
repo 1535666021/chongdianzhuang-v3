@@ -7,7 +7,7 @@ import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_PRICES, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
-import { BRAND_DEFAULTS, BREAKER_NAMES } from '@/constants/brands'
+import { BRAND_DEFAULTS, BREAKER_NAMES, DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitBreakdownItem, ProfitPreview, CompletionFormData } from '../types/completion'
 
@@ -22,7 +22,8 @@ function findCostMaterial(name: string) {
 function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'] {
   if (!order) return ''
   const brand = order.brandName || ''
-  const power = (order.powerKw || '').toString()
+  // P0-112：吉利系功率为空→默认7kW（常量brands.ts，判定复用isWanbangGeelyOrder）；有真实功率一律不动
+  const power = (order.powerKw || (isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText) ? DEFAULT_GEELY_POWER_KW : '')).toString()
   for (const [key, cfg] of Object.entries(BRAND_DEFAULTS)) {
     if (brand.includes(key)) {
       if (cfg.powerBreakers) {

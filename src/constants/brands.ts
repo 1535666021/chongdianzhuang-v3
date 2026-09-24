@@ -25,6 +25,9 @@ export function getBrandLabel(brand: string | undefined): string {
   return BRAND_MAP[value] || BRAND_MAP[value.toLowerCase() === 'icar' ? 'iCAR' : value] || value || '未知'
 }
 
+// P0-112：吉利系（吉利/银河/极氪，判定单点 isWanbangGeelyOrder）功率为空时的默认值
+export const DEFAULT_GEELY_POWER_KW = '7'
+
 export const BRAND_DEFAULTS: Record<string, BrandConfig> = {
   '零跑': { packageMeters: 30, breakerType: 'C40A' },
   '空灵零跑': { packageMeters: 30, breakerType: 'C40A' },

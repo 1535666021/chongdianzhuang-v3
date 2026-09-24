@@ -1,6 +1,6 @@
 /* ============================================================
  * 分组标签提取（P0-095 下沉自 useOrderList.ts，计算集中化）
- * extractAreaTag：地址 → 片区标签（镇/街道/乡 → 区/县 → 其他）
+ * extractAreaTag：地址 → 片区标签（P0-112：区/县 → 街道/镇 → 其他）
  * extractTimeTag：订单 → 月份标签（完工 > 预约 > 创建，YYYY-MM）
  * ============================================================ */
 
@@ -24,13 +24,13 @@ function stripNonHanEdges(text: string): string {
   return text.replace(/^[^一-龥]+/, '').replace(/[^一-龥]+$/, '')
 }
 
-/** 地址 → 片区标签：镇/街道/乡优先，其次区/县，均无命中归「其他」 */
+/** 地址 → 片区标签：P0-112区/县优先（甲方裁定，如花山区优先于解放路街道），无区/县再街道/镇，均无归「其他」 */
 export function extractAreaTag(address: string): string {
-  const street = address.match(AREA_TAG_STREET_RE)?.[1]
-  if (street) return stripNonHanEdges(street) || '其他'
   const district = stripNonHanEdges(address.match(AREA_TAG_DISTRICT_RE)?.[1] || '')
   // "XX小区/XX社区"是住宅小区名而非行政区（如"江南人家小区"），归「其他」
   if (district && !/(?:小区|社区)$/.test(district)) return district
+  const street = address.match(AREA_TAG_STREET_RE)?.[1]
+  if (street) return stripNonHanEdges(street) || '其他'
   return '其他'
 }
 
