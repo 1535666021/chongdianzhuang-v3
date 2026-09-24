@@ -13,8 +13,10 @@ export function useTagCounts(orders: Order[], state: FilterState) {
       keyword: state.keyword || undefined,
     }
     const base = filterOrders(orders, baseFilter)
-    return extractRegionTags(base, state.groupMode === 'time' ? 'time' : 'region')
-  }, [orders, state.statusFilter, state.groupMode, state.installType, state.brand, state.platform, state.keyword])
+    // P0-108-R1：标签区固定区域维度（镇/街道→区/县，extractAreaTag取数），
+    // 与按时间/按区域分组切换完全解耦；月份标签不再出现在标签区
+    return extractRegionTags(base, 'region')
+  }, [orders, state.statusFilter, state.installType, state.brand, state.platform, state.keyword])
 
   const typeCounts = useMemo(() => {
     const baseFilter: OrderFilter = {
