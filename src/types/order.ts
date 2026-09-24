@@ -44,6 +44,8 @@ export interface Order extends BaseEntity {
   rawText?: string
   installType?: InstallType
   surveyNote?: string
+  /** P0-114：勘测实收金额（空=按预估费用计算；有值=按实收计算，仅作用客户侧） */
+  surveyActualReceive?: number
   completionNotes?: string
   nature?: string
   /** 补桩状态（仅安装单）：needed=需补桩 / done=已补桩 */

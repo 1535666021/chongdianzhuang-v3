@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import type { Order } from '@/types'
-import { useSurvey } from '../hooks/useSurvey'
+import { resolveSurveyFinalFee, validateSurveyActualReceive, useSurvey } from '../hooks/useSurvey'
 import { getShortName } from '../utils/surveyUtils'
 import { addonMaterialsData } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -39,6 +39,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const [showDropdown, setShowDropdown] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [surveyNote, setSurveyNote] = useState(order.surveyNote || '')
+  // P0-114：实收（空=按预估），重开弹窗自动带入已保存值
+  const [actualReceive, setActualReceive] = useState(order.surveyActualReceive != null ? String(order.surveyActualReceive) : '')
   const toast = useToast()
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const engineerName = useSettingsStore((s) => s.engineerName)
@@ -59,9 +61,18 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
 
   const orderPackageMeters = resolveOrderPackageMeters(order)
 
+  // P0-114：客户应收口径——实收空=预估费用（既有公式不动），有值=实收；同屏同源单一变量
+  const finalFee = resolveSurveyFinalFee(actualReceive, totalEstimatedCost)
+
   const handleSave = () => {
+    const err = validateSurveyActualReceive(actualReceive)
+    if (err) {
+      toast.toast.error(err)
+      return
+    }
     save()
-    updateOrder(order.id, { surveyNote })
+    const t = actualReceive.trim()
+    updateOrder(order.id, { surveyNote, surveyActualReceive: t === '' ? undefined : Number(t) })
     onClose()
   }
 
@@ -88,7 +99,11 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
           : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ¥${subtotal.toFixed(2)}`)
       }
       lines.push('')
-      lines.push(`预计增项合计：¥${totalEstimatedCost.toFixed(2)}元（以实际使用为准）`)
+      // P0-114：话术含费用处按实收口径——实收有值时合计=实收并标注预估
+      const ar = actualReceive.trim()
+      lines.push(ar !== '' && Number(ar) > 0
+        ? `预计增项合计：¥${finalFee.toFixed(2)}元（实收，预估¥${totalEstimatedCost.toFixed(2)}元）（以实际使用为准）`
+        : `预计增项合计：¥${finalFee.toFixed(2)}元（以实际使用为准）`)
     }
     lines.push(`物业需要施工方案图：${form.needBlueprint}`)
     lines.push(`勘测结果：${form.surveyResult}`)
@@ -96,7 +111,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     lines.push(`勘测备注：${form.locationInfo || ''}`)
     lines.push(`以上勘测情况请您回复"确认"，谢谢`)
     return lines.join('\n')
-  }, [form, engineerName, engineerPhone, totalEstimatedCost, orderPackageMeters])
+  }, [form, engineerName, engineerPhone, totalEstimatedCost, orderPackageMeters, actualReceive, finalFee])
 
   const handleCopyReport = async () => {
     try {
@@ -376,6 +391,27 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               platformRate={platformRate}
               geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
             />
+          </div>
+
+          {/* P0-114：实收编辑行——框前"实收"二字，默认空，空=按上方预估费用计算；填入=按实收计算并保存 */}
+          <div className="modal-section" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>实收</span>
+              <input
+                type="number"
+                value={actualReceive}
+                onChange={(e) => setActualReceive(e.target.value)}
+                className="modal-input"
+                placeholder="空=按预估"
+                min={0}
+                style={{ flex: 1 }}
+              />
+              {finalFee !== totalEstimatedCost && (
+                <span style={{ fontSize: '13px', color: 'var(--color-primary)', whiteSpace: 'nowrap' }}>
+                  应收按 ¥{finalFee.toFixed(2)} 计
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="modal-footer">

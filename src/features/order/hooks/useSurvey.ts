@@ -9,6 +9,24 @@ import type { Material } from '@/types/material'
 import type { Order } from '@/types'
 import type { SurveyFormData, SurveyMaterialItem } from '../types/survey'
 
+/** P0-114：勘测实收口径——空=按预估；有值=按实收（仅作用客户侧，成本/利润侧不受影响）。非法值保守回退预估。 */
+export function resolveSurveyFinalFee(actualReceiveInput: string, estimatedFee: number): number {
+  const t = (actualReceiveInput || '').trim()
+  if (t === '') return estimatedFee
+  const v = Number(t)
+  return Number.isFinite(v) && v > 0 ? v : estimatedFee
+}
+
+/** P0-114：实收校验——null=合法（空或正数）；否则返回错误信息（拦截0/负数/非数字），保存前调用 */
+export function validateSurveyActualReceive(input: string): string | null {
+  const t = (input || '').trim()
+  if (t === '') return null
+  const v = Number(t)
+  if (!Number.isFinite(v)) return '实收金额格式不正确'
+  if (v <= 0) return '实收金额必须大于0，请清空或填写正数'
+  return null
+}
+
 export function useSurvey(order: Order) {
   const updateOrder = useOrderStore((s) => s.updateOrder)
 
