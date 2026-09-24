@@ -32,7 +32,8 @@ export default function OrderList({ fixedStatus }: Props) {
     sortOrder: 'desc',
     status: initialStatus === 'all' ? undefined : initialStatus,
     // P0-095：已完成页首帧即按时间分组，与 OrderFilterBar 初始值一致
-    groupMode: fixedStatus === '已完成' ? 'time' : undefined,
+    // P0-108：全部Tab首帧默认按时间分组（甲方指示），已完成本已是time不变
+    groupMode: 'time',
   })
   const [showCount, setShowCount] = useState(50)
   const [resetKey, setResetKey] = useState(0)
@@ -111,7 +112,7 @@ export default function OrderList({ fixedStatus }: Props) {
         key={resetKey}
         orders={allOrders}
         initialStatus={initialStatus}
-        initialGroupMode={fixedStatus === '已完成' ? 'time' : 'region'}
+        initialGroupMode="time"
         initialSortBy={fixedStatus === '已完成' ? 'completeDate' : fixedStatus === '已预约' ? 'appointmentDate' : 'businessTime'}
         onFilterChange={setFilter}
       />
