@@ -70,7 +70,7 @@ export interface OrderFilter {
   keyword?: string
   installType?: InstallType | null
   brand?: string | null
-  sortBy?: 'createdAt' | 'appointmentDate' | 'completeDate' | 'customerName'
+  sortBy?: 'createdAt' | 'appointmentDate' | 'completeDate' | 'customerName' | 'businessTime'
   sortOrder?: 'asc' | 'desc'
   groupMode?: GroupMode
 }

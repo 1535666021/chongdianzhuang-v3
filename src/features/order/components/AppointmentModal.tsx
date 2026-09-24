@@ -11,9 +11,15 @@ interface Props {
 
 const TIME_SLOTS = ['上午', '下午'] as const
 
+/** P0-106：本地时区当日 YYYY-MM-DD（禁用UTC toISOString——北京时间0-8点会跨日偏差一天） */
+function getTodayLocal(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function AppointmentModal({ order, onClose }: Props) {
   const updateOrder = useOrderStore((s) => s.updateOrder)
-  const [date, setDate] = useState(order.appointmentDate || new Date().toISOString().slice(0, 10))
+  const [date, setDate] = useState(order.appointmentDate || getTodayLocal())
   const [time, setTime] = useState<string>(order.appointmentTime || '')
   const [note, setNote] = useState(order.appointmentNote || '')
 

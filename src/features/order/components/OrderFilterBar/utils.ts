@@ -4,6 +4,8 @@ import { extractAreaTag, extractTimeTag } from '@/shared/utils/groupTags'
 export { extractAreaTag }
 
 export const SORT_OPTIONS = [
+  // P0-106：默认项——业务时间混排（预约>完工>创建），首页全部Tab首帧即选中
+  { value: 'businessTime', label: '按业务时间' },
   { value: 'createdAt', label: '按创建时间' },
   { value: 'appointmentDate', label: '按预约时间' },
   { value: 'completeDate', label: '按完工时间' },

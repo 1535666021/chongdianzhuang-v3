@@ -38,12 +38,25 @@ export function filterOrders(orders: Order[], filter?: OrderFilter): Order[] {
 function getSortValue(order: Order, sortBy: NonNullable<OrderFilter['sortBy']>) {
   if (sortBy === 'customerName') return order.customerName || ''
   if (sortBy === 'createdAt') return order.createdAt || 0
+  // P0-106：业务时间混排（首页全部Tab默认口径）——预约>完工>创建 逐级回退，统一时间戳比较
+  if (sortBy === 'businessTime') {
+    const appt = Date.parse(order.appointmentDate || '')
+    if (!Number.isNaN(appt)) return appt
+    const done = Date.parse(order.completeDate || '')
+    if (!Number.isNaN(done)) return done
+    return order.createdAt || 0
+  }
+  // P0-106：预约排序空值回退创建时间（无预约单排尾部、按创建时间兜底）；今日置顶在 sortOrders
+  if (sortBy === 'appointmentDate') {
+    const ts = Date.parse(order.appointmentDate || '')
+    return Number.isNaN(ts) ? order.createdAt || 0 : ts
+  }
   // P0-099：完工排序统一为时间戳比较；completeDate 为空的历史单回退 createdAt，不沉底不报错
   if (sortBy === 'completeDate') {
     const ts = Date.parse(order.completeDate || '')
     return Number.isNaN(ts) ? order.createdAt || 0 : ts
   }
-  return order[sortBy] || ''
+  return ''
 }
 
 /** 排序：按 sortBy/sortOrder；预约时间排序时今日订单置顶 */
