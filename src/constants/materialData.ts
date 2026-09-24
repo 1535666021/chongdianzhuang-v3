@@ -15,9 +15,11 @@ import { addonMaterials_batch12 } from './addonMaterialData_batch12_领克_阿�
 import { addonMaterials_batch13 } from './addonMaterialData_batch13_长城_西安领充'
 import { addonMaterials_batch14 } from './addonMaterialData_batch14_广汽埃安_理想'
 import { WANBANG_GEELY_ADDON_MATERIALS } from './addonPrice_wanbang_geely'
+import { ZHIDA_WULING_ADDON_MATERIALS } from './addonPrice_zhida_wuling'
 
 export const addonMaterialsData: Material[] = [
   WANBANG_GEELY_ADDON_MATERIALS,
+  ZHIDA_WULING_ADDON_MATERIALS,
   addonMaterials_batch1,
   addonMaterials_batch2,
   addonMaterials_batch3,

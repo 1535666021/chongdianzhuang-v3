@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_PRICES, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
+import { isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { BRAND_DEFAULTS, BREAKER_NAMES, DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
 import type { Order } from '@/types'
@@ -229,6 +230,8 @@ export function useCompletion(orderId: string) {
   }, [])
 
   const canApplyWanbangTemplate = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
+  // P0-113：挚达/五菱单（与万帮判定互斥），增项候选走挚达价表
+  const isZhidaWuling = isZhidaWulingOrder(order?.brandName)
 
   const applyWanbangAddonTemplate = useCallback(() => {
     setForm((prev) => ({
@@ -387,6 +390,7 @@ export function useCompletion(orderId: string) {
     removeMaterial,
     updateFixedAux,
     canApplyWanbangTemplate,
+    isZhidaWuling,
     applyWanbangAddonTemplate,
     save,
     pendingCostBind,

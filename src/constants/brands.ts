@@ -29,6 +29,9 @@ export function getBrandLabel(brand: string | undefined): string {
 export const DEFAULT_GEELY_POWER_KW = '7'
 
 export const BRAND_DEFAULTS: Record<string, BrandConfig> = {
+  // P0-113：挚达/五菱套餐30米（3*6线缆30米内减免的兜底口径；服务费与米数无关不受影响）
+  '挚达': { packageMeters: 30 },
+  '五菱': { packageMeters: 30 },
   '零跑': { packageMeters: 30, breakerType: 'C40A' },
   '空灵零跑': { packageMeters: 30, breakerType: 'C40A' },
   '苏宁': { breakerType: 'C40A' },

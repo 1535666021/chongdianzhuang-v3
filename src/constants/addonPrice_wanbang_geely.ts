@@ -10,7 +10,7 @@ export interface AddonPriceItem {
   remark?: string
 }
 
-const CATEGORY_MAP: Record<string, { category: MaterialCategory; categoryCode: MaterialCategoryCode }> = {
+export const CATEGORY_MAP: Record<string, { category: MaterialCategory; categoryCode: MaterialCategoryCode }> = {
   服务: { category: '服务', categoryCode: 'SERVICE' },
   线缆铺设: { category: '线缆', categoryCode: 'CABLE' },
   开挖: { category: '路面', categoryCode: 'ROAD_OPEN' },

@@ -14,15 +14,20 @@ interface Props {
   onUpdateFixedAux: (updates: Partial<FixedAuxInput>) => void
   showWanbangTemplate?: boolean
   onApplyWanbangTemplate?: () => void
+  /** P0-113：挚达/五菱单候选列表仅显示挚达价表22项 */
+  showZhidaTemplate?: boolean
 }
 
-export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate }: Props) {
+export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
 
+  // P0-113：挚达/五菱单候选=挚达价表（brand键过滤，与万帮同模式）；两判定互斥（品牌词不重叠）
   const catalog = showWanbangTemplate
     ? addonMaterialsData.filter((m) => m.brand === '万帮吉利')
-    : addonMaterialsData
+    : showZhidaTemplate
+      ? addonMaterialsData.filter((m) => m.brand === '挚达/五菱')
+      : addonMaterialsData
   const filtered = searchQuery
     ? catalog.filter((m) => m.name.includes(searchQuery)).slice(0, 30)
     : catalog.slice(0, 20)

@@ -20,7 +20,7 @@ import '../../../shared/components/OrderComplete.css'
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { order, form, profit, isEditMode, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, canApplyWanbangTemplate, applyWanbangAddonTemplate, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
+  const { order, form, profit, isEditMode, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, canApplyWanbangTemplate, applyWanbangAddonTemplate, isZhidaWuling, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const settings = useSettingsStore()
   const toast = useToast()
@@ -262,6 +262,7 @@ export default function OrderComplete() {
               onUpdateFixedAux={updateFixedAux}
               showWanbangTemplate={canApplyWanbangTemplate}
               onApplyWanbangTemplate={applyWanbangAddonTemplate}
+              showZhidaTemplate={isZhidaWuling}
             />
           </div>
 

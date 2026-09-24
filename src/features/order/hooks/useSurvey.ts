@@ -4,6 +4,7 @@ import { calcOverFee, calcSurveyTotal, getOrderServiceFee, resolveOrderPackageMe
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
+import { ZHIDA_WULING_ADDON_MATERIALS, isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
 import type { Material } from '@/types/material'
 import type { Order } from '@/types'
 import type { SurveyFormData, SurveyMaterialItem } from '../types/survey'
@@ -48,9 +49,12 @@ export function useSurvey(order: Order) {
   const brandAddons = useMemo<Material[]>(() => {
     const usageCount = materialUsageCount
     const wanbangHit = isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
+    // P0-113：挚达/五菱单走挚达价表（与万帮互斥）
     const source = wanbangHit
       ? WANBANG_GEELY_ADDON_MATERIALS
-      : addonMaterialsData.filter((m) => {
+      : isZhidaWulingOrder(order.brandName)
+        ? ZHIDA_WULING_ADDON_MATERIALS
+        : addonMaterialsData.filter((m) => {
           if (!effectiveBrand) return false
           const b = m.brand || ''
           return b.includes(effectiveBrand) || effectiveBrand.includes(b)
