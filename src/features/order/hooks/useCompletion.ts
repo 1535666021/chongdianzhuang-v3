@@ -77,11 +77,10 @@ function buildReceivableItems(ctx: BreakdownCtx): { name: string; calc: string; 
 function buildMaterialItems(ctx: BreakdownCtx): ProfitBreakdownItem[] {
   const { fixedAux: f, packageMeters: pm } = ctx
   const items: ProfitBreakdownItem[] = []
-  const fmtCable = (label: string, meters: number, price: number) => pm > 0
-    ? `${label} ${meters}米（套餐内${pm}米免费，超${Math.max(0, meters - pm)}米）× ¥${price}/米`
-    : `${label} ${meters}米 × ¥${price}/米`
-  if (f.cableMeters > 0) items.push({ name: '电缆', calc: fmtCable('电缆', f.cableMeters, ctx.cableCostPrice), amount: ctx.cableCost })
-  if (f.pvcMeters > 0) items.push({ name: 'PVC', calc: fmtCable('PVC', f.pvcMeters, ctx.pvcCostPrice), amount: ctx.pvcCost })
+  // P0-109：成本侧文案同步——实际米数全额计价，不再显示套餐内免费
+  const fmtCost = (label: string, meters: number, price: number) => `${label} ${meters}米 × ¥${price}/米`
+  if (f.cableMeters > 0) items.push({ name: '电缆', calc: fmtCost('电缆', f.cableMeters, ctx.cableCostPrice), amount: ctx.cableCost })
+  if (f.pvcMeters > 0) items.push({ name: 'PVC', calc: fmtCost('PVC', f.pvcMeters, ctx.pvcCostPrice), amount: ctx.pvcCost })
   items.push({ name: '漏保盒', calc: `漏保盒 ${f.breakerCount}个 × ¥${ctx.breakerBoxPrice}`, amount: f.breakerCount * ctx.breakerBoxPrice })
   if (f.breakerType) {
     items.push({ name: '漏保', calc: ctx.geelyBreakerFree ? `漏保 ${f.breakerType} 1个（厂家提供）` : `漏保 ${f.breakerType} 1个 × ¥${ctx.breakerTypeCost}`, amount: ctx.breakerTypeCost })
@@ -276,9 +275,9 @@ export function useCompletion(orderId: string) {
     }
     const customerReceivable = addonReceivable + cableReceivable
 
-    // P0-104-A：电缆、PVC 成本同口径——超米才计成本，套餐内¥0
-    const { overFee: cableCost } = calcOverFee(form.fixedAux.cableMeters, packageMeters, cableCostPrice)
-    const { overFee: pvcCost } = calcOverFee(form.fixedAux.pvcMeters, packageMeters, pvcCostPrice)
+    // P0-109：成本侧按实际使用米数全额计价——成本/客户价两系统独立，套餐减免只作用客户应收侧
+    const cableCost = Math.round(form.fixedAux.cableMeters * cableCostPrice * 100) / 100
+    const pvcCost = Math.round(form.fixedAux.pvcMeters * pvcCostPrice * 100) / 100
     const fixedCost = cableCost + pvcCost + (form.fixedAux.breakerCount * (breaker?.costPrice || 5)) + breakerTypeCost
 
     // 增项材料成本：排除电缆/PVC（已由固定辅材计入），吉利单漏保成本归零
