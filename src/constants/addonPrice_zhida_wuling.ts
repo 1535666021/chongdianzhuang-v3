@@ -38,9 +38,16 @@ export const ZHIDA_WULING_ADDON_PRICES: AddonPriceItem[] = [
   { id: 'zw-22', name: '远程服务费', spec: '超30公里部分', unit: '公里', customerPrice: 4, category: '服务', remark: '30公里内免费' },
 ]
 
-/** 挚达/五菱订单判定（品牌键；品牌名为空不命中，平台词不作门槛） */
-export function isZhidaWulingOrder(brand?: string): boolean {
-  return /挚达|五菱/.test((brand || '').toLowerCase())
+/**
+ * 挚达平台·五菱品牌二维门槛判定（P0-113-R1，参照 isWanbangGeelyOrder 三参模式）。
+ * 口径：平台名含"挚达" 且 品牌名含"五菱" 才命中；
+ * 平台缺失/不命中 → 保守不命中，回退既有 brand 过滤分支（上汽通用五菱/西安领充五菱旧价表互不干扰）。
+ */
+export function isZhidaWulingOrder(brand?: string, platformName?: string, rawText?: string): boolean {
+  void rawText // 预留签名对齐，不做正文兜底（平台缺失一律保守回退）
+  const b = (brand || '').toLowerCase()
+  const p = (platformName || '').toLowerCase()
+  return /挚达/.test(p) && /五菱/.test(b)
 }
 
 export const ZHIDA_WULING_ADDON_MATERIALS: Material[] = ZHIDA_WULING_ADDON_PRICES.map((item) => {

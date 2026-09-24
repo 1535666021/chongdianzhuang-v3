@@ -231,7 +231,7 @@ export function useCompletion(orderId: string) {
 
   const canApplyWanbangTemplate = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
   // P0-113：挚达/五菱单（与万帮判定互斥），增项候选走挚达价表
-  const isZhidaWuling = isZhidaWulingOrder(order?.brandName)
+  const isZhidaWuling = isZhidaWulingOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
 
   const applyWanbangAddonTemplate = useCallback(() => {
     setForm((prev) => ({

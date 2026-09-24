@@ -52,11 +52,13 @@ export function useSurvey(order: Order) {
     // P0-113：挚达/五菱单走挚达价表（与万帮互斥）
     const source = wanbangHit
       ? WANBANG_GEELY_ADDON_MATERIALS
-      : isZhidaWulingOrder(order.brandName)
+      : isZhidaWulingOrder(order.brandName, order.platformName || order.platform, order.rawText)
         ? ZHIDA_WULING_ADDON_MATERIALS
         : addonMaterialsData.filter((m) => {
           if (!effectiveBrand) return false
           const b = m.brand || ''
+          // P0-113-R1：旧brand过滤分支排除挚达价表项——平台未命中挚达门槛时不得混入（验收④⑤⑥）
+          if (b === '挚达/五菱') return false
           return b.includes(effectiveBrand) || effectiveBrand.includes(b)
         })
     return [...source].sort((a, b) => {
