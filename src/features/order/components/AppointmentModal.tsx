@@ -19,7 +19,8 @@ function getTodayLocal(): string {
 
 export default function AppointmentModal({ order, onClose }: Props) {
   const updateOrder = useOrderStore((s) => s.updateOrder)
-  const [date, setDate] = useState(order.appointmentDate || getTodayLocal())
+  // P0-116-R1：按订单状态判定——已预约单改约保留原日期；待办/其他状态（含残留脏数据）一律默认当天系统日期
+  const [date, setDate] = useState(order.status === '已预约' ? order.appointmentDate : getTodayLocal())
   const [time, setTime] = useState<string>(order.appointmentTime || '')
   const [note, setNote] = useState(order.appointmentNote || '')
 
