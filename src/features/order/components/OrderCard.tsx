@@ -121,30 +121,30 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
         className={`order-card ${isToday ? 'order-card--today' : ''} ${isCompleted ? 'order-card--completed' : ''}`}
         data-status={order.status}
       >
-        {/* 第一行：姓名 + 状态 */}
-        <div className="order-card__header">
-          <div
-            className="order-card__name"
-            onClick={(event) => {
-              event.stopPropagation()
-              if (longPressFiredRef.current) { longPressFiredRef.current = false; return } // 长按已复制，跳过点按
-              void copyToClipboard(identityText, `已复制：${identityText}`)
-            }}
-            onMouseDown={() => handleLongPressStart(identityText)}
-            onMouseUp={clearLongPressTimer}
-            onMouseLeave={clearLongPressTimer}
-            onTouchStart={(event) => {
-              const t = event.touches[0]
-              if (t) touchStartPosRef.current = { x: t.clientX, y: t.clientY }
-              handleLongPressStart(identityText)
-            }}
-            onTouchMove={(event) => {
-              const s = touchStartPosRef.current, t = event.touches[0]
-              if (s && t && (Math.abs(t.clientX - s.x) > 10 || Math.abs(t.clientY - s.y) > 10)) clearLongPressTimer() // 移动超10px取消长按
-            }}
-            onTouchEnd={clearLongPressTimer}
-            onTouchCancel={clearLongPressTimer}
-          >
+        {/* 第一行：姓名 + 状态 —— P0-118：复制热区扩至整行（姓名+状态标签横条）；状态标签为纯展示无独立点击，随热区一并覆盖 */}
+        <div
+          className="order-card__header"
+          onClick={(event) => {
+            event.stopPropagation() // 防冒泡到卡片根onClick（不进详情）
+            if (longPressFiredRef.current) { longPressFiredRef.current = false; return } // 长按已复制，跳过点按
+            void copyToClipboard(identityText, `已复制：${identityText}`)
+          }}
+          onMouseDown={() => handleLongPressStart(identityText)}
+          onMouseUp={clearLongPressTimer}
+          onMouseLeave={clearLongPressTimer}
+          onTouchStart={(event) => {
+            const t = event.touches[0]
+            if (t) touchStartPosRef.current = { x: t.clientX, y: t.clientY }
+            handleLongPressStart(identityText)
+          }}
+          onTouchMove={(event) => {
+            const s = touchStartPosRef.current, t = event.touches[0]
+            if (s && t && (Math.abs(t.clientX - s.x) > 10 || Math.abs(t.clientY - s.y) > 10)) clearLongPressTimer() // 移动超10px取消长按
+          }}
+          onTouchEnd={clearLongPressTimer}
+          onTouchCancel={clearLongPressTimer}
+        >
+          <div className="order-card__name">
             <User size={16} className="order-card__icon" />
             <span>{order.customerName || '未填写姓名'}</span>
           </div>
