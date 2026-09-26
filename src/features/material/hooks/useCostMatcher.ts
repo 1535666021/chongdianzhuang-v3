@@ -1,4 +1,4 @@
-import { costMaterials } from '@/constants/materialData'
+import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
 
 interface PresetRule {
   keywords: string[]
@@ -37,10 +37,10 @@ export function matchCostName(materialName: string): string | null {
 export function getCostPrice(materialName: string): number | null {
   const costName = matchCostName(materialName)
   if (!costName) return null
-  const costItem = costMaterials.find((m) => m.name === costName)
+  const costItem = getAllCostMaterials().find((m) => m.name === costName)
   return costItem?.costPrice ?? null
 }
 
 export function getCostMaterialList(): { name: string; costPrice: number }[] {
-  return costMaterials.map((m) => ({ name: m.name, costPrice: m.costPrice ?? 0 }))
+  return getAllCostMaterials().map((m) => ({ name: m.name, costPrice: m.costPrice ?? 0 }))
 }

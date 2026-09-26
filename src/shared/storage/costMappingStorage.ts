@@ -33,3 +33,8 @@ export function setCostMapping(materialName: string, costName: string): void {
 export function removeCostMapping(materialName: string): void {
   saveAll(loadAll().filter((m) => m.materialName !== materialName))
 }
+
+/** P0-126：删除成本材料时，清理映射表中所有指向该成本名的条目（绑定映射同步清理） */
+export function removeCostMappingsByCostName(costName: string): void {
+  saveAll(loadAll().filter((m) => m.costName !== costName))
+}

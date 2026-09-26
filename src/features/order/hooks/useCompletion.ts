@@ -4,7 +4,8 @@ import { getSettlementFee, getOrderPlatformFee, resolveOrderPackageMeters, isGee
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
-import { addonMaterialsData, costMaterials } from '@/constants/materialData'
+import { addonMaterialsData } from '@/constants/materialData'
+import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
 import { WANBANG_GEELY_ADDON_PRICES, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
@@ -17,7 +18,7 @@ function findAddonMaterial(name: string) {
 }
 
 function findCostMaterial(name: string) {
-  return costMaterials.find((m) => m.name === name)
+  return getAllCostMaterials().find((m) => m.name === name)
 }
 
 function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'] {
