@@ -75,19 +75,23 @@ export function UsageForm({ record, onClose }: Props) {
               value={name}
               onChange={(e) => { setName(e.target.value); setShowDropdown(true) }}
               onFocus={() => setShowDropdown(true)}
-              onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+              // P0-125：焦点落入下拉内部（点内部搜索框等）不关闭；否则150ms后关闭（兼容候选onMouseDown preventDefault点选路径）
+              onBlur={(e) => {
+                const rt = e.relatedTarget as HTMLElement | null
+                if (rt && rt.closest('.usage-dropdown')) return
+                setTimeout(() => setShowDropdown(false), 150)
+              }}
               placeholder="搜索或输入材料名称"
               className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
             />
             {showDropdown && (
-              <div className="absolute z-10 w-full bg-white border border-gray-200 rounded mt-1 max-h-40 overflow-y-auto shadow-lg">
+              <div className="usage-dropdown absolute z-10 w-full bg-white border border-gray-200 rounded mt-1 max-h-40 overflow-y-auto shadow-lg">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="搜索..."
                   className="w-full px-2 py-1.5 text-xs border-b border-gray-100"
-                  autoFocus
                 />
                 {filteredMaterials.map((mat) => (
                   <button
