@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Copy, RotateCcw, X } from 'lucide-react'
 import type { Order } from '@/types'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { toast } from '../../../shared/hooks/useToast'
 import { generateCompletionScript } from '../hooks/useScript'
 import '../../../shared/components/Modal.css'
 
@@ -20,11 +21,14 @@ export default function ScriptEditorModal({ order, onClose }: Props) {
 
   useEffect(() => setContent(initialScript), [initialScript])
 
+  // P0-123：复制成功→toast提示并自动关闭；失败→toast提示失败，弹窗保持打开、编辑内容保留供手动复制
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(content)
+      toast.success('复制成功')
+      onClose()
     } catch {
-      // 浏览器权限限制时保持编辑内容，用户可手动复制。
+      toast.error('复制失败，请长按选择手动复制')
     }
   }
 
