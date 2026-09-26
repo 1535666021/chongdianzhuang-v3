@@ -4,7 +4,7 @@ import { getSettlementFee, getOrderPlatformFee, resolveOrderPackageMeters, isGee
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
-import { addonMaterialsData } from '@/constants/materialData'
+import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
 import { WANBANG_GEELY_ADDON_PRICES, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
@@ -14,7 +14,7 @@ import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitBreakdownItem, ProfitPreview, CompletionFormData } from '../types/completion'
 
 function findAddonMaterial(name: string) {
-  return addonMaterialsData.find((m) => m.name === name)
+  return getAllAddonMaterials().find((m) => m.name === name)
 }
 
 function findCostMaterial(name: string) {

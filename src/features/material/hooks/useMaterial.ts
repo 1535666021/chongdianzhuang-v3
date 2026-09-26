@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react'
 import type { Material, MaterialUsageRecord } from '@/types'
 import { useMaterialStore } from '@/stores/materialStore'
 import { isCustomCostMaterial } from '@/shared/utils/costMaterialsResolver'
+import { isCustomAddonMaterial } from '@/shared/utils/addonMaterialsResolver'
 import { costMaterials, addonMaterialsData } from '@/constants/materialData'
 
 const FIXED_costMaterials: Material[] = costMaterials
@@ -47,20 +48,25 @@ export function useMaterial() {
   const materialsPool = useMaterialStore((st) => st.materials)
   const costMaterials = useMemo(() => mergeCostMaterials(storedMaterials, materialsPool), [storedMaterials, materialsPool])
 
+  // P0-128：增项572项按stored覆盖价格（既有覆盖制保留）+ custom_addon_新增项并入
   const addonMaterials = useMemo(() => {
-    return FIXED_ADDON_MATERIALS.map((m) => {
+    const base = FIXED_ADDON_MATERIALS.map((m) => {
       const stored = storedMaterials.find((s) => s.id === m.id)
       if (stored) {
         return {
           ...m,
           costPrice: stored.costPrice ?? m.costPrice,
+          settlementPrice: stored.settlementPrice ?? m.settlementPrice,
+          customerPrice: stored.customerPrice ?? m.customerPrice,
           freeQuota: stored.freeQuota ?? m.freeQuota,
           updatedAt: stored.updatedAt ?? m.updatedAt,
         }
       }
       return m
     })
-  }, [storedMaterials])
+    const customs = materialsPool.filter((s) => isCustomAddonMaterial(s.id))
+    return [...base, ...customs]
+  }, [storedMaterials, materialsPool])
 
   const updateCostPrice = useCallback(
     (id: string, price: number) => {

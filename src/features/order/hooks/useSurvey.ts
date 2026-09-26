@@ -5,6 +5,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { ZHIDA_WULING_ADDON_MATERIALS, isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
+import { getAllAddonMaterials, isCustomAddonMaterial } from '@/shared/utils/addonMaterialsResolver'
 import type { Material } from '@/types/material'
 import type { Order } from '@/types'
 import type { SurveyFormData, SurveyMaterialItem } from '../types/survey'
@@ -79,7 +80,14 @@ export function useSurvey(order: Order) {
           if (b === '挚达/五菱') return false
           return b.includes(effectiveBrand) || effectiveBrand.includes(b)
         })
-    return [...source].sort((a, b) => {
+    // P0-128：用户新增增项(custom_addon_)按品牌组并入候选（与订单平台/品牌同组才出现；通用分支放行未分组项）
+    const zhidaHitNow = isZhidaWulingOrder(order.brandName, order.platformName || order.platform, order.rawText)
+    const customTarget = wanbangHit ? '万帮吉利' : zhidaHitNow ? '挚达/五菱' : effectiveBrand
+    const sourceWithCustoms = [
+      ...source,
+      ...getAllAddonMaterials().filter((m) => isCustomAddonMaterial(m.id) && (m.brand === customTarget || (!wanbangHit && !zhidaHitNow && !m.brand))),
+    ]
+    return [...sourceWithCustoms].sort((a, b) => {
       const countA = usageCount[a.name] || 0
       const countB = usageCount[b.name] || 0
       if (countB !== countA) return countB - countA

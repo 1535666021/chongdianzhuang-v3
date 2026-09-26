@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { addonMaterialsData } from '@/constants/materialData'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
+import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
 import { isFreeQuotaMaterial } from '@/constants/package'
 import { DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import { Plus, Trash2, Search } from 'lucide-react'
@@ -26,11 +27,13 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
   const [showPicker, setShowPicker] = useState<number | null>(null)
 
   // P0-113：挚达/五菱单候选=挚达价表（brand键过滤，与万帮同模式）；两判定互斥（品牌词不重叠）
+  // P0-128：增项候选=resolver同源（含custom_addon_新增项）；品牌过滤逻辑保留
+  const allAddons = getAllAddonMaterials()
   const catalog = showWanbangTemplate
-    ? addonMaterialsData.filter((m) => m.brand === '万帮吉利')
+    ? allAddons.filter((m) => m.brand === '万帮吉利')
     : showZhidaTemplate
-      ? addonMaterialsData.filter((m) => m.brand === '挚达/五菱')
-      : addonMaterialsData
+      ? allAddons.filter((m) => m.brand === '挚达/五菱')
+      : allAddons
   const filtered = searchQuery
     ? catalog.filter((m) => m.name.includes(searchQuery)).slice(0, 30)
     : catalog.slice(0, 20)
