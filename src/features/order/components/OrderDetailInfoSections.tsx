@@ -1,5 +1,6 @@
 import { Calendar, ClipboardList, FileText } from 'lucide-react'
 import type { Order } from '@/types'
+import { adaptiveNameFontSize } from '../utils/surveyUtils'
 
 export function OrderDetailInfoSections({ order }: { order: Order }) {
   return (
@@ -40,7 +41,7 @@ function SurveyDetail({ survey }: { survey: NonNullable<Order['survey']> }) {
           <div>
             预估材料:
             <div className="mt-1 space-y-1">
-              {survey.estimatedMaterials.map((material, index) => <div key={index} className="text-xs text-gray-600">{material.name} {material.spec ? `(${material.spec})` : ''} × {material.quantity}{material.unit}</div>)}
+              {survey.estimatedMaterials.map((material, index) => <div key={index} className="text-gray-600" style={{ fontSize: adaptiveNameFontSize(material.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>{material.name} {material.spec ? `(${material.spec})` : ''} × {material.quantity}{material.unit}</div>)}
             </div>
           </div>
         )}

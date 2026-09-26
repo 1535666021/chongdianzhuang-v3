@@ -3,6 +3,7 @@ import { addonMaterialsData, costMaterials } from '@/constants/materialData'
 import { isFreeQuotaMaterial } from '@/constants/package'
 import { DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import { Plus, Trash2, Search } from 'lucide-react'
+import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
 
 interface Props {
@@ -85,6 +86,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
               <input
                 type="text"
                 value={m.name}
+                style={{ fontSize: adaptiveNameFontSize(m.name) }}
                 onClick={() => setShowPicker(index)}
                 onChange={(e) => onUpdate(index, { name: e.target.value })}
                 placeholder="点击选择材料"
@@ -115,8 +117,8 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
                       onClick={() => selectMaterial(index, mat)}
                       className="w-full text-left text-xs px-2 py-1.5 hover:bg-gray-50 rounded flex justify-between"
                     >
-                      <span>{mat.name} {mat.brand || ''}</span>
-                      <span className="text-gray-400">¥{mat.settlementPrice}/{mat.unit}</span>
+                      <span style={{ minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(mat.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>{mat.name} {mat.brand || ''}</span>
+                      <span className="text-gray-400" style={{ flexShrink: 0 }}>¥{mat.settlementPrice}/{mat.unit}</span>
                     </button>
                   ))}
                   {filtered.length === 0 && <div className="text-xs text-gray-400 text-center py-2">无匹配</div>}

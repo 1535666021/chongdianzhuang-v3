@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import type { Order } from '@/types'
 import { resolveSurveyFinalFee, validateSurveyActualReceive, useSurvey } from '../hooks/useSurvey'
-import { getShortName } from '../utils/surveyUtils'
+import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import { addonMaterialsData } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useOrderStore } from '@/stores/orderStore'
@@ -89,7 +89,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
       lines.push(`预计增项辅材明细：`)
       for (const m of form.estimatedMaterials) {
         const mat = addonMaterialsData.find((a) => a.name === m.name)
-        const short = mat ? getShortName(mat.name, mat.category) : m.name
+        const short = mat ? mat.name : m.name
         // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
         const isCable = isCableMat(m.name), distance = form.cableDistance || 0
         const over = isCable && mat ? calcOverFee(distance, orderPackageMeters, mat.settlementPrice) : null
@@ -201,10 +201,10 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                                     }
                                   }}
                                 />
-                                <span style={{ color: 'var(--color-text-primary)' }}>
-                                  {getShortName(mat.name, mat.category)}
+                                <span style={{ color: 'var(--color-text-primary)', minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(mat.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>
+                                  {mat.name}
                                 </span>
-                                <span style={{ color: 'var(--color-text-aux)', fontSize: '12px' }}>¥{mat.settlementPrice}</span>
+                                <span style={{ color: 'var(--color-text-aux)', fontSize: '12px', flexShrink: 0 }}>¥{mat.settlementPrice}</span>
                               </label>
                             )
                           })
@@ -225,8 +225,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                             key={m.name}
                             className="modal-material-item"
                           >
-                            <span className="modal-material-name">
-                              {getShortName(m.name, addonMaterialsData.find(a=>a.name===m.name)?.category || '其他')}
+                            <span className="modal-material-name" style={{ minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(m.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>
+                              {m.name}
                             </span>
                             <span className="modal-material-price">¥{m.unitPrice}/m</span>
                             <input
