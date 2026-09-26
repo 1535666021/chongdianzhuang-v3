@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { addonMaterialsData, costMaterials } from '@/constants/materialData'
+import { addonMaterialsData } from '@/constants/materialData'
+import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
 import { isFreeQuotaMaterial } from '@/constants/package'
 import { DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import { Plus, Trash2, Search } from 'lucide-react'
+import { useMaterialStore } from '@/stores/materialStore'
 import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
 
@@ -45,11 +47,14 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
     setSearchQuery('')
   }
 
-  // 固定辅材
-  const cable = costMaterials.find((m) => m.name === '电缆')
-  const pvc = costMaterials.find((m) => m.name === 'PVC')
-  const breaker = costMaterials.find((m) => m.name === '漏保盒')
-  const getBreakerCost = (type: string) => costMaterials.find(m => m.name === type)?.costPrice || 0
+  // P0-126-R1：成本材料候选=resolver同源（含custom_cost_新增项）；订阅store即时重渲染
+  useMaterialStore((st) => st.materials)
+  const allCostMaterials = getAllCostMaterials()
+  // 固定辅材：仍命中底表项（底表在数组前部，find先中；新增项重名不抢占）
+  const cable = allCostMaterials.find((m) => m.name === '电缆')
+  const pvc = allCostMaterials.find((m) => m.name === 'PVC')
+  const breaker = allCostMaterials.find((m) => m.name === '漏保盒')
+  const getBreakerCost = (type: string) => allCostMaterials.find(m => m.name === type)?.costPrice || 0
   const pkgMeters = DEFAULT_PACKAGE_METERS
 
   return (

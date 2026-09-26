@@ -1,10 +1,37 @@
 import { useCallback, useMemo } from 'react'
 import type { Material, MaterialUsageRecord } from '@/types'
 import { useMaterialStore } from '@/stores/materialStore'
+import { isCustomCostMaterial } from '@/shared/utils/costMaterialsResolver'
 import { costMaterials, addonMaterialsData } from '@/constants/materialData'
 
 const FIXED_costMaterials: Material[] = costMaterials
 const FIXED_ADDON_MATERIALS: Material[] = addonMaterialsData
+
+/**
+ * P0-126-R1：成本表合并输出（useMaterial真实数据源，可node直测）。
+ * 常量底表20项按storedMaterials覆盖价格（既有覆盖制保留）+ custom_cost_前缀新增项并入尾部。
+ * R1返工要点：UsageForm领用下拉(allMaterials)与MaterialPicker候选必须与 resolver 同源。
+ */
+export function mergeCostMaterials(storedMaterials: Material[], materialsPool: Material[]): Material[] {
+  const base = FIXED_costMaterials.map((m) => {
+    const stored = storedMaterials.find((s) => s.id === m.id)
+    if (stored) {
+      return {
+        ...m,
+        costPrice: stored.costPrice ?? m.costPrice,
+        settlementPrice: stored.settlementPrice ?? m.settlementPrice,
+        customerPrice: stored.customerPrice ?? m.customerPrice,
+        freeQuota: stored.freeQuota ?? m.freeQuota,
+        updatedAt: stored.updatedAt ?? m.updatedAt,
+      }
+    }
+    return m
+  })
+  const customs = materialsPool.filter((s) => isCustomCostMaterial(s.id))
+  return [...base, ...customs]
+}
+
+
 
 export function useMaterial() {
   const {
@@ -16,22 +43,9 @@ export function useMaterial() {
     deleteUsageRecord: storeDeleteUsage,
   } = useMaterialStore()
 
-  const costMaterials = useMemo(() => {
-    return FIXED_costMaterials.map((m) => {
-      const stored = storedMaterials.find((s) => s.id === m.id)
-      if (stored) {
-        return {
-          ...m,
-          costPrice: stored.costPrice ?? m.costPrice,
-          settlementPrice: stored.settlementPrice ?? m.settlementPrice,
-          customerPrice: stored.customerPrice ?? m.customerPrice,
-          freeQuota: stored.freeQuota ?? m.freeQuota,
-          updatedAt: stored.updatedAt ?? m.updatedAt,
-        }
-      }
-      return m
-    })
-  }, [storedMaterials])
+  // P0-126-R1：常量20项价格覆盖制保留 + custom_cost_新增项并入（同源即时生效）
+  const materialsPool = useMaterialStore((st) => st.materials)
+  const costMaterials = useMemo(() => mergeCostMaterials(storedMaterials, materialsPool), [storedMaterials, materialsPool])
 
   const addonMaterials = useMemo(() => {
     return FIXED_ADDON_MATERIALS.map((m) => {
