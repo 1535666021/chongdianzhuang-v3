@@ -61,10 +61,10 @@ export function CostDetail() {
             >
               <div>
                 <div className="text-sm font-medium text-gray-800">{item.customerName}</div>
-                <div className="text-xs text-gray-400">实际利润 {fmt(item.actualProfit)}</div>
+                <div className="text-xs text-red-500">材料扣款 {fmt(item.materialCost)}</div>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-red-500">-{fmt(item.materialCost)}</span>
+                <span className={`text-sm ${item.actualProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>{fmt(item.actualProfit)}</span>
                 {expandedId === item.orderId ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
               </div>
             </button>
