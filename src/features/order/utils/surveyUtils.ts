@@ -1,4 +1,5 @@
 import type { MaterialCategory } from '@/types/material'
+import { ZHIDA_WULING_ADDON_PRICES } from '@/constants/addonPrice_zhida_wuling'
 
 const CATEGORY_SHORT_MAP: Record<MaterialCategory, string> = {
   '线缆': '电缆',
@@ -42,6 +43,9 @@ const CATEGORY_SORT_ORDER: Record<string, number> = {
 
 export function getShortName(name: string, category: MaterialCategory): string {
   const n = name || ''
+  // P0-121：挚达/五菱价表泛称清零——22项原件名精确直显（置于最前，杜绝任何截短规则干扰；
+  // 精确匹配，旧价目材料名不重叠零误伤；含安装/自购安装费两形态同名可区分）
+  if (ZHIDA_WULING_ADDON_PRICES.some((p) => p.name === n)) return n
 
   // 线缆
   if (n.includes('3*6') || n.includes('3×6') || n.includes('3x6') || n.includes('3X6')) return '电缆3*6'
