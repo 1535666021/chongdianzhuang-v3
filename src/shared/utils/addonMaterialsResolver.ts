@@ -6,6 +6,7 @@
 import { addonMaterialsData } from '@/constants/materialData'
 import { useMaterialStore } from '@/stores/materialStore'
 import type { Material } from '@/types'
+import { getDeletedAddonIds } from '@/shared/storage/addonDeleteListStorage'
 
 export const CUSTOM_ADDON_PREFIX = 'custom_addon_'
 
@@ -16,5 +17,7 @@ export function isCustomAddonMaterial(id: string): boolean {
 export function getAllAddonMaterials(): Material[] {
   const stored = useMaterialStore.getState().materials
   const customs = stored.filter((s) => isCustomAddonMaterial(s.id))
-  return [...addonMaterialsData, ...customs]
+  // P0-129：底表删除名单过滤（被删底表项不进入任何计算/显示；常量文件零改动）
+  const deleted = getDeletedAddonIds()
+  return [...addonMaterialsData.filter((m) => !deleted.includes(m.id)), ...customs]
 }

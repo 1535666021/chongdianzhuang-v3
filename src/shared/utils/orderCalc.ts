@@ -1,7 +1,7 @@
 export const DEFAULT_OVER_PRICE = 45
 export const DEFAULT_PACKAGE_METERS = 30
 
-import { costMaterials } from '@/constants/materialData'
+import { getAllCostMaterials as resolveCostMaterials } from '@/shared/utils/costMaterialsResolver'
 import { matchCostName } from '@/features/material/hooks/useCostMatcher'
 import { getCostMapping } from '@/shared/storage/costMappingStorage'
 import { BRAND_DEFAULTS } from '@/constants/brands'
@@ -210,18 +210,21 @@ export function calcMaterialCost(materials: Array<{ name: string; quantity: numb
 export function resolveCostPrice(name: string): number { return findCostPrice(name) ?? 0 }
 
 export function findCostPrice(name: string): number | null {
+  // P0-129：精确名优先（用户新增材料参与计算的关键路径；顺序优先于映射/模糊匹配）
+  const exact = resolveCostMaterials().find((c) => c.name === name)
+  if (exact) return exact.costPrice ?? 0
   const mappedName = getCostMapping(name)
   if (mappedName) {
-    const item = costMaterials.find((c) => c.name === mappedName)
+    const item = resolveCostMaterials().find((c) => c.name === mappedName)
     if (item) return item.costPrice ?? 0
   }
   const matchedName = matchCostName(name)
   if (matchedName) {
-    const item = costMaterials.find((c) => c.name === matchedName)
+    const item = resolveCostMaterials().find((c) => c.name === matchedName)
     if (item) return item.costPrice ?? 0
   }
   const normalizedName = normalizeCostName(name)
-  const fallbackItem = costMaterials.find((item) => {
+  const fallbackItem = resolveCostMaterials().find((item) => {
     const normalizedCostName = normalizeCostName(item.name)
     return normalizedCostName === normalizedName
       || (normalizedName.startsWith('电缆') && normalizedCostName === '电缆')
