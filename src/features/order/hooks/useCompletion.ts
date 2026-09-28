@@ -13,8 +13,12 @@ import { BRAND_DEFAULTS, BREAKER_NAMES, DEFAULT_GEELY_POWER_KW } from '@/constan
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitBreakdownItem, ProfitPreview, CompletionFormData } from '../types/completion'
 
-function findAddonMaterial(name: string) {
-  return getAllAddonMaterials().find((m) => m.name === name)
+/** P0-130：同名按品牌——候选=精确名匹配集，优先命中订单品牌组（万帮吉利/挚达五菱/品牌名口径，与useSurvey customTarget一致）；无同组命中回退首个 */
+function findAddonMaterial(name: string, brand?: string) {
+  const matches = getAllAddonMaterials().filter((m) => m.name === name)
+  if (matches.length <= 1 || !brand) return matches[0]
+  const target = isWanbangGeelyOrder(brand) ? '万帮吉利' : isZhidaWulingOrder(brand) ? '挚达/五菱' : brand
+  return matches.find((m) => m.brand === target) ?? matches[0]
 }
 
 function findCostMaterial(name: string) {
@@ -103,8 +107,9 @@ function buildMaterialItems(ctx: BreakdownCtx): ProfitBreakdownItem[] {
 function initFormMaterials(order: Order | undefined): MaterialInput[] {
   const src = order?.materials?.length ? order.materials : order?.survey?.estimatedMaterials || []
   return src.map((m) => {
-    const addon = findAddonMaterial(m.name)
-    const sp = addon?.settlementPrice || m.unitPrice || 0
+    const addon = findAddonMaterial(m.name, order?.brandName)
+    // P0-130：订单快照价优先——已存单价一律不动；表价仅用于订单无价(0/空)的新行
+    const sp = m.unitPrice > 0 ? m.unitPrice : (addon?.settlementPrice ?? 0)
     const cp = findCostPrice(m.name) ?? addon?.costPrice ?? m.unitPrice ?? 0
     return {
       id: Math.random().toString(36).slice(2),
@@ -255,7 +260,7 @@ export function useCompletion(orderId: string) {
     // 从增项材料中定位电缆条目，取客户单价；若未选中则从增项价目表兜底取价
     const cableMat = form.materials.find((m) => isFreeQuotaMaterial(m.name) && !m.name.includes('PVC'))
     const cableCustomerPrice = cableMat?.settlementPrice
-      ?? findAddonMaterial(cableMat?.name || '')?.settlementPrice
+      ?? findAddonMaterial(cableMat?.name || '', order?.brandName)?.settlementPrice
       ?? 0
 
     const { overFee: cableReceivable } = calcOverFee(form.fixedAux.cableMeters, packageMeters, cableCustomerPrice)
