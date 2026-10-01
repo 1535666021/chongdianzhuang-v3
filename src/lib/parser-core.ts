@@ -72,7 +72,7 @@ export const BRAND_WORDS = [...BRAND_NAMES].sort((a, b) => b.length - a.length);
 export const PLATFORM_HINT_WORDS = [...PLATFORM_NAMES].filter((name) => name !== '其他').sort((a, b) => b.length - a.length);
 
 /** 姓名排除词 */
-export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申请|到货|加急|预约|京东|苏宁|挚达|维修|服务|套包|套餐|预排|上门|检测|拆桩|充电桩|联系|订单号|外联单|编号|地址|电话|备注|车架|用户|省市|小区|街道|工单|日期)/;
+export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申请|到货|加急|预约|京东|苏宁|挚达|维修|服务|套包|套餐|预排|上门|检测|拆桩|充电桩|联系|订单号|外联单|编号|地址|电话|备注|车架|用户|省市|小区|街道|工单|日期|订单来源|所属品牌|来源渠道)/;
 
 /** 键值块字段映射 */
 export const KV_FIELD_KEYS = {
@@ -252,11 +252,15 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
 export const DATE_SEP_RE = /^[—\-–=\s]*\d{4}[-/年]\d{1,2}[-/月]\d{1,2}[日]?\s*[—\-–=\s]*$/;
 
 export function isSpeakerLine(line: string): boolean {
-  if (line.length > 25) return false;
+  // P0-132：发送人行本身被「」包裹（微信导出），先剥「」包装再判定
+  line = line.replace(/^[「『]+|[」』]+$/g, '')
+  if (line.length > 30) return false;
   if (!/\s\d{1,2}:\d{2}$/.test(line)) return false;
-  if (PHONE_RE.test(line)) return false;
   if (KEY_VALUE_RE.test(line)) return false;
-  if (/[【】]/.test(line)) return false;
+  if (/[【】「』]/.test(line)) return false;
+  // P0-132：微信导出发送人包装行（发送人+符号+手机号+HH:MM）同为元信息行；
+  // 仅当该行含订单必要字段（地址/套餐/桩产品/功率等）时才豁免
+  if (PHONE_RE.test(line) && (ADDRESS_HINTS.test(line) || /套餐|套包|订单号|桩产品|kW|千瓦|充电|安装地址/.test(line))) return false;
   return true;
 }
 
@@ -370,12 +374,13 @@ export function splitOrderBlocks(rawText: string): string[] {
     return false;
   };
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    // P0-132：微信导出空格分隔手机号（139 0000 1111）归一为连续11位，后续PHONE_RE全链零改动
+    const line = lines[i].trim().replace(/(1[3-9]\d)[\s-](\d{4})[\s-](\d{4})(?!\d)/g, '$1$2$3');
     if (!line) {
       if (current.length > 0 && nextStartsOrder(i + 1)) flush();
       continue;
     }
-    if (DATE_SEP_RE.test(line) || /微信群上的聊天记录|请查收/.test(line) || /^Dear[:：]?$/i.test(line)) {
+    if (DATE_SEP_RE.test(line) || /微信群上的聊天记录|请查收|聊天记录如下[:：]?$/.test(line) || /^Dear\b/i.test(line) || /^群公告$/.test(line)) {
       if (current.length > 0 && nextStartsOrder(i + 1)) flush();
       continue;
     }
@@ -392,5 +397,6 @@ export function splitOrderBlocks(rawText: string): string[] {
       blocks.push(...splitFlowBlockByPhone(sub));
     }
   }
-  return blocks;
+  // P0-132：剥离块首尾成对英文/中文引号（微信导出装饰），再交字段抽取
+  return blocks.map((b) => b.replace(/^[\"\"\"\'']+|[\"\"\"\'']+$/g, ''));
 }
