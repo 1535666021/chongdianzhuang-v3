@@ -86,6 +86,16 @@ export default function OrderForm() {
         {/* 平台与状态 */}
         <div className="bg-white rounded-xl p-4 shadow-sm">
           <h2 className="font-semibold text-gray-900 mb-3">订单信息</h2>
+          {/* P0-133-R2：子品牌/型号可选输入（表单无品牌输入字段——品牌由解析器产出；独立成行随单入库进汇总） */}
+          <div className="mb-3">
+            <label className="text-sm text-gray-600 mb-1 block">子品牌/型号（可选）</label>
+            <input
+              value={form.subBrand || ''}
+              onChange={(e) => updateField('subBrand', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-100 rounded-lg text-sm outline-none"
+              placeholder="如：银河黑金刚"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm text-gray-600 mb-1 block">平台</label>

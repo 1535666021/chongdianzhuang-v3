@@ -8,6 +8,8 @@ export interface FormData {
   phone: string
   address: string
   platform: Platform
+  /** P0-133-R2：子品牌/型号 */
+  subBrand: string
   status: OrderStatus
   installType: InstallType
   appointmentDate: string
@@ -25,6 +27,7 @@ const DEFAULT_FORM: FormData = {
   phone: '',
   address: '',
   platform: '其他',
+  subBrand: '',
   status: '待办',
   installType: '其他',
   appointmentDate: '',
@@ -55,6 +58,7 @@ export function useOrderForm(orderId?: string) {
         phone: existingOrder.phone || '',
         address: existingOrder.address || '',
         platform: existingOrder.platform || '其他',
+        subBrand: existingOrder.subBrand || '',
         status: existingOrder.status || '待办',
         installType: existingOrder.installType || '其他',
         appointmentDate: existingOrder.appointmentDate || '',

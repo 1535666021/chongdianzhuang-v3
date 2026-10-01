@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { buildRestockShipmentText, isInstallOrder } from '../restock'
+import { buildRestockShipmentText, restockTargets } from '../restock'
 import type { RestockMaterialRow } from '../restock'
 import { toast } from '@/shared/hooks/useToast'
 import '../../../shared/components/Modal.css'
@@ -24,18 +24,11 @@ export default function RestockDialog({ open, onClose }: RestockDialogProps) {
   const [previewText, setPreviewText] = useState('')
   const [previewDirty, setPreviewDirty] = useState(false)
 
-  const targets = useMemo(
-    () =>
-      orders.filter(
-        (o) =>
-          o.restockStatus === 'needed' &&
-          o.status !== '回收站' &&
-          o.status !== '已完成' &&
-          isInstallOrder(o),
-      ),
-    [orders],
-  )
+  // P0-133-R2：有效状态口径（helper共用，仅待办+需补桩）
+  const targets = useMemo(() => restockTargets(orders), [orders]);
 
+  // P0-133-R2：功率缺失醒目提醒统计
+  const missingPowerCount = targets.filter((o) => !o.powerKw).length
   const shipmentText = buildRestockShipmentText(new Date(), targets, materials, engineerAddress || '')
 
   useEffect(() => {
@@ -114,6 +107,12 @@ export default function RestockDialog({ open, onClose }: RestockDialogProps) {
           <p className="text-sm text-gray-600 mb-2">
             本次纳入 {targets.length} 单需补桩安装单，复制后全部标记「已补桩」。
           </p>
+          {/* P0-133-R2：功率缺失醒目提醒（黄底横幅） */}
+          {missingPowerCount > 0 && (
+            <div className="mb-3 rounded-lg border border-yellow-300 bg-yellow-50 px-3 py-2.5 text-sm font-medium text-yellow-800">
+              ⚠️ 有 {missingPowerCount} 单功率未填，请先在订单卡补选功率后再发仓库
+            </div>
+          )}
 
           <textarea
             className="modal-textarea restock-preview"

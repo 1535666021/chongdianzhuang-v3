@@ -22,6 +22,19 @@ const ORDER_NO_PREFIX_RE = /^(?:D|HW)/;
  * 五、键值块解析
  * -------------------------------------------------------------- */
 
+/** P0-133-R2：子品牌抽取——品牌值命中已知品牌词后剩余部分存subBrand（"吉利银河黑金刚"→吉利+银河黑金刚） */
+const KNOWN_BRANDS = ['吉利', '银河', '极氪', '五菱', '挚达', '长安', '零跑', '特斯拉', '比亚迪', '长城', '宝马', '奔驰', '奥迪', '保时捷', '大众', '丰田', '本田', '理想', '蔚来', '小鹏', '问界', '领克', 'smart', '别克', '荣威', '埃安', '哪吒', '深蓝']
+function extractSubBrand(item: { brandName?: string; subBrand?: string }): void {
+  if (!item.brandName) return
+  for (const bw of KNOWN_BRANDS) {
+    if (item.brandName.startsWith(bw) && item.brandName.length > bw.length) {
+      item.subBrand = item.brandName.slice(bw.length)
+      item.brandName = bw
+      return
+    }
+  }
+}
+
 export function parseKeyValueBlock(block: string): ParsedOrderItem {
   const item = emptyItem();
   const kv = new Map<string, string>();
@@ -91,6 +104,12 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   item.phone = pickKv(kv, KV_FIELD_KEYS.phone);
   item.address = cleanAddressText(pickKv(kv, KV_FIELD_KEYS.address));
   item.brandName = pickKv(kv, KV_FIELD_KEYS.brandName);
+  extractSubBrand(item);
+  // P0-133-R2：pickKv对品牌值有词表截取——从kv原始值补抽子品牌（"所属品牌：吉利银河黑金刚"→银河黑金刚）
+  const brandRaw = kv.get('所属品牌') || kv.get('品牌') || kv.get('品牌型号')
+  if (brandRaw && item.brandName && brandRaw.length > item.brandName.length && !item.subBrand) {
+    item.subBrand = brandRaw.slice(item.brandName.length)
+  }
   item.powerKw = pickKv(kv, KV_FIELD_KEYS.powerKw);
   item.packageMeters = pickKv(kv, KV_FIELD_KEYS.packageMeters);
   item.vin = pickKv(kv, KV_FIELD_KEYS.vin);
@@ -178,7 +197,14 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
       if (!addressLine || line.length > addressLine.length) addressLine = line;
     }
     for (const word of BRAND_WORDS) {
-      if (line.toLowerCase().includes(word.toLowerCase()) && !brandCandidates.includes(word)) brandCandidates.push(word);
+      if (line.toLowerCase().includes(word.toLowerCase()) && !brandCandidates.includes(word)) {
+        brandCandidates.push(word)
+        // P0-133-R2：候选流子品牌——行内品牌词后的中文/字母数字剩余
+        if (!item.subBrand) {
+          const m = line.match(new RegExp(word + '([\\u4e00-\\u9fa5A-Za-z0-9]+)'))
+          if (m) item.subBrand = m[1]
+        }
+      }
     }
     for (const word of PLATFORM_HINT_WORDS) {
       if (line.toLowerCase().includes(word.toLowerCase()) && !platformCandidates.includes(word)) platformCandidates.push(word);
@@ -192,6 +218,12 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
   item.address = sanitizeStreamLikeAddress(addressLine, remarks);
   if (nameCandidates.length > 0) item.customerName = nameCandidates[0];
   if (brandCandidates.length > 0) item.brandName = brandCandidates[0];
+  extractSubBrand(item);
+  // P0-133-R2：终极兜底——brandName已截词但subBrand空时，从块rawText中品牌词后的中文/字母数字剩余补抽
+  if (!item.subBrand && item.brandName && (item as any).rawText) {
+    const m = (item as any).rawText.match(new RegExp(item.brandName + '([\\u4e00-\\u9fa5A-Za-z0-9]+)'))
+    if (m) item.subBrand = m[1]
+  }
   if (platformCandidates.length > 0) item.platformName = platformCandidates[0];
   if (vinCandidates.length > 0) item.vin = vinCandidates[0];
   if (orderNoCandidates.length > 0) item.orderNo = orderNoCandidates[0];

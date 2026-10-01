@@ -36,6 +36,8 @@ export interface Order extends BaseEntity {
   orderNo?: string
   vin?: string
   brandName?: string
+  /** P0-133-R2：子品牌/型号 */
+  subBrand?: string
   powerKw?: string
   packageMeters?: string
   serviceType?: string

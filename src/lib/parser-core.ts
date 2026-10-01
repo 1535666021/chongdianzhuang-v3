@@ -13,6 +13,8 @@ import { PLATFORM_NAMES } from '@/constants/platforms';
 export interface ParsedOrderItem {
   orderNo: string;
   customerName: string;
+  /** P0-133-R2：子品牌/型号（品牌词命中后的剩余部分） */
+  subBrand: string;
   phone: string;
   address: string;
   brandName: string;
@@ -80,7 +82,7 @@ export const KV_FIELD_KEYS = {
   customerName: ['订单姓名', '客户姓名', '联系人', '车主姓名', '姓名', '用户姓名', '车主', '客户', '姓名信息', '联系人姓名'],
   phone: ['真实号码', '客户手机', '用户电话', '联系电话', '联系人电话', '车主电话'],
   address: ['安装地址', '用户地址', '收件地址', '详细地址'],
-  brandName: ['服务品牌'],
+  brandName: ['服务品牌', '品牌', '所属品牌'],
   powerKw: ['功率'],
   packageMeters: ['套包米数'],
   vin: ['车架号'],
@@ -113,6 +115,7 @@ export function emptyItem(): ParsedOrderItem {
   return {
     orderNo: '',
     customerName: '',
+    subBrand: '',
     phone: '',
     address: '',
     brandName: '',

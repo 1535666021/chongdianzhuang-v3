@@ -9,7 +9,7 @@ import RestockDialog from '../components/RestockDialog'
 import BatchAppointmentDialog from '../components/BatchAppointmentDialog'
 import OrderFilterBar from '../components/OrderFilterBar'
 import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
-import { isInstallOrder } from '../restock'
+import { restockTargets } from '../restock'
 import { Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
@@ -62,7 +62,7 @@ export default function OrderList({ fixedStatus }: Props) {
   const hasAnyOrder = allOrders.length > 0
   const resetFilters = () => setResetKey((key) => key + 1)
   const restockCount = useMemo(
-    () => allOrders.filter((o) => o.restockStatus === 'needed' && o.status !== '回收站' && o.status !== '已完成' && isInstallOrder(o)).length,
+    () => restockTargets(allOrders).length,
     [allOrders],
   )
   const appointableOrders = useMemo(() => orders.filter((o) => o.status === '待办'), [orders])

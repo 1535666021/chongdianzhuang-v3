@@ -4,7 +4,7 @@ import { INSTALL_TYPE_COLORS } from '@/constants/order'
 import { getBrandLabel } from '@/constants/brands'
 import { getPlatformLabel } from '@/constants/platforms'
 import { getPowerLabel, POWER_OPTIONS } from '@/constants/power'
-import { isInstallOrder } from '../restock'
+import { effectiveRestock, isInstallOrder } from '../restock'
 
 interface OrderCardTagsProps {
   order: Order
@@ -21,7 +21,7 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
 
   return (
     <div className="order-card__tags">
-      {isInstall && order.restockStatus === 'needed' && (
+      {isInstall && order.status === '待办' && effectiveRestock(order) === 'needed' && (
         <span
           className="order-card__tag order-card__tag--pile"
           title="点击标记为已补桩"
@@ -30,7 +30,7 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
           需补桩
         </span>
       )}
-      {isInstall && order.restockStatus === 'done' && (
+      {isInstall && order.status === '待办' && effectiveRestock(order) === 'done' && (
         <span
           className="order-card__tag order-card__tag--restock-done"
           title="点击打回需补桩"

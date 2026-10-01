@@ -41,6 +41,7 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     phone: it.phone || '',
     address: it.address || '',
     brandName: it.brandName || '',
+    subBrand: it.subBrand || '',
     powerKw: it.powerKw || '',
     packageMeters: it.packageMeters || '',
     vin: it.vin || '',
