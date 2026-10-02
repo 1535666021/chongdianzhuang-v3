@@ -69,8 +69,9 @@ export function buildRestockShipmentText(date: Date, orders: Order[], materials:
   if (addr !== '') lines.push(addr)
   // P0-122：工程师信息行——姓名/电话按既有空值惯例，全空则不输出；有一个输出一个（空格收净）
   if (engineer) {
-    const eng = `工程师：${(engineer.name || '').trim()} ${(engineer.phone || '').trim()}`.trim()
-    if (eng !== '工程师：') lines.push(eng)
+    // P0-122-R1（甲方口径）：纯姓名+电话行，无"工程师："前缀
+    const eng = `${(engineer.name || '').trim()} ${(engineer.phone || '').trim()}`.trim()
+    if (eng !== '') lines.push(eng)
   }
   return lines.join('\n')
 }
