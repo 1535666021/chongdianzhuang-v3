@@ -43,7 +43,10 @@ export function platformNameOf(order: Order): string {
 }
 
 /** P0-133-R2：发货单——key含子品牌维度；功率缺失「功率未填」；原4参签名/辅材区/落款保留 */
-export function buildRestockShipmentText(date: Date, orders: Order[], materials: RestockMaterialRow[], receiveAddr: string): string {
+/** P0-122：工程师落款信息（设置页取值，话术变量体系{{engineerName}}/{{engineerPhone}}同源） */
+export interface ShipmentEngineer { name: string; phone: string }
+
+export function buildRestockShipmentText(date: Date, orders: Order[], materials: RestockMaterialRow[], receiveAddr: string, engineer?: ShipmentEngineer): string {
   const lines: string[] = [`${date.getMonth() + 1}月${date.getDate()}日发货明细`]
   const groups = new Map<string, number>()
   for (const order of orders) {
@@ -64,5 +67,10 @@ export function buildRestockShipmentText(date: Date, orders: Order[], materials:
   if (materialLines.length > 0) { lines.push('辅材：'); lines.push(...materialLines) }
   const addr = receiveAddr.trim()
   if (addr !== '') lines.push(addr)
+  // P0-122：工程师信息行——姓名/电话按既有空值惯例，全空则不输出；有一个输出一个（空格收净）
+  if (engineer) {
+    const eng = `工程师：${(engineer.name || '').trim()} ${(engineer.phone || '').trim()}`.trim()
+    if (eng !== '工程师：') lines.push(eng)
+  }
   return lines.join('\n')
 }

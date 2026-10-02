@@ -17,6 +17,9 @@ export default function RestockDialog({ open, onClose }: RestockDialogProps) {
   const orders = useOrderStore((s) => s.orders)
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const engineerAddress = useSettingsStore((s) => s.engineerAddress)
+  // P0-122：工程师信息（话术变量{{engineerName}}/{{engineerPhone}}同源storage键）
+  const engineerName = useSettingsStore((s) => s.engineerName)
+  const engineerPhone = useSettingsStore((s) => s.engineerPhone)
 
   const [materials, setMaterials] = useState<RestockMaterialRow[]>([])
   const [manualName, setManualName] = useState('')
@@ -30,7 +33,7 @@ export default function RestockDialog({ open, onClose }: RestockDialogProps) {
   // P0-133-R2：功率缺失醒目提醒统计
   // P0-135：吉利系空功率默认7kW，不再计入未填黄条
   const missingPowerCount = targets.filter((o) => !powerOf(o)).length
-  const shipmentText = buildRestockShipmentText(new Date(), targets, materials, engineerAddress || '')
+  const shipmentText = buildRestockShipmentText(new Date(), targets, materials, engineerAddress || '', { name: engineerName, phone: engineerPhone })
 
   useEffect(() => {
     if (!open) {
