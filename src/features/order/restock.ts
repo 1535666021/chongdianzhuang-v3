@@ -11,14 +11,12 @@ export function isInstallOrder(order: Order): boolean {
   return text.includes('安装') && !NON_INSTALL_KEYWORDS.some((k) => text.includes(k))
 }
 
-/** P0-133-R2：自动判定——带桩上门=需补桩；installType缺失时serviceType含「带桩」且不含维修/勘测/检测/拆桩/移机 */
-export function needsRestock(order: Order): boolean {
-  const type = (order.installType || '').trim()
-  if (type === '带桩上门') return true
-  if (type === '仅安装') return false
-  const st = order.serviceType || ''
-  if (/带桩/.test(st) && !NON_INSTALL_KEYWORDS.some((k) => st.includes(k))) return true
-  return false
+/** P0-134：口径变更（甲方拍板）——所有待办工单一律需补桩，不再区分带桩上门/仅安装/维修/勘测等类型。
+ * 恒真返回（保留签名与导出面；P0-133-R2 的类型判定已删，如需回滚可从 git 历史 b0bf9d16 前的 ec9751ef^ 恢复）。
+ * 手动标「已补桩」的退出通道在 effectiveRestock（手动标签优先），不受本口径影响。 */
+export function needsRestock(_order: Order): boolean {
+  void _order
+  return true
 }
 
 /** P0-133-R2：有效状态=手动标签优先，未标则自动判定（存量零迁移，动态生效） */
@@ -28,7 +26,7 @@ export function effectiveRestock(order: Order): 'needed' | 'done' | undefined {
 
 /** P0-133-R2：补桩清单目标——仅待办且需补桩（三处共用helper） */
 export function restockTargets(orders: Order[]): Order[] {
-  return orders.filter((o) => o.status === '待办' && effectiveRestock(o) === 'needed' && isInstallOrder(o))
+  return orders.filter((o) => o.status === '待办' && effectiveRestock(o) === 'needed')
 }
 
 export interface RestockMaterialRow { name: string; quantity: string }
