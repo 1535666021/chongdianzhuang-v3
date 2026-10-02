@@ -1,4 +1,6 @@
 import type { Order } from '@/types'
+import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
+import { DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
 
 export type RestockStatus = 'needed' | 'done'
 
@@ -29,6 +31,11 @@ export function restockTargets(orders: Order[]): Order[] {
   return orders.filter((o) => o.status === '待办' && effectiveRestock(o) === 'needed')
 }
 
+/** P0-135：功率取值——真实功率优先；吉利系（判定/常量复用既有单点）空功率默认7kW；显示层默认不回写快照（与useCompletion口径一致） */
+export function powerOf(order: Order): string {
+  return order.powerKw || (isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText) ? DEFAULT_GEELY_POWER_KW : '')
+}
+
 export interface RestockMaterialRow { name: string; quantity: string }
 
 export function platformNameOf(order: Order): string {
@@ -40,7 +47,7 @@ export function buildRestockShipmentText(date: Date, orders: Order[], materials:
   const lines: string[] = [`${date.getMonth() + 1}月${date.getDate()}日发货明细`]
   const groups = new Map<string, number>()
   for (const order of orders) {
-    const key = [platformNameOf(order), order.brandName || '未知品牌', order.subBrand || '', order.powerKw || ''].join('|')
+    const key = [platformNameOf(order), order.brandName || '未知品牌', order.subBrand || '', powerOf(order)].join('|')
     groups.set(key, (groups.get(key) ?? 0) + 1)
   }
   const rows = [...groups.entries()].map(([key, count]) => {

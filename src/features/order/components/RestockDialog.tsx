@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { buildRestockShipmentText, restockTargets } from '../restock'
+import { buildRestockShipmentText, restockTargets, powerOf } from '../restock'
 import type { RestockMaterialRow } from '../restock'
 import { toast } from '@/shared/hooks/useToast'
 import '../../../shared/components/Modal.css'
@@ -28,7 +28,8 @@ export default function RestockDialog({ open, onClose }: RestockDialogProps) {
   const targets = useMemo(() => restockTargets(orders), [orders]);
 
   // P0-133-R2：功率缺失醒目提醒统计
-  const missingPowerCount = targets.filter((o) => !o.powerKw).length
+  // P0-135：吉利系空功率默认7kW，不再计入未填黄条
+  const missingPowerCount = targets.filter((o) => !powerOf(o)).length
   const shipmentText = buildRestockShipmentText(new Date(), targets, materials, engineerAddress || '')
 
   useEffect(() => {

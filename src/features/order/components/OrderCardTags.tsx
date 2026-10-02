@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Ruler, ShoppingCart, Tag, Zap } from 'lucide-react'
 import type { Order } from '@/types'
 import { INSTALL_TYPE_COLORS } from '@/constants/order'
@@ -5,6 +6,8 @@ import { getBrandLabel } from '@/constants/brands'
 import { getPlatformLabel } from '@/constants/platforms'
 import { getPowerLabel, POWER_OPTIONS } from '@/constants/power'
 import { effectiveRestock, isInstallOrder } from '../restock'
+import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
+import { DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
 
 interface OrderCardTagsProps {
   order: Order
@@ -41,7 +44,7 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
       )}
       <PlatformTag order={order} onEditPlatform={onEditPlatform} />
       <BrandTag brand={order.brandName} />
-      <PowerTag powerKw={powerKw} onPowerChange={onPowerChange} />
+      <PowerTag powerKw={powerKw} geelyDefault={!powerKw && isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)} onPowerChange={onPowerChange} />
       {order.packageMeters && <span className="order-card__tag order-card__tag--meters"><Ruler size={10} />{order.packageMeters}米</span>}
       {installType !== '其他' && <span className="order-card__tag" style={{ backgroundColor: typeColors.bg, color: typeColors.text }}><Tag size={10} />{installType}</span>}
     </div>
@@ -60,7 +63,21 @@ function BrandTag({ brand }: { brand?: string }) {
   return <span className="order-card__tag order-card__tag--brand"><Tag size={10} />{getBrandLabel(brand)}</span>
 }
 
-function PowerTag({ powerKw, onPowerChange }: { powerKw?: string; onPowerChange: (powerKw: string) => void }) {
-  if (powerKw) return <span className="order-card__tag order-card__tag--power"><Zap size={10} />{getPowerLabel(powerKw)}</span>
-  return <span className="order-card__tag order-card__tag--power"><Zap size={10} /><select aria-label="选择功率" className="bg-transparent outline-none" defaultValue="" onClick={(event) => event.stopPropagation()} onChange={(event) => onPowerChange(event.target.value)}><option value="" disabled>选择功率</option>{POWER_OPTIONS.map((value) => <option key={value} value={value}>{getPowerLabel(value)}</option>)}</select></span>
+// P0-135：吉利系空功率默认7kW标签（样式同有功率），点击可展开下拉改选；有功率标签同样点击可改
+function PowerTag({ powerKw, geelyDefault, onPowerChange }: { powerKw?: string; geelyDefault?: boolean; onPowerChange: (powerKw: string) => void }) {
+  const [editing, setEditing] = useState(false)
+  const shown = powerKw || (geelyDefault ? DEFAULT_GEELY_POWER_KW : '')
+  if (shown && !editing) {
+    return (
+      <span
+        className="order-card__tag order-card__tag--power"
+        style={{ cursor: 'pointer' }}
+        title={geelyDefault ? '吉利默认7kW，点击改选' : '点击改选功率'}
+        onClick={(event) => { event.stopPropagation(); setEditing(true) }}
+      >
+        <Zap size={10} />{getPowerLabel(shown)}
+      </span>
+    )
+  }
+  return <span className="order-card__tag order-card__tag--power"><Zap size={10} /><select aria-label="选择功率" className="bg-transparent outline-none" defaultValue="" autoFocus onClick={(event) => event.stopPropagation()} onBlur={() => setEditing(false)} onChange={(event) => { onPowerChange(event.target.value); setEditing(false) }}><option value="" disabled>选择功率</option>{POWER_OPTIONS.map((value) => <option key={value} value={value}>{getPowerLabel(value)}</option>)}</select></span>
 }
