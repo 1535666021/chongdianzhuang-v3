@@ -79,7 +79,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
         }
       }
       if (key === '客户姓名' && NAME_EXCLUDE_RE.test(value)) continue;
-      if (key === '联系人' && NAME_EXCLUDE_RE.test(value)) continue;
+      if ((key === '联系人' || key === '购车人' || key === '购车人/电话' || key === '联系人/电话') && NAME_EXCLUDE_RE.test(value)) continue;
       kv.set(key, value);
       continue;
     }
@@ -98,6 +98,8 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   }
   item.orderNo = pickKv(kv, KV_FIELD_KEYS.orderNo);
   item.customerName = pickKv(kv, KV_FIELD_KEYS.customerName);
+  // P0-123：购车人/联系人值剥离粘连电话（"高测试13800001111"→"高测试"）
+  if (item.customerName) item.customerName = item.customerName.replace(/1[3-9]\d{9}/g, '').trim()
   if (!item.customerName && kv.has('_userinfo_name')) {
     item.customerName = kv.get('_userinfo_name')!;
   }
@@ -126,6 +128,12 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   }
   if (item.remark) item.remark = item.remark.trim();
   fillFallbacks(item, block);
+  // P0-123+P0-132调和：群公告块姓名=购车人/联系人字段优先（剥离电话）；
+  // 无该字段时不清空——保留独立行退化（"订单来源"值经NAME_EXCLUDE_RE与候选长度过滤永不作姓名，两口径一致）
+  if (/订单来源[:：]/.test(block)) {
+    const gm = block.match(/购车人\/电话[:：]\s*([^\s\d:：]+)/) || block.match(/联系人\/电话[:：]\s*([^\s\d:：]+)/)
+    if (gm) item.customerName = gm[1].trim()
+  }
   return item;
 }
 
@@ -216,7 +224,9 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
   }
   item.phone = phoneLine;
   item.address = sanitizeStreamLikeAddress(addressLine, remarks);
-  if (nameCandidates.length > 0) item.customerName = nameCandidates[0];
+  // P0-123：群公告块（原文含"订单来源"行）姓名永不退化取候选——订单来源值禁止作为姓名
+  const isGroupNotice = /订单来源[:：]/.test(block || '')
+  if (!isGroupNotice && nameCandidates.length > 0) item.customerName = nameCandidates[0];
   if (brandCandidates.length > 0) item.brandName = brandCandidates[0];
   extractSubBrand(item);
   // P0-133-R2：终极兜底——brandName已截词但subBrand空时，从块rawText中品牌词后的中文/字母数字剩余补抽
