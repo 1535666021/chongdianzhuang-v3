@@ -4,6 +4,7 @@
  * ============================================================ */
 
 import type { ParsedOrderItem } from './parser-core';
+import { PILE_BRAND_KEYWORDS } from '@/constants/brands';
 import {
   PHONE_RE, VIN_SEARCH_RE, POWER_RE,
   TIMESTAMP_PREFIX_RE, KEY_VALUE_RE,
@@ -134,6 +135,18 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
     const gm = block.match(/购车人\/电话[:：]\s*([^\s\d:：]+)/) || block.match(/联系人\/电话[:：]\s*([^\s\d:：]+)/)
     if (gm) item.customerName = gm[1].trim()
   }
+  // P0-136：桩名称品牌兜底（KV块同口径）——现有字段无法确定品牌时按桩名称/车辆型号映射识别（最长匹配，歧义保持原样）
+  if (!item.brandName || !KNOWN_BRANDS.includes(item.brandName)) {
+    const pileText = (block.match(/桩名称[:：]([^\n]+)/)?.[1] || '') + (block.match(/车辆型号[:：]([^\n]+)/)?.[1] || '')
+    if (pileText) {
+      const matched = PILE_BRAND_KEYWORDS.filter((e) => pileText.includes(e.kw))
+      if (matched.length > 0) {
+        const maxLen = Math.max(...matched.map((e) => e.kw.length))
+        const best = matched.filter((e) => e.kw.length === maxLen)
+        if (best.length === 1) item.brandName = best[0].brand
+      }
+    }
+  }
   return item;
 }
 
@@ -229,6 +242,18 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
   if (!isGroupNotice && nameCandidates.length > 0) item.customerName = nameCandidates[0];
   if (brandCandidates.length > 0) item.brandName = brandCandidates[0];
   extractSubBrand(item);
+  // P0-136：桩名称品牌兜底——现有字段（KV/候选）无法确定品牌时，按桩名称映射识别（最长匹配；歧义保持原样）
+  if (!item.brandName || !KNOWN_BRANDS.includes(item.brandName)) {
+    const pileText = (block.match(/桩名称[:：]([^\n]+)/)?.[1] || '') + (block.match(/车辆型号[:：]([^\n]+)/)?.[1] || '')
+    if (pileText) {
+      const matched = PILE_BRAND_KEYWORDS.filter((e) => pileText.includes(e.kw))
+      if (matched.length > 0) {
+        const maxLen = Math.max(...matched.map((e) => e.kw.length))
+        const best = matched.filter((e) => e.kw.length === maxLen)
+        if (best.length === 1) item.brandName = best[0].brand
+      }
+    }
+  }
   // P0-133-R2：终极兜底——brandName已截词但subBrand空时，从块rawText中品牌词后的中文/字母数字剩余补抽
   if (!item.subBrand && item.brandName && (item as any).rawText) {
     const m = (item as any).rawText.match(new RegExp(item.brandName + '([\\u4e00-\\u9fa5A-Za-z0-9]+)'))

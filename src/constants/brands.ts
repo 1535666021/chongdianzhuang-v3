@@ -26,6 +26,21 @@ export function getBrandLabel(brand: string | undefined): string {
 }
 
 // P0-112：吉利系（吉利/银河/极氪，判定单点 isWanbangGeelyOrder）功率为空时的默认值
+/** P0-136：桩名称品牌识别映射——桩名称/车辆型号含关键词→品牌。按关键词长度降序存储（最长匹配优先）。
+ * 出处逐条注明；新增条目须附出处。歧义（同长度多命中）由消费方保持原样并计数。 */
+export const PILE_BRAND_KEYWORDS: ReadonlyArray<{ kw: string; brand: string }> = [
+  { kw: '银河微金刚', brand: '吉利' }, // 甲方实证样本（桩名称原文）
+  { kw: '银河', brand: '吉利' }, // 任务书指定：银河=吉利银河系
+  { kw: '极氪', brand: '吉利' }, // P0-112 吉利系判定词表同口径
+  { kw: '万帮', brand: '吉利' }, // 万帮吉利价表关联（WANBANG_GEELY_ADDON）
+  { kw: '五菱', brand: '五菱' }, // 挚达/五菱价表品牌键
+  { kw: '挚达', brand: '挚达' }, // 挚达平台·五菱品牌价表
+  { kw: '特斯拉', brand: '特斯拉' }, // KNOWN_BRANDS词表（桩名称直接含品牌名=强信号）
+  { kw: '比亚迪', brand: '比亚迪' },
+  { kw: '长安', brand: '长安' },
+  { kw: '零跑', brand: '零跑' },
+].sort((a, b) => b.kw.length - a.kw.length)
+
 export const DEFAULT_GEELY_POWER_KW = '7'
 
 export const BRAND_DEFAULTS: Record<string, BrandConfig> = {
