@@ -25,7 +25,9 @@ export default function OrderList({ fixedStatus }: Props) {
   const navigate = useNavigate()
   const initialStatus: OrderStatus | 'all' =
     fixedStatus === '待办' || fixedStatus === '已预约' || fixedStatus === '已完成' ? fixedStatus : 'all'
-  const [filter, setFilter] = useState<OrderFilter>({
+  // P0-137：默认筛选抽常量——已完成页=按完工时间新→旧+按时间分组，首屏第一行=最近完成单；
+  // Tab切换时重置（防上一Tab的排序方向/维度残留导致已完成页排老底，甲方实证场景）
+  const defaultFilter = (): OrderFilter => ({
     // P0-099：已完成页首帧即按完工时间倒序，与 OrderFilterBar 初始值一致；其他 Tab 创建时间不变
     // P0-106：已完成→完工时间；已预约→预约时间；首页全部/待办→业务时间混排（预约>完工>创建）
     sortBy: fixedStatus === '已完成' ? 'completeDate' : fixedStatus === '已预约' ? 'appointmentDate' : 'businessTime',
@@ -35,6 +37,8 @@ export default function OrderList({ fixedStatus }: Props) {
     // P0-108：全部Tab首帧默认按时间分组（甲方指示），已完成本已是time不变
     groupMode: 'time',
   })
+  const [filter, setFilter] = useState<OrderFilter>(defaultFilter)
+  useEffect(() => { setFilter(defaultFilter()) }, [fixedStatus])
   const [showCount, setShowCount] = useState(50)
   const [resetKey, setResetKey] = useState(0)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
