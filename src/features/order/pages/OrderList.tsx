@@ -39,6 +39,13 @@ export default function OrderList({ fixedStatus }: Props) {
   })
   const [filter, setFilter] = useState<OrderFilter>(defaultFilter)
   useEffect(() => { setFilter(defaultFilter()) }, [fixedStatus])
+
+  // P0-137-R1：已完成页滚动定位顶部——①进入该Tab ②排序维度切换(按时间⇄按区域/方向)后，
+  // 视口重置到列表顶部（window.scrollTo，首屏第一行=最新完成单）。仅已完成页执行，首页/已预约滚动行为零触碰。
+  // 分组折叠无持久化（全仓无collapsed存储），默认全展开，最新组在首屏——任务书2天然满足。
+  useEffect(() => {
+    if (fixedStatus === '已完成') window.scrollTo(0, 0)
+  }, [fixedStatus, filter.sortBy, filter.sortOrder, filter.groupMode])
   const [showCount, setShowCount] = useState(50)
   const [resetKey, setResetKey] = useState(0)
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
