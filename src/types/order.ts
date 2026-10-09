@@ -36,6 +36,8 @@ export interface Order extends BaseEntity {
   orderNo?: string
   vin?: string
   brandName?: string
+  /** P0-139-R1：软删除标记（时间戳）；回收站单，undefined=正常 */
+  deletedAt?: number
   /** P0-138：双联系人结构化（外联单车主+联系人）；主字段customerName/phone=车主优先，全链既有消费方零改动 */
   contacts?: Array<{ relation: string; name: string; phone: string }>
   /** P0-133-R2：子品牌/型号 */

@@ -1,4 +1,5 @@
 import type { Order } from '@/types'
+import { isDeletedOrder } from './utils/recycleBin'
 import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
 
@@ -28,7 +29,7 @@ export function effectiveRestock(order: Order): 'needed' | 'done' | undefined {
 
 /** P0-133-R2：补桩清单目标——仅待办且需补桩（三处共用helper） */
 export function restockTargets(orders: Order[]): Order[] {
-  return orders.filter((o) => o.status === '待办' && effectiveRestock(o) === 'needed')
+  return orders.filter((o) => !isDeletedOrder(o) && o.status === '待办' && effectiveRestock(o) === 'needed')
 }
 
 /** P0-135：功率取值——真实功率优先；吉利系（判定/常量复用既有单点）空功率默认7kW；显示层默认不回写快照（与useCompletion口径一致） */

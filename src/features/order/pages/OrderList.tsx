@@ -10,6 +10,8 @@ import BatchAppointmentDialog from '../components/BatchAppointmentDialog'
 import OrderFilterBar from '../components/OrderFilterBar'
 import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
 import { restockTargets } from '../restock'
+import { activeOrders } from '../utils/recycleBin'
+import { toast } from '@/shared/hooks/useToast'
 import { Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
@@ -54,7 +56,8 @@ export default function OrderList({ fixedStatus }: Props) {
   const [showRestock, setShowRestock] = useState(false)
   const [showBatchAppointment, setShowBatchAppointment] = useState(false)
 
-  const allOrders = useOrderStore((state) => state.orders)
+  // P0-139-R1：回收站统一排除（正常业务流唯一过滤点）
+  const allOrders = activeOrders(useOrderStore((state) => state.orders))
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
   const updateOrder = useOrderStore((state) => state.updateOrder)
   const { orders } = useOrderList(filter)
@@ -166,7 +169,7 @@ export default function OrderList({ fixedStatus }: Props) {
                     onClick={() => navigate(`/orders/${order.id}`)}
                     onSurvey={setSurveyOrder}
                     onGenerateScript={setScriptOrder}
-                    onDelete={(item) => deleteOrder(item.id)}
+                    onDelete={(item) => { useOrderStore.getState().softDeleteOrder(item.id); toast.success('已移入回收站') }}
                     onEditPlatform={setEditPlatformOrder}
                   />
                 ))}

@@ -13,6 +13,7 @@ const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'))
 const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
 const OrderComplete = lazy(() => import('@/features/order/pages/OrderComplete'))
+const RecycleBinPage = lazy(() => import('@/features/order/pages/RecycleBinPage'))
 const OrderSurvey = lazy(() => import('@/features/order/pages/OrderSurvey'))
 const BackupImport = lazy(() => import('@/features/settings/components/BackupImport'))
 const InventoryPage = lazy(() => import('@/features/material/pages/InventoryPage'))
@@ -99,6 +100,7 @@ export default function AppRoutes() {
               }
             />
           </Route>
+                  <Route path="/recycle" element={<RecycleBinPage />} />
         </Routes>
       </ErrorBoundary>
     </HashRouter>

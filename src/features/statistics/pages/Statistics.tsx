@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FileText } from 'lucide-react'
 import { useOrderStore } from '@/stores/orderStore'
+import { activeOrders } from '@/features/order/utils/recycleBin'
 import PlatformBreakdown from '../components/PlatformBreakdown'
 import ProfitDetailModal from '../components/ProfitDetailModal'
 import { exportReconciliationCsv } from '@/shared/utils/exportExcel'
@@ -29,7 +30,8 @@ function Metric({ label, value, color, onClick, amount = true }: { label: string
 }
 
 export default function Statistics() {
-  const orders = useOrderStore((s) => s.orders)
+  // P0-139-R1：回收站排除
+  const orders = activeOrders(useOrderStore((s) => s.orders))
   const navigate = useNavigate()
   const now = new Date()
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`

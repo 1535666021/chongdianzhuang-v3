@@ -15,6 +15,14 @@ interface OrderState {
   updateOrder: (id: string, updates: Partial<Order>) => void
   completeOrder: (id: string, updates: Omit<Partial<Order>, 'status' | 'completeDate'>) => void
   deleteOrder: (id: string) => void
+  /** P0-139-R1：软删除进回收站（deletedAt=当前时间戳） */
+  softDeleteOrder: (id: string) => void
+  /** P0-139-R1：从回收站恢复（清 deletedAt，原 status 不动→回原Tab） */
+  restoreOrder: (id: string) => void
+  /** P0-139-R1：彻底删除（真删，不可恢复） */
+  purgeOrder: (id: string) => void
+  /** P0-139-R1：清空回收站（仅回收单真删） */
+  emptyRecycleBin: () => void
   setFilter: (filter: OrderFilter) => void
   importOrders: (orders: Order[]) => { added: number; skipped: number; updated: number }
   importFromLegacy: (legacyOrders: any[]) => void
@@ -70,6 +78,24 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     const newOrders = get().orders.filter((o) => (o as any).id !== id)
     storage.set('list', newOrders)
     set({ orders: newOrders })
+  },
+  softDeleteOrder: (id) => {
+    set((state) => ({ orders: state.orders.map((o) => (o.id === id ? { ...o, deletedAt: Date.now() } : o)) }))
+  },
+  restoreOrder: (id) => {
+    set((state) => ({ orders: state.orders.map((o) => {
+      if (o.id !== id) return o
+      const next = { ...o }
+      delete next.deletedAt
+      return next
+    }) }))
+  },
+  purgeOrder: (id) => {
+    set((state) => ({ orders: state.orders.filter((o) => o.id !== id) }))
+  },
+  emptyRecycleBin: () => {
+    // 判定逻辑与 utils/recycleBin.isDeletedOrder 同源（内联避免 store↔utils 循环依赖）
+    set((state) => ({ orders: state.orders.filter((o) => !o.deletedAt && o.status !== '回收站') }))
   },
   setFilter: (filter) => set({ filter }),
   /**
