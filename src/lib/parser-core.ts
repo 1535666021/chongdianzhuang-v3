@@ -15,6 +15,8 @@ export interface ParsedOrderItem {
   customerName: string;
   /** P0-133-R2：子品牌/型号（品牌词命中后的剩余部分） */
   subBrand: string;
+  /** P0-138：双联系人（外联单） */
+  contacts?: Array<{ relation: string; name: string; phone: string }>;
   phone: string;
   address: string;
   brandName: string;

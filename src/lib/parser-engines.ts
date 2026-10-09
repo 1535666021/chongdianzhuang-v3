@@ -308,6 +308,24 @@ export function parseBlock(block: string): ParsedOrderItem {
     const item = parseWanbangBlock(block);
     inferInstallType(item);
     inferNature(item);
+  const kvSafe = (key: string): string => {
+    const m = block.match(new RegExp(key + '[:：]\\s*([^\\n\\r]+)'))
+    return m ? m[1].trim() : ''
+  }
+  // P0-138：外联单统一口径（各解析分支之后应用）——姓名/电话车主优先于联系人；双联系人结构化入库；行尾日期段剥离
+  if (/外联单号[:：]/.test(block)) {
+    const stripDate = (v: string) => (v || '').replace(/\s*\d{1,2}\.\d{1,2}-\d{1,2}\.\d{1,2}号?/g, '').trim()
+    const ownerName = stripDate(kvSafe('车主姓名') || kvSafe('车主'))
+    const ownerPhone = stripDate(kvSafe('车主电话'))
+    const contactName = stripDate(kvSafe('联系人'))
+    const contactPhone = stripDate(kvSafe('联系人电话'))
+    if (ownerName || contactName) item.customerName = ownerName || contactName
+    if (ownerPhone || contactPhone) item.phone = ownerPhone || contactPhone
+    const contacts: Array<{ relation: string; name: string; phone: string }> = []
+    if (ownerName) contacts.push({ relation: '车主', name: ownerName, phone: ownerPhone })
+    if (contactName) contacts.push({ relation: '联系人', name: contactName, phone: contactPhone })
+    if (contacts.length > 0) item.contacts = contacts
+  }
     return item;
   }
   const kvLineCount = block.split('\n').filter((l) => KEY_VALUE_RE.test(l.trim())).length;

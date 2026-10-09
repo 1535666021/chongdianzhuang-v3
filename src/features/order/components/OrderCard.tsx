@@ -163,7 +163,23 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           onRestockToggle={(restockStatus) => updateOrder(order.id, { restockStatus })}
         />
 
-        {/* 电话：点按拨号 / 长按复制 */}
+        {/* P0-138：双联系人（外联单）双号码分行展示注明关系；仅一人时按现样式不冗余 */}
+        {order.contacts && order.contacts.length > 1 ? (
+          <div className="order-card__phone-group" style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {order.contacts.map((c) => (
+              <div
+                key={c.relation}
+                className="order-card__phone"
+                onClick={(event) => { event.stopPropagation(); if (c.phone) window.location.href = `tel:${c.phone}` }}
+                onMouseDown={() => c.phone && handleLongPressStart(`${c.relation}：${c.name} ${c.phone}`)}
+                onTouchStart={() => c.phone && handleLongPressStart(`${c.relation}：${c.name} ${c.phone}`)}
+              >
+                <Phone size={14} className="order-card__icon" />
+                <span>{c.relation}：{c.name} {c.phone}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div
           className="order-card__phone"
           onClick={(event) => { event.stopPropagation(); window.location.href = `tel:${order.phone}` }}
@@ -176,6 +192,7 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
           <Phone size={14} className="order-card__icon" />
           <span>{order.phone}</span>
         </div>
+        )}
 
         {/* 地址：点按导航 / 长按复制 */}
         <div

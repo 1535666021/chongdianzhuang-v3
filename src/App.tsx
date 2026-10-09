@@ -2,6 +2,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { repairGroupNoticeNames } from './features/order/utils/repairGroupNoticeNames'
 import { repairMistakenBrands } from './features/order/utils/repairMistakenBrands'
+import { repairWailianContacts } from './features/order/utils/repairWailianContacts'
 import { useOrderStore } from '@/stores/orderStore'
 import { ROUTES } from '@/routes/route'
 import { Home, Calendar, CheckCircle, Package, BarChart3, Settings, RefreshCw } from 'lucide-react'
@@ -41,6 +42,7 @@ export default function App() {
     runBrandBackfillOnce() // P0-102：品牌识别一次性回溯（标记幂等）
     repairGroupNoticeNames() // P0-123：群公告错单姓名自修复（标记幂等，仅群公告来源）
     repairMistakenBrands() // P0-136：桩名称品牌错单自愈（标记幂等，brand串位/空/未知）
+    repairWailianContacts() // P0-138：外联单车主姓名优先+双联系人补录（标记幂等）
   }, [setOrders])
 
   useEffect(() => {
