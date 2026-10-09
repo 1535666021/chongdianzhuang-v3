@@ -4,6 +4,7 @@
  * ============================================================ */
 
 import type { ParsedOrderItem } from './parser-core';
+import { APPOINTMENT_EXCLUDE_KEYS } from './parser-core';
 import { PILE_BRAND_KEYWORDS } from '@/constants/brands';
 import {
   PHONE_RE, VIN_SEARCH_RE, POWER_RE,
@@ -415,6 +416,30 @@ function applyWailianUnified(block: string, item: ParsedOrderItem): void {
   }
 }
 
+/** P0-141：KV姓名优先级（客户名称/车主姓名/购车人 显式键优先于用户信息行退化提取）+用户信息行进双联系人体系 */
+function applyKvNamePriority(block: string, item: ParsedOrderItem): void {
+  const kvGet = (key: string): string => {
+    const m = block.match(new RegExp(key + '[:：]\s*([^\n\r]+)'))
+    return m ? m[1].trim() : ''
+  }
+  const explicitName = kvGet('客户名称') || kvGet('车主姓名') || kvGet('购车人')
+  if (explicitName && item.customerName !== explicitName) item.customerName = explicitName.replace(/[-\s]+$/, '').trim()
+  const userInfo = kvGet('用户信息') || (block.match(/用户信息[:：]\s*([^\n\r]+)/)?.[1] || '').trim()
+  if (userInfo) {
+    const um = userInfo.match(/^(.*?)(1[3-9]\d{9})$/)
+    if (um) {
+      const cName = um[1].replace(/[-\s]+$/, '').trim()
+      const cPhone = um[2]
+      const contacts = item.contacts || []
+      if (cName && !contacts.some((c) => c.relation === '联系人' && c.name === cName)) {
+        contacts.push({ relation: '联系人', name: cName, phone: cPhone })
+        item.contacts = contacts
+      }
+      if (!item.phone) item.phone = cPhone
+    }
+  }
+}
+
 /** P0-140-R4 甲方铁律：既有解析"合理"→零触碰；识别不出/错误→万联兜底。禁止改动正常格式路径。 */
 function isSaneFlowResult(item: ParsedOrderItem, block: string): boolean {
   const name = (item.customerName || '').trim()
@@ -435,14 +460,27 @@ function isSaneFlowResult(item: ParsedOrderItem, block: string): boolean {
 export function parseBlock(block: string): ParsedOrderItem {
   const existing = parseBlockLegacy(block)
   applyWailianUnified(block, existing)
+  applyKvNamePriority(block, existing)
   if (isSaneFlowResult(existing, block)) return existing
   const wanlian = parseWanlianFlowBlock(block)
   if (wanlian) return wanlian
-  // P0-140-R5 兜底第三级：地址串位修正（谢素玲形态，非万联格式）——从原文抽含省市真地址段
+  // P0-140-R5/141 兜底第三级：地址串位修正+VIN/HW单号/车型抽提（流式地址锚定泛化）
   const name3 = (existing.customerName || '').trim()
   const addr3 = (existing.address || '').trim()
-  if (addr3 === name3 || (name3.length >= 2 && addr3.startsWith(name3))) {
-    const addrM = block.match(/([\u4e00-\u9fa5]{2,8}(?:省|市|区|县)[\u4e00-\u9fa5A-Za-z0-9]{2,30})/)
+  const vinG = block.match(/(?=[A-HJ-NPR-Z0-9]*[A-Z])[A-HJ-NPR-Z0-9]{17}/)
+  if (vinG) {
+    if (!existing.vin) existing.vin = vinG[0]
+    if (existing.address.includes(vinG[0])) existing.address = existing.address.slice(0, existing.address.indexOf(vinG[0])).trim()
+  }
+  const hwG = block.match(/HW\d{16,20}/)
+  if (hwG && !existing.orderNo) existing.orderNo = hwG[0]
+  if (vinG && !existing.vehicleModel) {
+    const after = block.slice(block.indexOf(vinG[0]) + 17).trim()
+    const vmG = after.match(/^([\u4e00-\u9fa5A-Za-z0-9]{2,12})[\s\d]/)
+    if (vmG && vmG[1] !== existing.customerName) existing.vehicleModel = vmG[1]
+  }
+  if (addr3 === name3 || (name3.length >= 2 && addr3.startsWith(name3)) || /充电桩|\d+KW/.test(addr3)) {
+    const addrM = block.match(/([\u4e00-\u9fa5]{2,8}(?:省|市|区|县)[\u4e00-\u9fa50-9]{2,30})/)
     if (addrM) existing.address = addrM[1].trim()
   }
   return existing

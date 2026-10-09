@@ -10,7 +10,8 @@ import { useOrderStore } from '@/stores/orderStore'
 export interface FlowRepairReport { scanned: number; repaired: number; marked: number; skipped: number }
 
 export function isWanlianFlowRaw(rawText?: string): boolean {
-  return !!rawText && /^D\d{16}WL/.test(rawText.trim())
+  const t = (rawText || '').trim()
+  return !!t && (/^D\d{16}WL/.test(t) || /HW\d{16}/.test(t) || /客户名称[:：]/.test(t))
 }
 
 export interface FlowRepairReport { scanned: number; repaired: number; marked: number; skipped: number; misMarked: number }
@@ -24,13 +25,14 @@ export function repairWanlianFlowOrders(): FlowRepairReport {
     report.scanned++
     const hadMark = !!(order as unknown as { _flowRepaired?: boolean })._flowRepaired
     const fresh = parseBlock(order.rawText!.trim())
-    if (!fresh || !fresh.orderNo) { report.skipped++; continue }
+    if (!fresh || (!fresh.orderNo && !fresh.customerName)) { report.skipped++; continue } // P0-141: KV类无单号键但有姓名仍可比对更正
     const patch: Partial<Order> = {}
     const fields: Array<[keyof Order, unknown]> = [
       ['orderNo', fresh.orderNo], ['platformName', fresh.platformName], ['customerName', fresh.customerName],
       ['phone', fresh.phone], ['address', fresh.address], ['vin', fresh.vin], ['powerKw', fresh.powerKw],
       ['vehicleModel', fresh.vehicleModel], ['pileName', fresh.pileName], ['installMode', fresh.installMode],
       ['remark', fresh.remark], ['brandName', fresh.brandName],
+      ['appointmentDate', fresh.appointmentDate || ''], // P0-141: 权益到期误标预约的存量一并清除
     ]
     for (const [k, v] of fields) {
       if ((order[k] || '') !== (v || '')) (patch as Record<string, unknown>)[k] = v

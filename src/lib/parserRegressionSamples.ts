@@ -9,6 +9,10 @@ export const REGRESSION_SAMPLES: RegressionSample[] = [
   { name: '样本C(R4)', input: 'D2026100101010003WL lxTestGDzG 13800001111 安徽省淮北市 恒大名都9栋 LK6ADAE35TG000000 7KW充电桩+30米安装', expect: { orderNo: 'D2026100101010003', customerName: 'lxTestGDzG', phone: '13800001111', address: '安徽省淮北市恒大名都9栋', vin: 'LK6ADAE35TG000000', powerKw: '7' } },
   { name: '地址串位(P0-140-R5 谢素玲形态 addr=name应修复)', input: '谢素玲 13900003333 安徽省宿州市埇桥区某小区3栋 套餐：20米',
     expect: { customerName: '谢素玲', address: '安徽省宿州市埇桥区某小区3栋 套餐：20米' } }, // 既有解析合理(铁律零触碰), 套餐尾=既有行为锁
+  { name: '均胜KV(P0-141 客户名称优先+联系人+权益到期排除)', input: '202609220808-B长城-长城魏牌7KW墙盒-30米基础安装套餐\n是否带桩：是\n客户名称：李测试\n用户信息：朱先生-13900001111\n车架号/VIN：LGWFGVA81SM000000\n安装地址：安徽省-淮北市-烈山区-杨庄街道二郎庙村三组\n权益到期时间：2027-10-26\n车型：魏牌',
+    expect: { customerName: '李测试', phone: '13900001111', vin: 'LGWFGVA81SM000000', appointmentDate: '' } },
+  { name: '均胜流式尾段(P0-141 地址止VIN前+单号/车型入位)', input: '姓名 甲 电话 13900004444 均胜长城 安徽省淮北市某区凤凰社区 L6T79BAZ3SV000000 银河M9 HW2025121316161800001 2026/12/12',
+    expect: { address: '安徽省淮北市某区凤凰社区', vin: 'L6T79BAZ3SV000000', vehicleModel: '银河M9', orderNo: 'HW2025121316161800001' } },
   { name: '微信包装(P0-132)', input: '「方中发💍189 5605 1764 16:47」\n"订单来源：妍伟（送桩卷）\n颜伟\n所属品牌：吉利星愿\n套餐：20米\n购车人电话：139 0000 1111\n安装地址：安徽省合肥市包河区测试小区1栋"', expect: { customerName: '颜伟', phone: '13900001111', platformName: '妍伟' } },
 ]
 export function runRegressionSamples(parse: (text: string) => { items: Array<Record<string, unknown>> }): { passed: number; failed: number; failures: string[] } {

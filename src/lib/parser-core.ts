@@ -83,9 +83,12 @@ export const PLATFORM_HINT_WORDS = [...PLATFORM_NAMES].filter((name) => name !==
 export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申请|到货|加急|预约|京东|苏宁|挚达|维修|服务|套包|套餐|预排|上门|检测|拆桩|充电桩|联系|订单号|外联单|编号|地址|电话|备注|车架|用户|省市|小区|街道|工单|日期|订单来源|所属品牌|来源渠道)/;
 
 /** 键值块字段映射 */
+/** P0-141：预约日期提取排除键清单（权益到期/客服在线等非预约语义键，集中常量禁散落） */
+export const APPOINTMENT_EXCLUDE_KEYS = ['权益到期时间', '到期', '客服在线时间', '在线时间', '专属客服']
+
 export const KV_FIELD_KEYS = {
   orderNo: ['订单号', '安装订单号', '安装工单号', '服务编号', '服务单号', '外联单号'],
-  customerName: ['订单姓名', '客户姓名', '联系人', '车主姓名', '姓名', '用户姓名', '车主', '客户', '姓名信息', '联系人姓名', '购车人/电话', '联系人/电话', '购车人', '购车人姓名'],
+  customerName: ['客户名称', '订单姓名', '客户姓名', '联系人', '车主姓名', '姓名', '用户姓名', '车主', '客户', '姓名信息', '联系人姓名', '购车人/电话', '联系人/电话', '购车人', '购车人姓名'],
   phone: ['真实号码', '客户手机', '用户电话', '联系电话', '联系人电话', '车主电话'],
   address: ['安装地址', '用户地址', '收件地址', '详细地址'],
   brandName: ['服务品牌', '品牌', '所属品牌'],
@@ -231,7 +234,16 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
     const m = blockText.match(/桩产品名称[:：]\s*([^\s:：]+)/);
     if (m) item.brandName = extractBrandName(m[1]) || m[1].split('-')[0].trim();
   }
-  if (!item.appointmentDate) item.appointmentDate = blockText.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/)?.[0].replace(/\//g, '-') ?? '';
+  // P0-141：预约日期排除键清单（按行跳排除键）
+  if (!item.appointmentDate) {
+    const dates = blockText.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/g) || []
+    for (const d of dates) {
+      const line = blockText.split('\n').find((l) => l.includes(d)) || ''
+      if (APPOINTMENT_EXCLUDE_KEYS.some((k) => line.includes(k))) continue
+      item.appointmentDate = d.replace(/\//g, '-')
+      break
+    }
+  }
   if (item.powerKw) {
     const m = item.powerKw.match(/(\d+(?:\.\d+)?)/);
     if (m) item.powerKw = m[1];
