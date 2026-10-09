@@ -4,7 +4,7 @@
  * 一致则仅置标；无rawText或非万联→跳过计数。
  */
 import type { Order } from '@/types'
-import { parseFlowBlock } from '@/lib/parser-engines'
+import { parseBlock } from '@/lib/parser-engines'
 import { useOrderStore } from '@/stores/orderStore'
 
 export interface FlowRepairReport { scanned: number; repaired: number; marked: number; skipped: number }
@@ -20,7 +20,7 @@ export function repairWanlianFlowOrders(): FlowRepairReport {
     if ((order as unknown as { _flowRepaired?: boolean })._flowRepaired) continue
     if (!isWanlianFlowRaw(order.rawText)) continue
     report.scanned++
-    const fresh = parseFlowBlock(order.rawText!.trim())
+    const fresh = parseBlock(order.rawText!.trim())
     if (!fresh || !fresh.orderNo) { report.skipped++; continue }
     const patch: Partial<Order> = {}
     const fields: Array<[keyof Order, unknown]> = [

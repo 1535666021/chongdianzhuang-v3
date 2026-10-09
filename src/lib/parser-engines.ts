@@ -196,13 +196,18 @@ function parseWanlianFlowBlock(block: string): ParsedOrderItem | null {
     item.phone = phoneM[0]
     const before = text.slice(0, phoneM.index ?? 0).trim()
     const segs = before.split(/\s+/)
-    let last = segs[segs.length - 1] || ''
-    if (last.length > 6) {
-      const tail = before.slice(-1)
-      last = /[A-Za-z]/.test(tail) ? tail : ''
+    const last = segs[segs.length - 1] || ''
+    if (segs.length > 1) {
+      if (last && !/省|市|县|区|镇|村|街道/.test(last)) nameSeg = last
+    } else {
+      let cand = last
+      if (cand.length > 6) {
+        const tail = before.slice(-1)
+        cand = /[A-Za-z]/.test(tail) ? tail : ''
+      }
+      if (cand.length <= 6 && !/省|市|县|区|镇|村|街道/.test(cand)) nameSeg = cand
     }
-    if (last.length <= 6 && !/省|市|县|区|镇|村|街道/.test(last)) nameSeg = last
-    isVariant2 = nameSeg !== '' && segs.length > 1
+    isVariant2 = nameSeg !== '' && /省|市|县|区|镇|村/.test(text.slice(head[0].length, (phoneM.index ?? 0)))
   }
   item.customerName = nameSeg
   // 功率：VIN移除后独立匹配（防VIN尾3781007KW粘连）
@@ -259,9 +264,6 @@ function parseWanlianFlowBlock(block: string): ParsedOrderItem | null {
 }
 
 export function parseFlowBlock(block: string): ParsedOrderItem {
-  // P0-140-R3：万联流式双变体优先
-  const wanlian = parseWanlianFlowBlock(block)
-  if (wanlian) return wanlian
   const compactItem = parseCompactFlowBlock(block);
   if (compactItem) return compactItem;
   const item = emptyItem();
@@ -390,25 +392,20 @@ function inferNature(item: ParsedOrderItem): void {
   parsedItem.nature = '安装';
 }
 
-export function parseBlock(block: string): ParsedOrderItem {
-  // P0-140-R3：万联流式双变体最高优先（含空格表格形态，先于wanbang/KV/流式表格分派）
-  const wanlianFirst = parseWanlianFlowBlock(block)
-  if (wanlianFirst) return wanlianFirst
-  if (isWanbangBlock(block)) {
-    const item = parseWanbangBlock(block);
-    inferInstallType(item);
-    inferNature(item);
-  const kvSafe = (key: string): string => {
-    const m = block.match(new RegExp(key + '[:：]\\s*([^\\n\\r]+)'))
+const kvSafe = (key: string, blk: string): string => {
+    const m = blk.match(new RegExp(key + '[:：]\\s*([^\\n\\r]+)'))
     return m ? m[1].trim() : ''
   }
+
+/** P0-138 外联单统一口径（已验收） */
+function applyWailianUnified(block: string, item: ParsedOrderItem): void {
   // P0-138：外联单统一口径（各解析分支之后应用）——姓名/电话车主优先于联系人；双联系人结构化入库；行尾日期段剥离
   if (/外联单号[:：]/.test(block)) {
     const stripDate = (v: string) => (v || '').replace(/\s*\d{1,2}\.\d{1,2}-\d{1,2}\.\d{1,2}号?/g, '').trim()
-    const ownerName = stripDate(kvSafe('车主姓名') || kvSafe('车主'))
-    const ownerPhone = stripDate(kvSafe('车主电话'))
-    const contactName = stripDate(kvSafe('联系人'))
-    const contactPhone = stripDate(kvSafe('联系人电话'))
+    const ownerName = stripDate(kvSafe('车主姓名', block) || kvSafe('车主', block))
+    const ownerPhone = stripDate(kvSafe('车主电话', block))
+    const contactName = stripDate(kvSafe('联系人', block))
+    const contactPhone = stripDate(kvSafe('联系人电话', block))
     if (ownerName || contactName) item.customerName = ownerName || contactName
     if (ownerPhone || contactPhone) item.phone = ownerPhone || contactPhone
     const contacts: Array<{ relation: string; name: string; phone: string }> = []
@@ -416,6 +413,36 @@ export function parseBlock(block: string): ParsedOrderItem {
     if (contactName) contacts.push({ relation: '联系人', name: contactName, phone: contactPhone })
     if (contacts.length > 0) item.contacts = contacts
   }
+}
+
+/** P0-140-R4 甲方铁律：既有解析"合理"→零触碰；识别不出/错误→万联兜底。禁止改动正常格式路径。 */
+function isSaneFlowResult(item: ParsedOrderItem, block: string): boolean {
+  const name = (item.customerName || '').trim()
+  const addr = (item.address || '').trim()
+  if (!item.phone) return false
+  if (!name) return false
+  if (addr.endsWith(name)) return false
+  if (item.vin && addr.includes(item.vin)) return false
+  if (addr.includes('充电桩') || /\d+KW/.test(addr)) return false
+  if (/^D\d{16}WL/.test(block.trim()) && item.phone) {
+    const rawSeg = block.replace(/\s+/g, '').split(item.phone)[0].replace(/^D\d{16}WL/, '')
+    if (rawSeg.length > (addr + name).length) return false
+  }
+  return true
+}
+
+export function parseBlock(block: string): ParsedOrderItem {
+  const existing = parseBlockLegacy(block)
+  applyWailianUnified(block, existing)
+  if (isSaneFlowResult(existing, block)) return existing
+  const wanlian = parseWanlianFlowBlock(block)
+  return wanlian || existing
+}
+
+function parseBlockLegacy(block: string): ParsedOrderItem {  if (isWanbangBlock(block)) {
+    const item = parseWanbangBlock(block);
+    inferInstallType(item);
+    inferNature(item);
     return item;
   }
   const kvLineCount = block.split('\n').filter((l) => KEY_VALUE_RE.test(l.trim())).length;
