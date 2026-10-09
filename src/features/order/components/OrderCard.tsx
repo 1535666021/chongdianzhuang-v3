@@ -171,8 +171,8 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
                 key={c.relation}
                 className="order-card__phone"
                 onClick={(event) => { event.stopPropagation(); if (c.phone) window.location.href = `tel:${c.phone}` }}
-                onMouseDown={() => c.phone && handleLongPressStart(`${c.relation}：${c.name} ${c.phone}`)}
-                onTouchStart={() => c.phone && handleLongPressStart(`${c.relation}：${c.name} ${c.phone}`)}
+                onMouseDown={() => c.phone && handleLongPressStart(c.phone)}
+                onTouchStart={() => c.phone && handleLongPressStart(c.phone)}
               >
                 <Phone size={14} className="order-card__icon" />
                 <span>{c.relation}：{c.name} {c.phone}</span>
