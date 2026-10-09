@@ -12,7 +12,7 @@ import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
 import { restockTargets } from '../restock'
 import { activeOrders } from '../utils/recycleBin'
 import { toast } from '@/shared/hooks/useToast'
-import { Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
+import { Recycle, Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
@@ -118,6 +118,17 @@ export default function OrderList({ fixedStatus }: Props) {
             批量预约
             {appointableOrders.length > 0 && <span className="order-list__badge">{appointableOrders.length}</span>}
           </button>
+          {/* P0-139-R1 入口（返工）：回收站——已完成页顶栏工具区，与一键补桩/批量预约同款样式，不挤占列表首屏 */}
+          {fixedStatus === '已完成' && (
+            <button
+              onClick={() => navigate('/recycle')}
+              className="order-list__btn order-list__btn--secondary"
+              title="回收站"
+            >
+              <Recycle size={16} />
+              回收站
+            </button>
+          )}
         </div>
       </div>
 
