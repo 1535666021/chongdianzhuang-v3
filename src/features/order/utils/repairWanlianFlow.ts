@@ -13,13 +13,16 @@ export function isWanlianFlowRaw(rawText?: string): boolean {
   return !!rawText && /^D\d{16}WL/.test(rawText.trim())
 }
 
+export interface FlowRepairReport { scanned: number; repaired: number; marked: number; skipped: number; misMarked: number }
+
 export function repairWanlianFlowOrders(): FlowRepairReport {
-  const report: FlowRepairReport = { scanned: 0, repaired: 0, marked: 0, skipped: 0 }
+  // P0-140-R5：_flowRepaired 降级为"上次核对一致"快照——有标记仍重解析：一致→跳过，不一致→照常更正（错标纠正）。幂等由"结果一致"天然保证。
+  const report: FlowRepairReport = { scanned: 0, repaired: 0, marked: 0, skipped: 0, misMarked: 0 }
   const store = useOrderStore.getState()
   for (const order of store.orders) {
-    if ((order as unknown as { _flowRepaired?: boolean })._flowRepaired) continue
     if (!isWanlianFlowRaw(order.rawText)) continue
     report.scanned++
+    const hadMark = !!(order as unknown as { _flowRepaired?: boolean })._flowRepaired
     const fresh = parseBlock(order.rawText!.trim())
     if (!fresh || !fresh.orderNo) { report.skipped++; continue }
     const patch: Partial<Order> = {}
@@ -35,13 +38,14 @@ export function repairWanlianFlowOrders(): FlowRepairReport {
     if (Object.keys(patch).length > 0) {
       store.updateOrder(order.id, { ...patch, _flowRepaired: true } as Partial<Order>)
       report.repaired++
+      if (hadMark) report.misMarked++ // 错标纠正：有标记但现解析不一致（R3错标事故单）
     } else {
-      store.updateOrder(order.id, { _flowRepaired: true } as Partial<Order>)
+      if (!hadMark) store.updateOrder(order.id, { _flowRepaired: true } as Partial<Order>)
       report.marked++
     }
   }
   if (report.scanned > 0) {
-    console.log(`[P0-140迁移] 扫描${report.scanned} 更正${report.repaired} 一致置标${report.marked} 跳过${report.skipped}`)
+    console.log(`[P0-140迁移] 扫描${report.scanned} 更正${report.repaired} 错标纠正${report.misMarked} 一致${report.marked} 跳过${report.skipped}`)
   }
   return report
 }

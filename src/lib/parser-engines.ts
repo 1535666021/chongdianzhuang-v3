@@ -245,7 +245,7 @@ function parseWanlianFlowBlock(block: string): ParsedOrderItem | null {
   item.address = address.replace(/\s+/g, '')
   // 车型（变体1）：WL后~电话前，惰性捕获，尾单大写字母（Q标记）剥离
   const modelM = text.match(/WL\s*([\u4e00-\u9fa5A-Za-z0-9]+?)[A-Z]?1[3-9]\d{9}/)
-  if (modelM) item.vehicleModel = modelM[1]
+  if (modelM && modelM[1] !== nameSeg) item.vehicleModel = modelM[1] // 捕获值=姓名段则跳过（防把姓名误作车型写回正确单——R5已正确单零改动）
   // 桩名称
   const pileM = text.match(/充电桩（([^）]*)）/)
   item.pileName = pileM ? `充电桩（${pileM[1]}）` : ''
@@ -422,6 +422,7 @@ function isSaneFlowResult(item: ParsedOrderItem, block: string): boolean {
   if (!item.phone) return false
   if (!name) return false
   if (addr.endsWith(name)) return false
+  if (addr === name || (name.length >= 2 && addr.startsWith(name))) return false // P0-140-R5：地址被姓名占用（真地址丢失形态，谢素玲单）
   if (item.vin && addr.includes(item.vin)) return false
   if (addr.includes('充电桩') || /\d+KW/.test(addr)) return false
   if (/^D\d{16}WL/.test(block.trim()) && item.phone) {
@@ -436,7 +437,15 @@ export function parseBlock(block: string): ParsedOrderItem {
   applyWailianUnified(block, existing)
   if (isSaneFlowResult(existing, block)) return existing
   const wanlian = parseWanlianFlowBlock(block)
-  return wanlian || existing
+  if (wanlian) return wanlian
+  // P0-140-R5 兜底第三级：地址串位修正（谢素玲形态，非万联格式）——从原文抽含省市真地址段
+  const name3 = (existing.customerName || '').trim()
+  const addr3 = (existing.address || '').trim()
+  if (addr3 === name3 || (name3.length >= 2 && addr3.startsWith(name3))) {
+    const addrM = block.match(/([\u4e00-\u9fa5]{2,8}(?:省|市|区|县)[\u4e00-\u9fa5A-Za-z0-9]{2,30})/)
+    if (addrM) existing.address = addrM[1].trim()
+  }
+  return existing
 }
 
 function parseBlockLegacy(block: string): ParsedOrderItem {  if (isWanbangBlock(block)) {
