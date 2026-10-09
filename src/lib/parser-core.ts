@@ -27,6 +27,10 @@ export interface ParsedOrderItem {
   platformName: string;
   remark: string;
   installType: string;
+  /** P0-140-R3：万联流式 */
+  vehicleModel?: string;
+  pileName?: string;
+  installMode?: string;
   appointmentDate: string;
   region: string;
   rawText?: string;
@@ -118,6 +122,9 @@ export function emptyItem(): ParsedOrderItem {
     orderNo: '',
     customerName: '',
     subBrand: '',
+    vehicleModel: '',
+    pileName: '',
+    installMode: '',
     phone: '',
     address: '',
     brandName: '',

@@ -22,6 +22,10 @@ export interface Order extends BaseEntity {
   platformFee: number
   actualProfit: number
   notes: string
+  /** P0-140-R3：万联流式变体——车型/桩名称/安装方式（可空） */
+  vehicleModel?: string
+  pileName?: string
+  installMode?: string
   meterStatus: '已安装' | '未安装'
   meterNumber?: string
   completeDate?: string

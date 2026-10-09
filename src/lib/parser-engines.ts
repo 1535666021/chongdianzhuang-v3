@@ -174,7 +174,94 @@ function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
   return item;
 }
 
+/** P0-140-R3：万联(WL)流式双变体专用解析。
+ * 变体1: D单号 WL 车型 Q电话 地址 VIN 7KW 桩 …（姓名段紧贴电话前）
+ * 变体2: D单号 WL 地址 姓名 电话 VIN 7KW 桩 …（地址在姓名电话前）
+ * 核心：VIN先剥块头匹配（防误中单号）；地址右界锚定防吞串；功率在VIN移除后匹配防粘连。
+ */
+function parseWanlianFlowBlock(block: string): ParsedOrderItem | null {
+  const head = block.match(/^D\d{16}WL/)
+  if (!head) return null
+  const item = emptyItem()
+  item.orderNo = head[0].slice(0, 17)
+  let text = block.replace(/\s+/g, ' ').trim()
+  // VIN：剥块头后匹配17位必含字母（单号整体移除，无歧义）
+  const vinM = text.slice(head[0].length).match(/(?=[A-HJ-NPR-Z0-9]*[A-Z])[A-HJ-NPR-Z0-9]{17}/)
+  item.vin = vinM ? vinM[0] : ''
+  // 电话11位 + 紧贴前非号码段=姓名（段>6字取尾单字母Q标记；汉字尾=地址臆造置空——甲方口径1）
+  let nameSeg = ''
+  let isVariant2 = false
+  const phoneM = text.match(/1[3-9]\d{9}/)
+  if (phoneM) {
+    item.phone = phoneM[0]
+    const before = text.slice(0, phoneM.index ?? 0).trim()
+    const segs = before.split(/\s+/)
+    let last = segs[segs.length - 1] || ''
+    if (last.length > 6) {
+      const tail = before.slice(-1)
+      last = /[A-Za-z]/.test(tail) ? tail : ''
+    }
+    if (last.length <= 6 && !/省|市|县|区|镇|村|街道/.test(last)) nameSeg = last
+    isVariant2 = nameSeg !== '' && segs.length > 1
+  }
+  item.customerName = nameSeg
+  // 功率：VIN移除后独立匹配（防VIN尾3781007KW粘连）
+  const textNoVin = item.vin ? text.replace(item.vin, ' ') : text
+  const kwM = textNoVin.match(/(\d+)KW/)
+  if (kwM) {
+    const kwAt = kwM.index ?? 0
+    const prev = kwAt > 0 ? (textNoVin[kwAt - 1] || '') : ''
+    if (!/[0-9A-Za-z]/.test(prev)) item.powerKw = kwM[1]
+  }
+  // 地址右界锚定：止于 姓名段/电话/VIN/KW/充电桩 任一之前
+  const restAfterWl = text.slice(head[0].length).trim()
+  const anchors: number[] = []
+  if (isVariant2 && nameSeg) anchors.push(restAfterWl.indexOf(nameSeg))
+  if (phoneM) anchors.push(restAfterWl.indexOf(phoneM[0]))
+  if (item.vin) anchors.push(restAfterWl.indexOf(item.vin))
+  const kwIdx = restAfterWl.search(/\d+KW/)
+  if (kwIdx >= 0) anchors.push(kwIdx)
+  const pileIdx = restAfterWl.indexOf('充电桩')
+  if (pileIdx >= 0) anchors.push(pileIdx)
+  const rightBound = anchors.filter((x) => x > 0).sort((a, b) => a - b)[0] ?? restAfterWl.length
+  // 变体2：地址=WL后~姓名段前；变体1（含Q紧贴）：地址=电话后~锚点前
+  let address = ''
+  if (isVariant2) {
+    address = restAfterWl.slice(0, rightBound).trim()
+  } else if (phoneM) {
+    const afterPhone = restAfterWl.slice(restAfterWl.indexOf(phoneM[0]) + 11).trim()
+    const a2: number[] = []
+    if (item.vin) a2.push(afterPhone.indexOf(item.vin))
+    a2.push(afterPhone.search(/\d+KW/))
+    a2.push(afterPhone.indexOf('充电桩'))
+    const rb2 = a2.filter((x) => x > 0).sort((a, b) => a - b)[0] ?? afterPhone.length
+    address = afterPhone.slice(0, rb2).trim()
+  }
+  item.address = address.replace(/\s+/g, '')
+  // 车型（变体1）：WL后~电话前，惰性捕获，尾单大写字母（Q标记）剥离
+  const modelM = text.match(/WL\s*([\u4e00-\u9fa5A-Za-z0-9]+?)[A-Z]?1[3-9]\d{9}/)
+  if (modelM) item.vehicleModel = modelM[1]
+  // 桩名称
+  const pileM = text.match(/充电桩（([^）]*)）/)
+  item.pileName = pileM ? `充电桩（${pileM[1]}）` : ''
+  // 安装方式
+  const imM = text.match(/(地面壁挂|壁挂|立柱|电表已安装)/)
+  item.installMode = imM ? imM[1] : ''
+  // 挚达五菱 → 平台挚达+品牌五菱（P0-113-R1二维门槛）
+  if (/挚达五菱/.test(text)) { item.platformName = '挚达'; item.brandName = '五菱' }
+  else if (/五菱/.test(text)) item.brandName = '五菱'
+  // 尾部括号→备注（原文保留）
+  const noteM = text.match(/（([^）]*)）\s*$/)
+  item.remark = noteM ? noteM[1] : ''
+  item.serviceType = '安装'
+  item.rawText = block
+  return item
+}
+
 export function parseFlowBlock(block: string): ParsedOrderItem {
+  // P0-140-R3：万联流式双变体优先
+  const wanlian = parseWanlianFlowBlock(block)
+  if (wanlian) return wanlian
   const compactItem = parseCompactFlowBlock(block);
   if (compactItem) return compactItem;
   const item = emptyItem();
@@ -304,6 +391,9 @@ function inferNature(item: ParsedOrderItem): void {
 }
 
 export function parseBlock(block: string): ParsedOrderItem {
+  // P0-140-R3：万联流式双变体最高优先（含空格表格形态，先于wanbang/KV/流式表格分派）
+  const wanlianFirst = parseWanlianFlowBlock(block)
+  if (wanlianFirst) return wanlianFirst
   if (isWanbangBlock(block)) {
     const item = parseWanbangBlock(block);
     inferInstallType(item);
