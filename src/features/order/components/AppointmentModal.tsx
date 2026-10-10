@@ -36,6 +36,8 @@ export default function AppointmentModal({ order, onClose }: Props) {
       appointmentDate: date,
       appointmentTime: time,
       appointmentNote: note || undefined,
+      availableFrom: undefined, // P0-142: 约定具体日期→自动清除可约窗口
+      availableTo: undefined,
     })
     onClose()
   }

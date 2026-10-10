@@ -40,6 +40,9 @@ export interface Order extends BaseEntity {
   orderNo?: string
   vin?: string
   brandName?: string
+  /** P0-142：可约时间窗口（绝对日期 YYYY-MM-DD，设档锁定，预约成功自动清除） */
+  availableFrom?: string
+  availableTo?: string
   /** P0-139-R1：软删除标记（时间戳）；回收站单，undefined=正常 */
   deletedAt?: number
   /** P0-138：双联系人结构化（外联单车主+联系人）；主字段customerName/phone=车主优先，全链既有消费方零改动 */

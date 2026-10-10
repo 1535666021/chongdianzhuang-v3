@@ -13,11 +13,15 @@ import { Calendar, MapPin, Phone, User, MoreVertical, ClipboardList, CheckCircle
 import { calcMaterialCost, calcOrderFinancials, getOrderServiceFee } from '@/shared/utils/orderCalc'
 import { getPlatformLabel } from '@/constants/platforms'
 import { toast } from '@/shared/hooks/useToast'
+import { AVAILABLE_WINDOW_TIERS, getAvailableWindow, isAvailableWindowExpired } from '@/constants/availableWindow'
 import OrderCardTags from './OrderCardTags'
 import '../../../shared/components/OrderCard.css'
 import '../../../shared/components/Modal.css'
 
 interface OrderCardProps {
+  /** P0-142：可约时间窗口行（仅首页待办传true） */
+  showAvailableWindow?: boolean
+
   order: Order
   onClick?: () => void
   onSurvey?: (order: Order) => void
@@ -32,10 +36,16 @@ function dedupeAddress(address: string) {
   return address.replace(/^(.+?市)\1/, '$1')
 }
 
-export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform }: OrderCardProps) {
+export default function OrderCard({ order, onClick, showMenu = false, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform, showAvailableWindow = false }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
+  const [showTierPicker, setShowTierPicker] = useState(false)
+  const windowExpired = isAvailableWindowExpired(order)
+  const pickTier = (tierKey: string) => {
+    const win = getAvailableWindow(tierKey)
+    if (win) { updateOrder(order.id, { availableFrom: win.from, availableTo: win.to }); setShowTierPicker(false) }
+  }
   const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
 
   const customerPrice = order.customerPrice || 0
@@ -311,12 +321,35 @@ export default function OrderCard({ order, onClick, showMenu = false, isToday = 
             <span>彻底删除</span>
           </button>
         ) : (
-          <div
-            className="order-card__appointment-btn"
-            onClick={(e) => { e.stopPropagation(); setShowAppointment(true) }}
-          >
-            <span>预约</span>
-          </div>
+          <>
+            {/* P0-142：可约时间窗口——仅首页待办；未设→设可约；已设→区间点击重选；到期红显 */}
+            {showAvailableWindow && (windowExpired ? (
+              <div className="order-card__available-window order-card__available-window--expired" onClick={(e) => { e.stopPropagation(); setShowTierPicker(!showTierPicker) }}>
+                ⚠️ 可约 {order.availableFrom?.slice(5)}~{order.availableTo?.slice(5)} 已到期，点击改档
+              </div>
+            ) : order.availableFrom ? (
+              <div className="order-card__available-window" onClick={(e) => { e.stopPropagation(); setShowTierPicker(!showTierPicker) }}>
+                可约 {order.availableFrom.slice(5)}~{order.availableTo?.slice(5)}
+              </div>
+            ) : (
+              <div className="order-card__available-window order-card__available-window--empty" onClick={(e) => { e.stopPropagation(); setShowTierPicker(!showTierPicker) }}>
+                设可约
+              </div>
+            ))}
+            {showAvailableWindow && showTierPicker && (
+              <div className="order-card__available-window-picker" onClick={(e) => e.stopPropagation()}>
+                {AVAILABLE_WINDOW_TIERS.map((t) => (
+                  <button key={t.key} onClick={() => pickTier(t.key)}>{t.label}</button>
+                ))}
+              </div>
+            )}
+            <div
+              className="order-card__appointment-btn"
+              onClick={(e) => { e.stopPropagation(); setShowAppointment(true) }}
+            >
+              <span>预约</span>
+            </div>
+          </>
         )}
 
         {showMenu && (

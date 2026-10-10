@@ -176,6 +176,7 @@ export default function OrderList({ fixedStatus }: Props) {
                     key={order.id}
                     order={order}
                     showMenu={fixedStatus === '待办' || fixedStatus === '已预约'}
+                    showAvailableWindow={fixedStatus === '待办'}
                     isToday={order.appointmentDate === today}
                     onClick={() => navigate(`/orders/${order.id}`)}
                     onSurvey={setSurveyOrder}
