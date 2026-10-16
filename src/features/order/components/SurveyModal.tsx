@@ -33,7 +33,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     selectedBrand, setSelectedBrand,
     updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
     calcCableCost,
-    serviceFee, feeLabel, fullCost, platformRate, save,
+    serviceFee, feeLabel, fullCost, refreshCost, platformRate, save,
   } = useSurvey(order)
 
   const [showDropdown, setShowDropdown] = useState(false)
@@ -393,6 +393,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               serviceFee={serviceFee}
               feeLabel={feeLabel}
               fullCostResult={fullCost}
+              onCostRebound={refreshCost}
               platformRate={platformRate}
               geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
             />

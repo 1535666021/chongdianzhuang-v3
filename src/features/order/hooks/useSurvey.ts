@@ -62,12 +62,15 @@ export function useSurvey(order: Order) {
 
   // P0-188-R1：成本侧统一出口 calcFullMaterialCost（电缆全量+PVC+漏保盒+漏保器矩阵自动计入；
   // 列表内电缆/漏保盒/漏保器行由出口统一处理故过滤；未绑定→unmatched 橙色警示 §5.3）
+  // P0-191-R2：改绑/绑定后 bump 版本触发重算（金额实时刷新）
+  const [costVersion, setCostVersion] = useState(0)
+  const refreshCost = useCallback(() => setCostVersion((v) => v + 1), [])
   const fullCost = useMemo(() => calcFullMaterialCost({
     brandName: effectiveBrand,
     powerKw: order.powerKw,
     cableMeters: form.cableDistance || 0,
     extraItems: (form.estimatedMaterials || []).filter((m) => !isCableMat(m.name) && !isBreakerBoxRow(m.name) && !isBreakerMaterial(m.name)).map((m) => ({ name: m.name, quantity: m.quantity })),
-  }), [effectiveBrand, order.powerKw, form.cableDistance, form.estimatedMaterials])
+  }), [effectiveBrand, order.powerKw, form.cableDistance, form.estimatedMaterials, costVersion])
 
   const calcCableCost = (name: string, distance: number) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
@@ -218,6 +221,7 @@ export function useSurvey(order: Order) {
     serviceFee,
     feeLabel,
     fullCost,
+    refreshCost,
     platformRate,
     save,
   }
