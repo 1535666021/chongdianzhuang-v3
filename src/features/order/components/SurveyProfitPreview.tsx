@@ -9,6 +9,79 @@ import { setCostMapping, getCostMapping } from '@/shared/storage/costMappingStor
 import type { SurveyMaterialItem } from '../types/survey'
 import './SurveyProfitPreview.css'
 
+// P0-191-R3：材料成本同源解析（主区/结论区共用，禁两份实现）
+function resolveSurveyCost(
+  materials: SurveyMaterialItem[],
+  geelyExemptBreaker: boolean,
+  fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] },
+) {
+  const costMaterials = geelyExemptBreaker ? materials.filter((m) => !isBreakerMaterial(m.name)) : materials
+  const costResult = calcMaterialCost(costMaterials)
+  return fullCostResult ? fullCostResult.total : costResult.total
+}
+
+/** P0-191-R3：成本逐项明细表+行内改绑/绑定（主区/结论区共用同一渲染，禁复制第二份实现）。
+ * 数据源=fullCostResult.items（金额读 amount 禁自算）；改绑走 onCostRebound 通知重算。
+ */
+function CostItemsTable({
+  fullCostResult,
+  onCostRebound,
+}: {
+  fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] }
+  onCostRebound?: () => void
+}) {
+  const [pickerFor, setPickerFor] = useState<string | null>(null)
+  const unitMeta = useMemo(() => getAllCostMaterials(), [])
+  const unitOf = (name: string) => unitMeta.find((m) => m.name === name)?.unit || ''
+  if (!fullCostResult) return <div className="text-xs text-gray-400 py-0.5">—（预估不可用）</div>
+  return (
+    <div className="mt-1 border-t border-dashed border-gray-200 pt-1">
+      {(fullCostResult.items || []).map((item) => {
+        const isUnmatched = fullCostResult!.unmatched.includes(item.name)
+        const isFreeRow = item.amount === 0 && item.unitCost === 0
+        return (
+          <div key={item.name} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 items-center py-0.5 text-xs">
+            <span className="text-gray-700 truncate">{item.name}</span>
+            <span className="text-gray-500">{item.quantity}{unitOf(getCostMapping(item.name) || item.name)}</span>
+            <span className="text-gray-500">¥{item.unitCost}</span>
+            <span className="text-gray-700 text-right w-14">{formatCurrency(item.amount)}</span>
+            <span className="w-12 text-right">
+              {isUnmatched ? (
+                <button type="button" className="text-orange-600 underline" onClick={() => setPickerFor(item.name)}>绑定</button>
+              ) : isFreeRow ? (
+                <span className="text-gray-300">—</span>
+              ) : (
+                <button type="button" className="text-blue-600 underline" onClick={() => setPickerFor(item.name)}>改绑</button>
+              )}
+            </span>
+          </div>
+        )
+      })}
+      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 items-center py-0.5 text-xs font-medium border-t border-gray-100 mt-0.5">
+        <span className="text-gray-700">合计</span><span /><span /><span className="text-right w-14">{formatCurrency(fullCostResult.total)}</span><span className="w-12" />
+      </div>
+      {fullCostResult.unmatched.length > 0 && (
+        <div className="py-0.5 text-xs" style={{ color: '#ea580c' }}>
+          <span>⚠ {fullCostResult.unmatched.join('、')}未绑定成本价，预估偏低</span>
+        </div>
+      )}
+      {pickerFor && (
+        <CostItemPicker
+          materialName={pickerFor}
+          selectedCostName={getCostMapping(pickerFor)}
+          onSelect={(costName) => {
+            // P0-191-R2/R3：改绑/绑定落库 cdz_cost_mapping_v1，通知重算→明细/合计/利润实时刷新
+            setCostMapping(pickerFor, costName)
+            setPickerFor(null)
+            onCostRebound?.()
+          }}
+          onClose={() => setPickerFor(null)}
+        />
+      )}
+    </div>
+  )
+}
+
 interface SurveyProfitPreviewProps {
   estimatedCost: number
   cableCost: number
@@ -35,25 +108,18 @@ export function SurveyProfitPreview({
   platformRate,
   geelyExemptBreaker = false,
 }: SurveyProfitPreviewProps) {
-  // P0-191-R2：行内改绑/绑定选择器（materialName=查询名），改绑后走 onCostRebound 通知重算
-  const [pickerFor, setPickerFor] = useState<string | null>(null)
-  const unitMeta = useMemo(() => getAllCostMaterials(), [])
-  const unitOf = (name: string) => unitMeta.find((m) => m.name === name)?.unit || ''
   const { customerReceivable, platformFee, materialCost, profit } = useMemo(() => {
-    const costMaterials = geelyExemptBreaker ? materials.filter((m) => !isBreakerMaterial(m.name)) : materials
-    const costResult = calcMaterialCost(costMaterials)
     const receivable = estimatedCost
     const fee = calcPlatformFee(estimatedCost, platformRate)
     return {
       customerReceivable: receivable,
       platformFee: fee,
-      // P0-188-R1：优先统一出口（凡使用即有成本），旧路径兜底
-      materialCost: fullCostResult ? fullCostResult.total : costResult.total,
+      // P0-191-R3：材料成本与结论区同源（resolveSurveyCost 唯一实现）
+      materialCost: resolveSurveyCost(materials, geelyExemptBreaker, fullCostResult),
       // P0-177-R3：勘测预览与完工/卡片/统计同出口（数值等价：fee取abs）
       profit: calcActualProfitByPolicy({
         customerPrice: receivable,
-        // P0-188-R1：优先统一出口（凡使用即有成本），旧路径兜底
-      materialCost: fullCostResult ? fullCostResult.total : costResult.total,
+        materialCost: resolveSurveyCost(materials, geelyExemptBreaker, fullCostResult),
         platformFee: fee,
         serviceFee,
         tripSubsidy: 0,
@@ -84,60 +150,11 @@ export function SurveyProfitPreview({
         <div className="survey-profit-preview__row">
           <span>预估材料成本</span><strong>-{formatCurrency(materialCost)}</strong>
         </div>
-        {/* P0-191-R2：成本逐项明细（默认展开），数据源=出口 items[]，金额读 amount 禁自算 */}
-        {!fullCostResult && (
-          <div className="survey-profit-preview__row text-xs text-gray-400">—（预估不可用）</div>
-        )}
-        {fullCostResult && (
-          <div className="mt-1 border-t border-dashed border-gray-200 pt-1">
-            {(fullCostResult.items || []).map((item) => {
-              const isUnmatched = fullCostResult.unmatched.includes(item.name)
-              const isFreeRow = item.amount === 0 && item.unitCost === 0
-              return (
-                <div key={item.name} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 items-center py-0.5 text-xs">
-                  <span className="text-gray-700 truncate">{item.name}</span>
-                  <span className="text-gray-500">{item.quantity}{unitOf(getCostMapping(item.name) || item.name)}</span>
-                  <span className="text-gray-500">¥{item.unitCost}</span>
-                  <span className="text-gray-700 text-right w-14">{formatCurrency(item.amount)}</span>
-                  <span className="w-12 text-right">
-                    {isUnmatched ? (
-                      <button type="button" className="text-orange-600 underline" onClick={() => setPickerFor(item.name)}>绑定</button>
-                    ) : isFreeRow ? (
-                      <span className="text-gray-300">—</span>
-                    ) : (
-                      <button type="button" className="text-blue-600 underline" onClick={() => setPickerFor(item.name)}>改绑</button>
-                    )}
-                  </span>
-                </div>
-              )
-            })}
-            <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 items-center py-0.5 text-xs font-medium border-t border-gray-100 mt-0.5">
-              <span className="text-gray-700">合计</span><span /><span /><span className="text-right w-14">{formatCurrency(fullCostResult.total)}</span><span className="w-12" />
-            </div>
-          </div>
-        )}
-        {fullCostResult && fullCostResult.unmatched.length > 0 && (
-          <div className="survey-profit-preview__row" style={{ color: '#ea580c' }}>
-            <span>⚠ {fullCostResult.unmatched.join('、')}未绑定成本价，预估偏低</span>
-          </div>
-        )}
+        {/* P0-191-R3：逐项明细表+行内改绑已移至结论区（预计赚块），主区不再重复 */}
         <div className={`survey-profit-preview__profit ${profit >= 0 ? 'is-positive' : 'is-negative'}`}>
           <span>预计利润</span><strong>{formatCurrency(profit)}</strong>
         </div>
       </div>
-      {pickerFor && (
-        <CostItemPicker
-          materialName={pickerFor}
-          selectedCostName={getCostMapping(pickerFor)}
-          onSelect={(costName) => {
-            // P0-191-R2：改绑/绑定落库 cdz_cost_mapping_v1，通知父级重算→明细/合计/利润实时刷新
-            setCostMapping(pickerFor, costName)
-            setPickerFor(null)
-            onCostRebound?.()
-          }}
-          onClose={() => setPickerFor(null)}
-        />
-      )}
     </CollapsePanel>
   )
 }
@@ -151,25 +168,32 @@ interface SurveyProfitConclusionProps {
   feeLabel?: string
   /** 客户应收（实收覆盖后的 finalFee 口径） */
   receivable: number
-  /** 预估材料成本（=本弹窗预估费用 totalEstimatedCost，与费用预估卡同源） */
-  estimatedCost: number
+  /** P0-191-R3：成本已改走 resolveSurveyCost 同源链路，此字段保留兼容、不再用于成本显示 */
+  estimatedCost?: number
   serviceFee: number
   platformRate: number
   /** 出差单：平台扣点免、出差补助照列 */
   isBusinessTrip?: boolean
+  /** P0-191-R3：成本同源入参（与主区同式） */
+  materials: SurveyMaterialItem[]
+  geelyExemptBreaker?: boolean
+  fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] }
+  onCostRebound?: () => void
 }
 
 export function SurveyProfitConclusion({
   feeLabel = '安装费',
   receivable,
-  estimatedCost,
   serviceFee,
   platformRate,
   isBusinessTrip = false,
+  materials,
+  geelyExemptBreaker = false,
+  fullCostResult,
+  onCostRebound,
 }: SurveyProfitConclusionProps) {
-  // P0-180：材料成本=弹窗预估费用（费用预估卡显示值），与 form 材料/电缆/超米同源，
-  // 弹窗内增删材料/改数量→totalEstimatedCost重算→本区实时联动；不在此二次计算（禁自算）
-  const materialCost = estimatedCost
+  // P0-191-R3：材料成本与主区同源（resolveSurveyCost 唯一实现），旧 estimatedCost 进成本路径清零
+  const materialCost = resolveSurveyCost(materials, geelyExemptBreaker, fullCostResult)
   const platformFee = isBusinessTrip ? 0 : calcPlatformFee(receivable, platformRate)
   const tripSubsidy = isBusinessTrip ? calcTripSubsidy(true) : 0
   const profit = calcActualProfitByPolicy({
@@ -198,6 +222,8 @@ export function SurveyProfitConclusion({
         <div className="survey-profit-conclusion__row"><span>平台扣点{isBusinessTrip ? '（出差免）' : ''}</span><strong>-{formatCurrency(platformFee)}</strong></div>
         <div className="survey-profit-conclusion__row"><span>{feeLabel}</span><strong>+{formatCurrency(serviceFee)}</strong></div>
         <div className="survey-profit-conclusion__row"><span>预估材料成本</span><strong>-{formatCurrency(materialCost)}</strong></div>
+        {/* P0-191-R3：成本逐项明细+行内改绑（与主区同一数据源/同一组件） */}
+        <CostItemsTable fullCostResult={fullCostResult} onCostRebound={onCostRebound} />
         {isBusinessTrip && <div className="survey-profit-conclusion__row"><span>出差补助</span><strong>+{formatCurrency(tripSubsidy)}</strong></div>}
         <div className="survey-profit-conclusion__row survey-profit-conclusion__total"><span>= 利润</span><strong>{formatCurrency(profit)}</strong></div>
       </div>

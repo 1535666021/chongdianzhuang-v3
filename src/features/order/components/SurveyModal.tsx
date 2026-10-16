@@ -425,8 +425,11 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
           <SurveyProfitConclusion
             feeLabel={feeLabel}
             receivable={finalFee}
-            estimatedCost={totalEstimatedCost}
             serviceFee={serviceFee}
+            materials={form.estimatedMaterials}
+            geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
+            fullCostResult={fullCost}
+            onCostRebound={refreshCost}
             platformRate={platformRate}
             isBusinessTrip={order.isBusinessTrip === true}
           />
