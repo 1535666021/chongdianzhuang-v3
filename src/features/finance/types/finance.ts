@@ -1,0 +1,43 @@
+export interface MonthlyReconciliation {
+  month: string
+  orderCount: number
+  totalReceivable: number
+  totalServiceFee: number
+  totalCustomerPay: number
+  totalDeduction: number
+  totalActual: number
+  totalMaterial: number
+  totalProfit: number
+}
+
+export interface ReceivableOrder {
+  id: string
+  customerName: string
+  amount: number
+  paid: boolean
+  completeDate?: string
+}
+
+export interface OrderMaterialDetail {
+  name: string
+  spec?: string
+  quantity: number
+  unit: string
+  unitPrice: number
+  subtotal: number
+  costUnitPrice: number
+  costSubtotal: number
+}
+
+export interface OrderCostDetail {
+  orderId: string
+  customerName: string
+  materials: OrderMaterialDetail[]
+  customerPrice: number
+  serviceFee: number
+  customerPay: number
+  materialCost: number
+  platformDeduction: number
+  platformRate: number
+  actualProfit: number
+}

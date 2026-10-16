@@ -1,0 +1,129 @@
+/* 页面转场动画 */
+
+/* Push 前进 */
+.page-transition.push.exit {
+  transform: translateX(0);
+  opacity: 1;
+  animation: push-exit var(--transition-duration) ease-in forwards;
+}
+
+.page-transition.push.enter {
+  transform: translateX(0);
+  opacity: 1;
+  animation: push-enter var(--transition-duration) ease-out;
+}
+
+@keyframes push-enter {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes push-exit {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-30%);
+    opacity: 0.5;
+  }
+}
+
+/* Pop 返回 */
+.page-transition.pop.exit {
+  transform: translateX(0);
+  opacity: 1;
+  animation: pop-exit var(--transition-duration) ease-in forwards;
+}
+
+.page-transition.pop.enter {
+  transform: translateX(0);
+  opacity: 1;
+  animation: pop-enter var(--transition-duration) ease-out;
+}
+
+@keyframes pop-enter {
+  from {
+    transform: translateX(-30%);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pop-exit {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Modal 弹窗 */
+.page-transition.modal.exit {
+  transform: translateY(0);
+  animation: modal-exit var(--transition-duration) ease-out forwards;
+}
+
+.page-transition.modal.enter {
+  transform: translateY(0);
+  animation: modal-enter var(--transition-duration) ease-out;
+}
+
+@keyframes modal-enter {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-exit {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+/* 遮罩层 */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  animation: backdrop-fade-in 200ms ease forwards;
+  z-index: var(--z-index-modal);
+}
+
+.modal-backdrop.exit {
+  animation: backdrop-fade-out 200ms ease forwards;
+}
+
+@keyframes backdrop-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes backdrop-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* 性能优化 */
+.page-transition {
+  will-change: transform, opacity;
+}

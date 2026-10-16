@@ -1,0 +1,533 @@
+.order-card {
+  background: var(--color-bg-card);
+  border-radius: 12px;
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--color-border-light);
+  border-bottom-color: var(--color-border);
+  margin-bottom: 12px;
+  transition: transform 150ms;
+  cursor: pointer;
+  position: relative;
+}
+
+.order-card:active {
+  transform: scale(0.98);
+}
+
+.order-card--today {
+  background: var(--color-bg-card);
+  border-color: var(--color-warning);
+  border-width: 2px;
+}
+
+.order-card--completed {
+  background: var(--color-bg-page);
+  overflow: hidden;
+}
+
+.order-card[data-status='回收站'] {
+  background: var(--color-bg-muted);
+}
+
+.order-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-sm);
+}
+
+.order-card__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.order-card__icon {
+  color: var(--color-text-aux);
+  flex-shrink: 0;
+}
+
+.order-card__icon--top {
+  margin-top: 2px;
+}
+
+.order-card__name span {
+  font-size: var(--fs-card-title);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  user-select: none;
+}
+
+.order-card__status {
+  font-size: var(--fs-aux);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-full);
+  color: white;
+  flex-shrink: 0;
+}
+
+.order-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+
+.order-card__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-aux);
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-xs);
+}
+
+.order-card__tag--pile {
+  background: var(--color-danger-light);
+  color: var(--color-danger);
+  cursor: pointer;
+}
+
+.order-card__tag--restock-done {
+  background: var(--color-success-light);
+  color: var(--color-success);
+  cursor: pointer;
+}
+
+.order-card__tag--platform {
+  background: var(--tag-platform-bg); /* P0-149-R2：平台=蓝系 */
+  color: var(--tag-platform-text);
+}
+
+.order-card__tag--brand {
+  background: var(--tag-brand-bg); /* P0-149-R2：品牌=绿系 */
+  color: var(--tag-brand-text);
+}
+
+.order-card__tag--power {
+  background: var(--tag-power-bg); /* P0-149-R2：功率=黄底深棕 */
+  color: var(--tag-power-text);
+}
+
+.order-card__tag--meters {
+  background: var(--tag-meters-bg); /* P0-149-R2：米数=青系 */
+  color: var(--tag-meters-text);
+}
+
+/* P0-156：米数标签就地编辑态（仅标签内部变化，卡片布局不动） */
+.order-card__tag-input {
+  width: 52px;
+  border: none;
+  outline: none;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 4px;
+  font-size: inherit;
+  color: inherit;
+  padding: 0 4px;
+  line-height: inherit;
+}
+.order-card__tag-input--error { box-shadow: 0 0 0 1.5px var(--color-danger); }
+.order-card__tag-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.order-card__phone,
+.order-card__address {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--fs-body);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+}
+
+.order-card__phone span,
+.order-card__address span {
+  color: var(--color-info);
+}
+
+.order-card__appointment {
+  margin-bottom: var(--space-md);
+}
+
+.order-card__appointment-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--fs-aux);
+  color: var(--color-success);
+}
+
+.order-card__appointment-placeholder {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: var(--fs-aux);
+  color: var(--color-text-aux);
+  cursor: pointer;
+  transition: color 150ms;
+}
+
+.order-card__appointment-placeholder:hover {
+  color: var(--color-info);
+}
+
+.order-card__actions {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.order-card[data-status='已预约'] .order-card__actions,
+.order-card[data-status='待办'] .order-card__appointment-btn {
+  margin-top: 8px;
+}
+
+.order-card__btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  height: 36px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-aux);
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.order-card__btn--survey {
+  background: var(--color-primary);
+  color: white;
+}
+
+.order-card__btn--survey:hover {
+  background: var(--color-primary-dark);
+}
+
+.order-card__btn--complete {
+  background: var(--color-success);
+  color: white;
+}
+
+.order-card__btn--complete:hover {
+  background: var(--color-success-dark);
+}
+
+.order-card__btn--watermark {
+  background: var(--color-info);
+  color: white;
+}
+
+.order-card__btn--watermark:hover {
+  background: var(--color-info-dark);
+}
+
+.order-card__profit-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+}
+
+.order-card--completed .order-card__profit-header {
+  border-top: 1px solid var(--color-border);
+  padding-top: 10px;
+  margin-top: 10px;
+}
+
+.order-card__profit-detail {
+  padding-top: var(--space-sm);
+}
+
+.order-card__profit-formula {
+  background: var(--color-primary-light);
+  border-radius: var(--radius-xs);
+  padding: var(--space-sm);
+  margin-top: var(--space-md);
+}
+
+.order-card__profit-formula-label {
+  font-size: var(--fs-aux);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 4px;
+}
+
+.order-card__profit-formula-text {
+  font-size: var(--fs-aux);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.order-card__profit-formula-calc {
+  font-size: var(--fs-aux);
+  color: var(--color-text-primary);
+  font-weight: 500;
+}
+
+.order-card__appointment-btn {
+  background: var(--color-primary-light);
+  border-radius: var(--radius-sm);
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.order-card__appointment-btn:hover {
+  background: var(--color-primary-light-light);
+}
+
+.order-card__appointment-btn span {
+  font-size: var(--fs-aux);
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.order-card--completed .order-card__appointment-btn {
+  margin-top: 12px;
+  background: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  width: 100%;
+  border-radius: 8px;
+  padding: 8px 0;
+  text-align: center;
+  font-size: 14px;
+}
+
+.order-card--completed .order-card__appointment-btn:hover {
+  background: var(--color-primary-light);
+}
+
+.order-card__appointment-btn--delete {
+  margin-top: 8px;
+  width: 100%;
+  border: 1px solid var(--color-danger);
+  background: transparent;
+}
+
+.order-card__appointment-btn--delete span {
+  color: var(--color-danger-dark);
+}
+
+.order-card__appointment-btn--delete:hover {
+  background: var(--color-danger-light);
+}
+
+
+
+/* P0-090 A3：订单备注展示（单行截断 + 点击展开） */
+.order-card__remark {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+}
+.order-card__remark-text--clamp {
+  flex: 1;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+}
+.order-card__remark-text--full {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+/* P0-096 C：查看原始记录入口 */
+.order-card__rawview {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+}
+.order-card__rawview:hover { color: #2563eb; }
+.modal-rawtext-empty { font-size: 13px; color: #9ca3af; text-align: center; padding: 24px 0; margin: 0; }
+
+
+/* ===== P0-142-R2：可约窗口自由区间 ===== */
+.order-card__available-window {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e5e7eb);
+  background: var(--color-bg-soft, #f9fafb);
+  color: var(--color-text, #374151);
+  cursor: pointer;
+  user-select: none;
+}
+.order-card__available-window--empty {
+  border-style: dashed;
+  color: var(--color-text-secondary, #9ca3af);
+  background: transparent;
+}
+.order-card__available-window--expired {
+  color: #b91c1c;
+  background: #fee2e2;
+  border-color: #fca5a5;
+  font-weight: 600;
+}
+.order-card__win-range {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.order-card__win-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #6b7280);
+}
+.order-card__win-field input[type='date'] {
+  padding: 8px 10px;
+  font-size: 15px;
+  border: 1px solid var(--color-border, #d1d5db);
+  border-radius: 8px;
+  background: var(--color-bg, #fff);
+  color: var(--color-text, #111827);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+
+/* ===== P0-144：批量选择勾选圈 + 卡片定位 ===== */
+.order-card { position: relative; }
+
+
+/* ===== P0-145：倒计时徽章 ===== */
+.order-card__countdown {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.order-card__countdown--today { background: #dcfce7; color: #15803d; }
+.order-card__countdown--tomorrow { background: #dbeafe; color: #1d4ed8; }
+.order-card__countdown--future { background: #f3f4f6; color: #4b5563; }
+.order-card__countdown--expired { background: #fee2e2; color: #b91c1c; }
+
+/* ===== P0-145：左滑快捷钮组 ===== */
+
+/* ===== P0-149-R2：左滑钮组分色（拨号=绿蓝/改约=蓝/删除=红，形状位置不动） ===== */
+.swipe-row__actions .swipe-row__btn--reschedule { background: var(--btn-reschedule-bg); }
+.swipe-row__actions .swipe-row__btn--danger { background: var(--btn-delete-bg); }
+
+/* P0-145-R1修②+③：容器兜底卡片底色 + margin 上提——外边距折叠穿透 front 层
+   导致四钮底边漏进 margin 带，根因修复为间距由容器承担、卡身 margin 清零 */
+.swipe-row { position: relative; overflow: hidden; border-radius: 12px; background: var(--color-bg-card, #fff); margin-bottom: 12px; }
+.swipe-row .order-card { margin-bottom: 0; }
+.swipe-row__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  z-index: 1;
+}
+.swipe-row__actions button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: var(--btn-dial-bg); /* P0-149-R2：拨号=绿蓝 */
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+.swipe-row__actions .swipe-row__btn--reschedule { background: var(--btn-reschedule-bg); } /* 改约=蓝 */
+.swipe-row__actions .swipe-row__btn--danger { background: var(--btn-delete-bg); } /* 删除=红 */
+.swipe-row__actions button + button { border-left: 1px solid rgba(255, 255, 255, 0.15); }
+.swipe-row__actions .swipe-row__btn--danger { background: #b91c1c; }
+.swipe-row__front {
+  position: relative;
+  z-index: 2;
+  background: var(--color-bg-card, #fff); /* P0-145-R1修②： opaque 前面层盖住底层四钮，滑出时整体左移露出 */
+  border-radius: 12px;
+  transition: transform 200ms ease;
+}
+.swipe-row__front--open { transform: translateX(-216px); }
+
+
+/* P0-145-R1修②+③：容器兜底卡片底色 + margin 上提——外边距折叠穿透 front 层
+   导致四钮底边漏进 margin 带，根因修复为间距由容器承担、卡身 margin 清零 */
+.swipe-row { position: relative; overflow: hidden; border-radius: 12px; background: var(--color-bg-card, #fff); margin-bottom: 12px; }
+.swipe-row .order-card { margin-bottom: 0; }
+.swipe-row__actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  z-index: 1;
+}
+.swipe-row__actions button {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border: none;
+  background: var(--btn-dial-bg); /* P0-149-R2：拨号=绿蓝 */
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+}
+.swipe-row__actions .swipe-row__btn--reschedule { background: var(--btn-reschedule-bg); } /* 改约=蓝 */
+.swipe-row__actions .swipe-row__btn--danger { background: var(--btn-delete-bg); } /* 删除=红 */
+.swipe-row__actions button + button { border-left: 1px solid rgba(255, 255, 255, 0.15); }
+.swipe-row__actions .swipe-row__btn--danger { background: #b91c1c; }
+.swipe-row__front {
+  position: relative;
+  z-index: 2;
+  background: var(--color-bg-card, #fff); /* P0-145-R1修②： opaque 前面层盖住底层四钮，滑出时整体左移露出 */
+  border-radius: 12px;
+  transition: transform 200ms ease;
+}
+.swipe-row__front--open { transform: translateX(-216px); }
+
+
+
+/* ===== P0-149-R2：左滑钮组分色（拨号=绿蓝/改约=蓝/删除=红，形状位置不动） ===== */
+.swipe-row__actions .swipe-row__btn--reschedule { background: var(--btn-reschedule-bg); }
+.swipe-row__actions .swipe-row__btn--danger { background: var(--btn-delete-bg); }

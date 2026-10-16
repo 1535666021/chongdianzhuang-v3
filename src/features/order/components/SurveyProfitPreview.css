@@ -1,0 +1,101 @@
+.survey-profit-preview {
+  margin-bottom: var(--space-md);
+}
+
+.survey-profit-preview__content {
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.survey-profit-preview__row,
+.survey-profit-preview__profit {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-xs) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-aux);
+}
+
+.survey-profit-preview__row strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.survey-profit-preview__profit {
+  margin-top: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px dashed var(--color-info-border);
+  color: var(--color-text-primary);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.survey-profit-preview__profit.is-positive strong {
+  color: var(--color-success-dark);
+}
+
+.survey-profit-preview__profit.is-negative strong {
+  color: var(--color-danger);
+}
+
+.survey-profit-preview__hint {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-text-aux);
+  font-size: var(--fs-aux);
+}
+
+/* P0-180：勘测弹窗最底部利润预估结论区 */
+.survey-profit-conclusion {
+  margin: var(--space-md) 0;
+  padding: var(--space-sm) var(--space-md);
+  border: 1px dashed var(--color-info-border);
+  border-radius: var(--radius-md, 8px);
+  background: var(--color-bg-secondary, transparent);
+}
+
+.survey-profit-conclusion__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+}
+
+.survey-profit-conclusion__head strong {
+  font-size: var(--fs-title, 16px);
+  font-weight: 700;
+}
+
+.survey-profit-conclusion__head strong.is-positive { color: var(--color-success-dark); }
+.survey-profit-conclusion__head strong.is-negative { color: var(--color-danger); }
+.survey-profit-conclusion__head strong.is-pending { color: var(--color-text-aux); }
+
+.survey-profit-conclusion__note {
+  color: var(--color-text-aux);
+  font-size: var(--fs-aux);
+}
+
+.survey-profit-conclusion__detail {
+  border-top: 1px dashed var(--color-info-border);
+  margin-top: var(--space-xs);
+  padding-top: var(--space-xs);
+}
+
+.survey-profit-conclusion__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: 2px 0;
+  color: var(--color-text-secondary);
+  font-size: var(--fs-aux);
+}
+
+.survey-profit-conclusion__row strong { color: var(--color-text-primary); font-weight: 600; }
+
+.survey-profit-conclusion__total {
+  margin-top: var(--space-xs);
+  padding-top: var(--space-xs);
+  border-top: 1px dashed var(--color-info-border);
+  color: var(--color-text-primary);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}

@@ -1,0 +1,185 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* 色彩系统 */
+  --color-primary: #2e7d5b;
+  --color-primary-hover: #276b4e;
+  --color-primary-dark: #276b4e;
+  --color-primary-active: #1f5a41;
+  --color-primary-light: #e3f0ea;
+  --color-secondary: #c99435;
+  --color-secondary-light: #f7eeda;
+  --color-bg-page: #F2F3F5; /* P0-149-R1 规范：页面背景 */
+  --color-bg-card: #ffffff;
+  --color-bg-muted: #efece5;
+  --color-text-primary: #2b2a26;
+  --color-text-secondary: #6f6c64;
+  --color-text-aux: #a09c92;
+  --color-border: #E5E5EA; /* P0-149-R1 规范：卡片描边 */
+  --color-divider: #eeeae1;
+  --color-danger: #bf5340;
+  --color-danger-light: #f8e7e3;
+  --color-danger-dark: #a24333;
+  --color-info: #4a7ba6;
+  --color-info-dark: #3b668a;
+  --color-info-light: #e6eef5;
+  --color-success: #3e8e5a;
+  --color-success-light: #e4f1e8;
+  --color-warning: #c08a2e;
+  --color-warning-light: #f8efdc;
+
+  /* 字体大小 */
+  --fs-page-title: 17px;
+  --fs-card-title: 15px;
+  --fs-body: 14px;
+  --fs-aux: 12px;
+  --fs-money: 17px;
+  --fs-label: 11px;
+
+  /* 间距 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+
+  /* 圆角 */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 999px;
+
+  /* 阴影 */
+  --shadow-sm: 0 1px 2px rgba(43, 42, 38, 0.05);
+  /* ===== P0-149-R2 多彩语义令牌（色系映射，禁散落魔法数） ===== */
+  --tag-platform-bg: #dbeafe; --tag-platform-text: #1d4ed8; /* 平台=蓝系 */
+  --tag-brand-bg: #dcfce7; --tag-brand-text: #15803d;       /* 品牌=绿系 */
+  --tag-power-bg: #fef3c7; --tag-power-text: #92400e;       /* 功率=黄底深棕 */
+  --tag-meters-bg: #cffafe; --tag-meters-text: #0e7490;     /* 米数=青系 */
+  --tag-install-zaizhuang-bg: #cffafe; --tag-install-zaizhuang-text: #0e7490; /* 带桩上门=青 */
+  --tag-install-anzhuang-bg: #f3f4f6; --tag-install-anzhuang-text: #4b5563;   /* 仅安装=灰 */
+  --tag-install-weixiu-bg: #fef3c7; --tag-install-weixiu-text: #d97706;
+  --tag-install-kancha-bg: #f3e8ff; --tag-install-kancha-text: #7c3aed;
+  --tag-install-jiance-bg: #fce7f3; --tag-install-jiance-text: #db2777;
+  --tag-install-chaizhuang-bg: #fee2e2; --tag-install-chaizhuang-text: #dc2626;
+  --tag-install-yiji-bg: #e0f2fe; --tag-install-yiji-text: #0284c7;
+  --tag-install-other-bg: #f3f4f6; --tag-install-other-text: #6b7280;
+  --btn-dial-bg: #0d9488;        /* 拨号=绿蓝 */
+  --btn-reschedule-bg: #2563eb;  /* 改约=蓝 */
+  --btn-delete-bg: #dc2626;      /* 删除=红 */
+  --btn-survey-bg: #2563eb;      /* 勘测=蓝 */
+  --filter-active-bg: #3b82f6; --filter-active-text: #ffffff; /* 主选中蓝药丸 */
+  --filter-sub-active-bg: #eff6ff; --filter-sub-active-border: #3b82f6; /* 次级浅底描边 */
+
+  --shadow-modal: 0 12px 40px rgba(43, 42, 38, 0.18);
+
+  /* z-index */
+  --z-index-toast: 200;
+  --z-index-modal: 100;
+  --z-sticky: 100;
+  --z-floating: 300;
+  --z-modal: 9999;
+  --z-dropdown: 10000;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* 全局滚动条样式 */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: var(--radius-full);
+}
+
+/* 移动端隐藏滚动条 */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 0;
+  }
+}
+
+/* Toast 动画 */
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+.toast-container {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: var(--z-index-toast);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 80%;
+}
+
+.toast {
+  color: white;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 6px 20px rgba(43, 42, 38, 0.12);
+}
+
+.toast-enter {
+  animation: toast-enter 200ms ease-out;
+}
+
+.toast-exit {
+  animation: toast-exit 200ms ease-in forwards;
+}
+
+.toast-success {
+  background: var(--color-success);
+}
+
+.toast-error {
+  background: var(--color-danger);
+}
+
+.toast-warning {
+  background: var(--color-warning);
+}
+
+.toast-info {
+  background: rgba(43, 42, 38, 0.85);
+}

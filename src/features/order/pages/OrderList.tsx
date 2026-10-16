@@ -1,0 +1,304 @@
+import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import type { Order, OrderFilter, OrderStatus } from '@/types'
+import { useOrderList } from '../hooks/useOrderList'
+import OrderCard from '../components/OrderCard'
+import DeleteUndoBar from '../components/DeleteUndoBar'
+import AppointmentExpiryBanner from '../components/AppointmentExpiryBanner'
+import SkeletonList from '@/shared/components/SkeletonList'
+import { hapticVibrate } from '@/shared/utils/haptics'
+import { useVirtualRows, VIRTUAL_THRESHOLD } from '../hooks/useVirtualRows'
+import type { VirtualFlatRow } from '../hooks/useVirtualRows'
+import SurveyModal from '../components/SurveyModal'
+import ScriptEditorModal from '../components/ScriptEditorModal'
+import RestockDialog from '../components/RestockDialog'
+import BatchAppointmentDialog from '../components/BatchAppointmentDialog'
+import OrderFilterBar from '../components/OrderFilterBar'
+import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
+import { restockTargets } from '../restock'
+import { activeOrders } from '../utils/recycleBin'
+import { toast } from '@/shared/hooks/useToast'
+import { Recycle, Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { useOrderStore } from '@/stores/orderStore'
+import { getKnownPlatforms } from '@/shared/storage/platformStorage'
+import '../../../shared/components/OrderList.css'
+
+// P0-144：滚动记忆——三个Tab各自独立（模块级映射，SPA会话内有效）
+const tabScrollMemory: Record<string, number> = {}
+
+interface Props {
+  fixedStatus?: string
+  allowTrash?: boolean
+}
+
+export default function OrderList({ fixedStatus }: Props) {
+  const navigate = useNavigate()
+  const initialStatus: OrderStatus | 'all' =
+    fixedStatus === '待办' || fixedStatus === '已预约' || fixedStatus === '已完成' ? fixedStatus : 'all'
+  // P0-137：默认筛选抽常量——已完成页=按完工时间新→旧+按时间分组，首屏第一行=最近完成单；
+  // Tab切换时重置（防上一Tab的排序方向/维度残留导致已完成页排老底，甲方实证场景）
+  const defaultFilter = (): OrderFilter => ({
+    // P0-099：已完成页首帧即按完工时间倒序，与 OrderFilterBar 初始值一致；其他 Tab 创建时间不变
+    // P0-106：已完成→完工时间；已预约→预约时间；首页全部/待办→业务时间混排（预约>完工>创建）
+    sortBy: fixedStatus === '已完成' ? 'completeDate' : fixedStatus === '已预约' ? 'appointmentDate' : 'businessTime',
+    sortOrder: 'desc',
+    status: initialStatus === 'all' ? undefined : initialStatus,
+    // P0-095：已完成页首帧即按时间分组，与 OrderFilterBar 初始值一致
+    // P0-108：全部Tab首帧默认按时间分组（甲方指示），已完成本已是time不变
+    groupMode: 'time',
+  })
+  const [filter, setFilter] = useState<OrderFilter>(defaultFilter)
+  useEffect(() => { setFilter(defaultFilter()) }, [fixedStatus])
+
+  // P0-137-R1：已完成页滚动定位顶部——①进入该Tab ②排序维度切换(按时间⇄按区域/方向)后，
+  // 视口重置到列表顶部（window.scrollTo，首屏第一行=最新完成单）。仅已完成页执行，首页/已预约滚动行为零触碰。
+  // 分组折叠无持久化（全仓无collapsed存储），默认全展开，最新组在首屏——任务书2天然满足。
+  // P0-144：滚动记忆（覆盖扩展P0-137-R1）——进详情/弹窗返回恢复离开位置；
+  // 仅①Tab首次激活（无记忆则回顶）②切换排序维度（下方effect清记忆+回顶）才重置，同Tab不重置。
+  const tabKey = fixedStatus ?? 'all'
+  useEffect(() => {
+    const save = () => { tabScrollMemory[tabKey] = window.scrollY }
+    window.addEventListener('scroll', save, { passive: true })
+    return () => { save(); window.removeEventListener('scroll', save) } // 卸载时兜底保存
+  }, [tabKey])
+  useEffect(() => {
+    requestAnimationFrame(() => window.scrollTo(0, tabScrollMemory[tabKey] ?? 0))
+  }, [tabKey])
+  const firstSortRef = useRef(true)
+  useEffect(() => {
+    if (firstSortRef.current) { firstSortRef.current = false; return } // 首渲染由恢复逻辑接管
+    tabScrollMemory[tabKey] = 0
+    window.scrollTo(0, 0)
+  }, [filter.sortBy, filter.sortOrder, filter.groupMode]) // eslint-disable-line react-hooks/exhaustive-deps
+  const [showCount, setShowCount] = useState(50)
+  const [resetKey, setResetKey] = useState(0)
+  const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
+  const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
+  const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
+  const [showRestock, setShowRestock] = useState(false)
+  const [restockScope, setRestockScope] = useState<Order[] | null>(null) // P0-144：批量补桩限定范围
+  const [showBatchAppointment, setShowBatchAppointment] = useState(false)
+  // P0-144：批量操作（多选模式）
+  const [undoDeleted, setUndoDeleted] = useState<Order[]>([]) // P0-144：删除撤销条
+  // P0-145-R1：骨架门控修复——骨架仅在"未就绪且加载超300ms"时出现；数据就绪即收起且不再出现。
+  // 置位链：同步存储源=挂载即置 dataReady；异步源接入时改在其数据就绪回调内置位（保留扩展位）。
+  const SKELETON_DELAY_MS = 300
+  const [dataReady, setDataReady] = useState(false)
+  const [slowLoading, setSlowLoading] = useState(false)
+  useEffect(() => {
+    const timer = setTimeout(() => setSlowLoading(true), SKELETON_DELAY_MS)
+    setDataReady(true) // 同步源挂载即就绪；异步源移至数据就绪回调
+    return () => clearTimeout(timer)
+  }, [])
+  const showSkeleton = !dataReady && slowLoading
+  const restoreOrder = useOrderStore((state) => state.restoreOrder)
+  const doSoftDelete = (targets: Order[]) => { targets.forEach((o) => useOrderStore.getState().softDeleteOrder(o.id)); setUndoDeleted(targets); hapticVibrate([20, 40, 20]) } // P0-146：删除轻震
+
+  // P0-139-R1：回收站统一排除（正常业务流唯一过滤点）
+  const allOrders = activeOrders(useOrderStore((state) => state.orders))
+  const deleteOrder = useOrderStore((state) => state.deleteOrder)
+  const updateOrder = useOrderStore((state) => state.updateOrder)
+  const { orders } = useOrderList(filter)
+  const knownPlatforms = getKnownPlatforms()
+
+  const today = new Date().toISOString().slice(0, 10)
+
+  const renderOrderCard = (order: Order) => (
+    <OrderCard
+      key={order.id}
+      order={order}
+      isToday={order.appointmentDate === today}
+      onClick={() => navigate(`/orders/${order.id}`)}
+      onSurvey={setSurveyOrder}
+      onGenerateScript={setScriptOrder}
+      onDelete={(item) => doSoftDelete([item])} // P0-144：删除→撤销条（3秒内可撤销）
+      onEditPlatform={setEditPlatformOrder}
+    />
+  )
+  const displayOrders = useMemo(() => orders.slice(0, showCount), [orders, showCount])
+  const groupMode = filter.groupMode ?? 'region'
+  // P0-167：已完成Tab分组键=实际完工日（与统计按天明细口径一致）；其余Tab维持原键
+  const orderGroups = useMemo(() => groupOrdersByTag(displayOrders, groupMode, { doneDate: fixedStatus === '已完成' }), [displayOrders, groupMode, fixedStatus])
+  // P0-146：虚拟滚动——超100条启用窗口化渲染（批量模式下禁用，保多选稳定）
+  const flatRows = useMemo<VirtualFlatRow[]>(() => orderGroups.flatMap((g) => [
+    { key: `h:${g.label}`, type: 'header' as const, label: g.label },
+    ...g.orders.map((o) => ({ key: o.id, type: 'card' as const, order: o })),
+  ]), [orderGroups])
+  // P0-169：多选模式移除，虚拟列表不再受其抑制
+  const virtualEnabled = orders.length > VIRTUAL_THRESHOLD && !showSkeleton
+  const virtual = useVirtualRows(flatRows, virtualEnabled)
+
+  useEffect(() => {
+    setShowCount(50)
+  }, [filter])
+
+  const hasAnyOrder = allOrders.length > 0
+  const resetFilters = () => setResetKey((key) => key + 1)
+  const restockCount = useMemo(
+    () => restockTargets(allOrders).length,
+    [allOrders],
+  )
+  const appointableOrders = useMemo(() => orders.filter((o) => o.status === '待办'), [orders])
+
+  return (
+    <div className="order-list-page">
+      {/* 操作按钮 */}
+      <div className="order-list__toolbar">
+        <div className="order-list__actions">
+          <button
+            onClick={() => navigate('/order/new')}
+            className="order-list__btn order-list__btn--primary"
+          >
+            <Plus size={16} />
+            新增订单
+          </button>
+          <button
+            onClick={() => navigate('/batch-parser')}
+            className="order-list__btn order-list__btn--secondary"
+          >
+            <FileText size={16} />
+            批量解析
+          </button>
+          <button
+            onClick={() => setShowRestock(true)}
+            className="order-list__btn order-list__btn--secondary"
+          >
+            <PackagePlus size={16} />
+            一键补桩
+            {restockCount > 0 && <span className="order-list__badge">{restockCount}</span>}
+          </button>
+          <button
+            onClick={() => setShowBatchAppointment(true)}
+            className="order-list__btn order-list__btn--secondary"
+            disabled={appointableOrders.length === 0}
+            style={appointableOrders.length === 0 ? { opacity: 0.5 } : undefined}
+          >
+            <CalendarPlus size={16} />
+            批量预约
+            {appointableOrders.length > 0 && <span className="order-list__badge">{appointableOrders.length}</span>}
+          </button>
+          {/* P0-139-R1 入口（返工）：回收站——已完成页顶栏工具区，与一键补桩/批量预约同款样式，不挤占列表首屏 */}
+          {fixedStatus === '已完成' && (
+            <button
+              onClick={() => navigate('/recycle')}
+              className="order-list__btn order-list__btn--secondary"
+              title="回收站"
+            >
+              <Recycle size={16} />
+              回收站
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* P0-142-R3：预约区间明天到期的已约单——顶部提醒条（当天一次） */}
+      {fixedStatus === '待办' && <AppointmentExpiryBanner />}
+
+      {/* 多维筛选与分组 */}
+      <OrderFilterBar
+        key={resetKey}
+        orders={allOrders}
+        initialStatus={initialStatus}
+        initialGroupMode="time"
+        initialSortBy={fixedStatus === '已完成' ? 'completeDate' : fixedStatus === '已预约' ? 'appointmentDate' : 'businessTime'}
+        onFilterChange={setFilter}
+      />
+
+      {/* 订单列表：P0-145-R1 骨架与列表互斥渲染——数据就绪即整区切真实列表，零残留占位 */}
+      <div className="order-list__content">
+        {showSkeleton ? (
+          <SkeletonList count={3} />
+        ) : orders.length === 0 ? (
+          hasAnyOrder ? (
+            <EmptyState
+              type="search"
+              title="没有符合筛选条件的订单"
+              action={
+                <button onClick={resetFilters} className="order-list__empty-btn">
+                  清空筛选条件
+                </button>
+              }
+            />
+          ) : (
+            <EmptyState
+              type="orders"
+              description="还没有订单，点右下角导入"
+              title="还没有订单"
+              action={
+                <button onClick={() => navigate('/order/new')} className="order-list__empty-btn">
+                  新增第一单
+                </button>
+              }
+            />
+          )
+        ) : (
+          <>
+            {virtualEnabled ? (
+              // P0-146：窗口化渲染——只挂视口内±缓冲的行，视口外零 DOM
+              <div ref={virtual.containerRef} className="order-list__virtual" style={{ height: virtual.totalHeight }}>
+                {virtual.rows.slice(virtual.start, virtual.end).map((row) => row.type === 'header' ? (
+                  <div key={row.key} ref={virtual.measure(row.key, 'header')} className="order-list__group-title order-list__virtual-item" style={{ top: row.top }}>{row.label}</div>
+                ) : row.order ? (
+                  <div key={row.key} ref={virtual.measure(row.key, 'card')} className="order-list__virtual-item" style={{ top: row.top }}>{renderOrderCard(row.order)}</div>
+                ) : null)}
+              </div>
+            ) : (
+              orderGroups.map((group) => (
+                <section className="order-list__group" key={group.label}>
+                  <h2 className="order-list__group-title">{group.label} ({group.orders.length})</h2>
+                  {group.orders.map(renderOrderCard)}
+                </section>
+              ))
+            )}
+            {orders.length > showCount && (
+              <button
+                onClick={() => setShowCount((n) => n + 50)}
+                className="order-list__load-more"
+              >
+                加载更多（剩余 {orders.length - showCount} 条）
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      {surveyOrder && (
+        <SurveyModal
+          order={surveyOrder}
+          onClose={() => setSurveyOrder(null)}
+        />
+      )}
+      {scriptOrder && <ScriptEditorModal order={scriptOrder} onClose={() => setScriptOrder(null)} />}
+      <RestockDialog open={showRestock} onClose={() => { setShowRestock(false); setRestockScope(null) }} scopeOrders={restockScope ?? undefined} />
+      {showBatchAppointment && (
+        <BatchAppointmentDialog orders={appointableOrders} onClose={() => setShowBatchAppointment(false)} />
+      )}
+      {/* P0-169：批量操作浮条已移除（甲方确认不要批量选择）；删除撤销条保留 */}
+      {undoDeleted.length > 0 && (
+        <DeleteUndoBar
+          deleted={undoDeleted}
+          onUndo={(list) => { list.forEach((o) => restoreOrder(o.id)); setUndoDeleted([]) }}
+          onClose={() => setUndoDeleted([])}
+        />
+      )}
+      {editPlatformOrder && (
+        <div className="modal-overlay" onClick={() => setEditPlatformOrder(null)}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header"><h3 className="modal-title">选择平台</h3></div>
+            <div className="modal-body">
+              {knownPlatforms.length ? knownPlatforms.map((platform) => (
+                <button
+                  key={platform}
+                  className="modal-btn modal-btn--secondary w-full mb-2"
+                  onClick={() => { updateOrder(editPlatformOrder.id, { platformName: platform }); setEditPlatformOrder(null) }}
+                >
+                  {platform}
+                </button>
+              )) : <p className="text-sm text-gray-500">暂无已知平台</p>}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

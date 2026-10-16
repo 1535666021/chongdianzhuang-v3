@@ -1,0 +1,447 @@
+import { useState, useMemo, useEffect } from 'react'
+import type { Order } from '@/types'
+import { resolveSurveyFinalFee, validateSurveyActualReceive, useSurvey } from '../hooks/useSurvey'
+import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
+import { addonMaterialsData } from '@/constants/materialData'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { useOrderStore } from '@/stores/orderStore'
+import { X } from 'lucide-react'
+import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
+import { useToast } from '@/shared/hooks/useToast'
+import { calcOverFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
+import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
+import { SurveyProfitPreview, SurveyProfitConclusion } from './SurveyProfitPreview'
+import { SurveyReportModal } from './SurveyReportModal'
+import '../../../shared/components/Modal.css'
+import { formatCurrency } from '@/shared/utils/format'
+
+interface SurveyModalProps {
+  order: Order
+  onClose: () => void
+}
+
+const POWER_OPTIONS = ['国网取电', '物业配电', '自家电表', '其他'] as const
+const CABLE_SPECS = ['3*6', '3*10', '3*16', '4*6', '4*10', '5*6', '5*10', '5*16', '2*4', '2*6', '其他']
+const INSTALL_OPTIONS = ['壁挂安装', '立柱安装', '吊装', '其他'] as const
+const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
+const BLUEPRINT_OPTIONS = ['是', '否'] as const
+const RESULT_OPTIONS = ['勘测完成', '符合安装', '不符合安装', '需整改', '待定'] as const
+
+export default function SurveyModal({ order, onClose }: SurveyModalProps) {
+  const {
+    form, brandList, brandAddons,
+    selectedBrand, setSelectedBrand,
+    updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
+    calcCableCost,
+    serviceFee, platformRate, save,
+  } = useSurvey(order)
+
+  const [showDropdown, setShowDropdown] = useState(false)
+  const [showReport, setShowReport] = useState(false)
+  const [surveyNote, setSurveyNote] = useState(order.surveyNote || '')
+  // P0-114：实收（空=按预估），重开弹窗自动带入已保存值
+  const [actualReceive, setActualReceive] = useState(order.surveyActualReceive != null ? String(order.surveyActualReceive) : '')
+  const toast = useToast()
+  const updateOrder = useOrderStore((s) => s.updateOrder)
+  const engineerName = useSettingsStore((s) => s.engineerName)
+  const engineerPhone = useSettingsStore((s) => s.engineerPhone)
+  const sortedBrandAddons = useMemo(
+    () => sortMaterialsByFrequency(brandAddons, getMaterialFrequency()), [brandAddons])
+  const needsBrandSelect = !order.brandName && !selectedBrand
+
+  useEffect(() => {
+    document.body.classList.add('modal-open')
+    return () => { document.body.classList.remove('modal-open') }
+  }, [])
+
+  const isCableMat = (name: string) => {
+    const mat = addonMaterialsData.find((a) => a.name === name)
+    return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
+  }
+
+  const orderPackageMeters = resolveOrderPackageMeters(order)
+
+  // P0-114：客户应收口径——实收空=预估费用（既有公式不动），有值=实收；同屏同源单一变量
+  const finalFee = resolveSurveyFinalFee(actualReceive, totalEstimatedCost)
+
+  const handleSave = () => {
+    const err = validateSurveyActualReceive(actualReceive)
+    if (err) {
+      toast.toast.error(err)
+      return
+    }
+    save()
+    const t = actualReceive.trim()
+    updateOrder(order.id, { surveyNote, surveyActualReceive: t === '' ? undefined : Number(t) })
+    onClose()
+  }
+
+  const reportText = useMemo(() => {
+    const lines: string[] = []
+    lines.push(`勘测完成时间：${new Date().toISOString().slice(0, 10)}`)
+    lines.push(`勘测详情：${form.installMethod}`)
+    lines.push(`勘测工程师及电话：${engineerName || ''} / ${engineerPhone || ''}`)
+    lines.push(`用电方式：${form.powerSource}`)
+    lines.push(`电表状态：${form.meterStatus}`)
+    lines.push(`布线距离：${form.cableDistance || 0} 米`)
+    // P0-161：未填即未选——数量为空(0)的非电缆行不进报告明细、不计费；电缆行按布线距离口径保留
+    const billedMaterials = form.estimatedMaterials.filter((m) => isCableMat(m.name) || m.quantity > 0)
+    if (billedMaterials.length > 0) {
+      lines.push('')
+      lines.push(`预计增项辅材明细：`)
+      for (const m of billedMaterials) {
+        const mat = addonMaterialsData.find((a) => a.name === m.name)
+        const short = mat ? mat.name : m.name
+        // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
+        const isCable = isCableMat(m.name), distance = form.cableDistance || 0
+        const over = isCable && mat ? calcOverFee(distance, orderPackageMeters, mat.settlementPrice) : null
+        const subtotal = over ? over.overFee : m.unitPrice * m.quantity
+        lines.push(over
+          ? `${short} ${distance}米（超${over.overMeters}米）× ¥${m.unitPrice} = ${formatCurrency(subtotal)}`
+          : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ${formatCurrency(subtotal)}`)
+      }
+      lines.push('')
+      // P0-114：话术含费用处按实收口径——实收有值时合计=实收并标注预估
+      const ar = actualReceive.trim()
+      lines.push(ar !== '' && Number(ar) > 0
+        ? `预计增项合计：${formatCurrency(finalFee)}元（实收，预估${formatCurrency(totalEstimatedCost)}元）（以实际使用为准）`
+        : `预计增项合计：${formatCurrency(finalFee)}元（以实际使用为准）`)
+    }
+    lines.push(`物业需要施工方案图：${form.needBlueprint}`)
+    lines.push(`勘测结果：${form.surveyResult}`)
+    lines.push(`（电缆上有准确的米标刻度）`)
+    lines.push(`勘测备注：${form.locationInfo || ''}`)
+    lines.push(`以上勘测情况请您回复"确认"，谢谢`)
+    return lines.join('\n')
+  }, [form, engineerName, engineerPhone, totalEstimatedCost, orderPackageMeters, actualReceive, finalFee])
+
+  const handleCopyReport = async () => {
+    try {
+      await navigator.clipboard.writeText(reportText)
+      setShowReport(false)
+      toast.toast.success('报告已复制')
+    } catch {
+      setShowReport(false)
+      toast.toast.error('复制失败')
+    }
+  }
+
+  return (
+    <>
+      <div className="modal-overlay" onClick={onClose}>
+        <div
+          className="modal-content"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="modal-header">
+            <h2 className="modal-title">🔧 勘测记录</h2>
+            <button onClick={onClose} className="modal-close">
+              <X size={20} />
+            </button>
+          </div>
+
+          <div className="modal-body">
+            {/* 📦 预估材料 */}
+            <div className="modal-section">
+              <h3 className="modal-section__title">📦 预估材料</h3>
+              {needsBrandSelect ? (
+                <select
+                  value={selectedBrand || ''}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  className="modal-select"
+                >
+                  <option value="">请选择车辆品牌</option>
+                  {brandList.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              ) : (
+                <>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowDropdown(!showDropdown)}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-white border rounded-lg text-sm"
+                      style={{ borderRadius: '8px', borderColor: 'var(--color-border)' }}
+                    >
+                      <span style={{ color: 'var(--color-text-secondary)' }}>
+                        {showDropdown ? '收起列表' : '点击选择辅材'}
+                        <span style={{ color: 'var(--color-text-aux)', marginLeft: '4px' }}>
+                          ({brandAddons.length}种可选)
+                        </span>
+                      </span>
+                      <span style={{ color: 'var(--color-text-aux)', fontSize: '12px' }}>
+                        {showDropdown ? '▲' : '▼'}
+                      </span>
+                    </button>
+                    {showDropdown && (
+                      <div className="modal-dropdown">
+                        {brandAddons.length === 0 ? (
+                          <div className="modal-dropdown-empty">该品牌暂无材料</div>
+                        ) : (
+                          sortedBrandAddons.map((mat) => {
+                            const checked = form.estimatedMaterials.some((m) => m.name === mat.name)
+                            return (
+                              <label
+                                key={mat.id}
+                                className="modal-dropdown-item"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  className="w-4 h-4 rounded"
+                                  style={{ accentColor: 'var(--color-primary)' }}
+                                  onChange={() => {
+                                    const isAdding = !form.estimatedMaterials.some((em) => em.name === mat.name)
+                                    toggleAddon(mat)
+                                    if (isAdding) {
+                                      setShowDropdown(false)
+                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|3x6|3x10|3x16|3X6|3X10|3X16|3×6|3×10|3×16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
+                                      if (cableMatch) {
+                                        updateForm({ cableSpec: cableMatch[0] })
+                                      }
+                                    }
+                                  }}
+                                />
+                                <span style={{ color: 'var(--color-text-primary)', minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(mat.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>
+                                  {mat.name}
+                                </span>
+                                <span style={{ color: 'var(--color-text-aux)', fontSize: '12px', flexShrink: 0 }}>¥{mat.settlementPrice}</span>
+                              </label>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {form.estimatedMaterials.length > 0 && (
+                    <div className="modal-material-list">
+                      {form.estimatedMaterials.map((m) => {
+                        const isCable = isCableMat(m.name)
+                        // P0-099：材料行超米费与预估费用同一函数同一输入（form.cableDistance），天然相等
+                        const displayFee = isCable
+                          ? calcCableCost(m.name, form.cableDistance || 0)
+                          : (m.quantity || 0) * m.unitPrice
+                        return (
+                          <div
+                            key={m.name}
+                            className="modal-material-item"
+                          >
+                            <span className="modal-material-name" style={{ minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(m.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>
+                              {m.name}
+                            </span>
+                            <span className="modal-material-price">¥{m.unitPrice}/m</span>
+                            <input
+                              type="number"
+                              min={0}
+                              placeholder="数量"
+                              value={m.quantity > 0 ? String(m.quantity) : ''}
+                              onChange={(e) => updateQuantity(m.name, Number(e.target.value))}
+                              className="modal-material-qty"
+                            />
+                            <span className="modal-material-total" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: '80px' }}>
+                              <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                                {formatCurrency(displayFee)}
+                              </span>
+                              {isCable && (
+                                <span style={{ fontSize: '10px', color: 'var(--color-text-aux)', marginTop: '2px' }}>
+                                  超米费
+                                </span>
+                              )}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeAddon(m.name)}
+                              className="modal-material-remove"
+                            >
+                              <X size={16} strokeWidth={2.5} />
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* 🔌 线缆信息 */}
+            <div className="modal-section">
+              <h3 className="modal-section__title">🔌 线缆信息</h3>
+              <div className="modal-section__grid">
+                <div>
+                  <label className="modal-label">取电方式</label>
+                  <select
+                    value={form.powerSource}
+                    onChange={(e) => updateForm({ powerSource: e.target.value as any })}
+                    className="modal-select"
+                  >
+                    {POWER_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">线缆规格</label>
+                  <select
+                    value={form.cableSpec}
+                    onChange={(e) => updateForm({ cableSpec: e.target.value })}
+                    className="modal-select"
+                  >
+                    <option value="">请选择</option>
+                    {CABLE_SPECS.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">电缆距离 (米)</label>
+                  <input
+                    type="number"
+                    value={form.cableDistance || ''}
+                    onChange={(e) => updateForm({ cableDistance: Number(e.target.value) })}
+                    className="modal-input"
+                    min={0}
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="modal-label">预估费用 (元)</label>
+                  <input
+                    type="text"
+                    value={formatCurrency(totalEstimatedCost)}
+                    onChange={(e) => updateForm({ estimatedCableCost: Number(e.target.value.replace(/[^0-9.]/g, '')) })}
+                    className="modal-input"
+                    min={0}
+                    placeholder="¥0.00"
+                    readOnly
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 🔧 勘测详情 */}
+            <div className="modal-section">
+              <h3 className="modal-section__title">🔧 勘测详情</h3>
+              <div className="modal-section__grid">
+                <div>
+                  <label className="modal-label">安装方式</label>
+                  <select
+                    value={form.installMethod}
+                    onChange={(e) => updateForm({ installMethod: e.target.value as any })}
+                    className="modal-select"
+                  >
+                    {INSTALL_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">电表状态</label>
+                  <select
+                    value={form.meterStatus}
+                    onChange={(e) => updateForm({ meterStatus: e.target.value as any })}
+                    className="modal-select"
+                  >
+                    {METER_STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">物业需要方案图</label>
+                  <select
+                    value={form.needBlueprint}
+                    onChange={(e) => updateForm({ needBlueprint: e.target.value as any })}
+                    className="modal-select"
+                  >
+                    {BLUEPRINT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="modal-label">勘测结果</label>
+                  <select
+                    value={form.surveyResult}
+                    onChange={(e) => updateForm({ surveyResult: e.target.value as any })}
+                    className="modal-select"
+                  >
+                    {RESULT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* 📍 位置信息 */}
+            <div className="modal-section">
+              <h3 className="modal-section__title">📍 位置信息</h3>
+              <textarea
+                value={form.locationInfo}
+                onChange={(e) => updateForm({ locationInfo: e.target.value })}
+                className="modal-textarea"
+                placeholder="输入位置描述..."
+              />
+            </div>
+
+            {/* 📝 勘测备注 */}
+            <div className="modal-section">
+              <h3 className="modal-section__title">📝 备注</h3>
+              <textarea
+                value={surveyNote}
+                onChange={(e) => setSurveyNote(e.target.value)}
+                className="modal-textarea"
+                placeholder="勘测备注（允许为空）"
+                style={{ minHeight: '64px' }}
+              />
+            </div>
+
+            <SurveyProfitPreview
+              estimatedCost={totalEstimatedCost}
+              cableCost={form.estimatedCableCost}
+              materials={form.estimatedMaterials}
+              serviceFee={serviceFee}
+              platformRate={platformRate}
+              geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
+            />
+          </div>
+
+          {/* P0-114：实收编辑行——框前"实收"二字，默认空，空=按上方预估费用计算；填入=按实收计算并保存 */}
+          <div className="modal-section" style={{ paddingTop: '8px', paddingBottom: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '14px', color: 'var(--color-text-secondary)', whiteSpace: 'nowrap' }}>实收</span>
+              <input
+                type="number"
+                value={actualReceive}
+                onChange={(e) => setActualReceive(e.target.value)}
+                className="modal-input"
+                placeholder="空=按预估"
+                min={0}
+                style={{ flex: 1 }}
+              />
+              {finalFee !== totalEstimatedCost && (
+                <span style={{ fontSize: '13px', color: 'var(--color-primary)', whiteSpace: 'nowrap' }}>
+                  应收按 {formatCurrency(finalFee)} 计
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* P0-180：利润预估结论区——费用预估=成本侧在上，本区=结论侧在最底部（确认按钮上方）；
+              应收=实收覆盖后 finalFee，材料成本与费用预估卡同源实时联动，全程 orderCalc 唯一出口 */}
+          <SurveyProfitConclusion
+            receivable={finalFee}
+            estimatedCost={totalEstimatedCost}
+            serviceFee={serviceFee}
+            platformRate={platformRate}
+            isBusinessTrip={order.isBusinessTrip === true}
+          />
+
+          <div className="modal-footer">
+            <button onClick={onClose} className="modal-btn modal-btn--secondary">取消</button>
+            <button
+              onClick={() => setShowReport(true)}
+              className="modal-btn modal-btn--secondary"
+              style={{ color: 'var(--color-info)', borderColor: 'var(--color-info-border)' }}
+            >
+              生成报告
+            </button>
+            <button onClick={handleSave} className="modal-btn modal-btn--primary">确认</button>
+          </div>
+        </div>
+      </div>
+
+      {showReport && <SurveyReportModal reportText={reportText} onClose={() => setShowReport(false)} onCopy={handleCopyReport} />}
+    </>
+  )
+}

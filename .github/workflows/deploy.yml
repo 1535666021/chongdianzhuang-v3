@@ -1,0 +1,76 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Clean cache
+        run: rm -rf dist node_modules/.vite
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate version.json
+        run: |
+          echo "{\"version\":\"${GITHUB_SHA::7}\",\"buildTime\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > public/version.json
+
+      - name: Build
+        run: npm run build
+        env:
+          VITE_APP_VERSION: ${{ github.sha }}
+
+      - name: Verify build output
+        run: |
+          echo "Checking build output for legacyImporter keywords..."
+          if ! grep -rq "appointed" dist/assets/; then
+            echo "ERROR: 'appointed' not found in build output"
+            exit 1
+          fi
+          if ! grep -rq "trash" dist/assets/; then
+            echo "ERROR: 'trash' not found in build output"
+            exit 1
+          fi
+          echo "✅ Build output verification passed (appointed + trash found)"
+
+      - name: Add .nojekyll
+        run: touch dist/.nojekyll
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
