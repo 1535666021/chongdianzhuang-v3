@@ -351,10 +351,10 @@ export function isBreakerBoxRow(name: string): boolean {
 }
 
 /**
- * 对账利润（公司结算额，R6口径·条件化）
- * 出差单：客户付费线下收、不进公司账 → 对账 = 安装费 + 出差补助（公司只付这两笔）
- * 普通单：付费走账 → 对账 = 付费 − |扣点| + 安装费 + 出差补助
- * 两分支均不减材料不减工资（公司不核材料与工资）。
+ * 对账利润（只算安装费维度，P0-187甲方锁定口径）
+ * 出差单 = 安装费 + 每台补助30（零扣点）
+ * 不出差单 = 安装费 − 扣点（扣点=客户付款×10%，从安装费里扣），无补助
+ * 客户增项系私下现金收款，不进对账；两分支均不减材料不减工资。
  */
 export function calcReconciliationProfit(order: {
   customerPrice?: number
@@ -368,12 +368,14 @@ export function calcReconciliationProfit(order: {
   const serviceFee = order.serviceFee ?? getServiceFee(order.notes || '')
   const subsidy = order.tripSubsidy || 0
   if (isBusinessTripOrder(order)) return round2(serviceFee + subsidy)
-  return round2((order.customerPrice || 0) - absPlatformFee(order) + serviceFee + subsidy)
+  // P0-187：不出差单只算安装费维度——安装费−扣点；补助恒为0故不带入，customerPrice（客户增项现金）不进对账
+  return round2(serviceFee - absPlatformFee(order))
 }
 
 /**
  * 实际利润 = 付费 − |扣点| + 安装费 + 出差补助 − 材料成本 − 工资（自己记账，全部真实收支）
- * R6：与旧链"对账−材料−工资"数值等价（对账旧公式恰=付费−扣点+安装费+补助），现网数值不变。
+ * P0-187：口径不变。与对账口径差异——实际利润含客户增项现金（真实收支全记），
+ * 对账利润只算安装费维度（出差=安装费+补助；不出差=安装费−扣点），不含客户增项现金。
  */
 export function calcActualProfitByPolicy(order: {
   customerPrice?: number
