@@ -88,7 +88,7 @@ export function CostDetail() {
               <div className="border-t border-gray-100 p-3 space-y-2">
                 {/* P0-177-D(P0-176并入)：首屏三行结论（收入/成本/利润） */}
                 <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-3 space-y-1.5">
-                  <SummaryRow label="收入" value={fmt(item.customerPay)} />
+                  <SummaryRow label="公司流水（含安装费结算）" value={fmt(item.customerPay)} />
                   <SummaryRow label="成本" value={`-${fmt(item.materialCost)}`} />
                   <SummaryRow label="利润" value={fmt(item.actualProfit)} strong />
                 </div>
@@ -103,7 +103,7 @@ export function CostDetail() {
                 {showDetail && (<>
                 <div className="border border-blue-100 rounded-lg p-3 bg-blue-50/40">
                   <div className="flex justify-between items-center text-sm font-semibold text-blue-700">
-                    <span>增项售价明细</span><span>{fmt(item.customerPay)}</span>
+                    <span>增项售价明细</span><span>{fmt(item.customerPrice)}</span>
                   </div>
                   <div className="mt-2 border-t border-blue-100 pt-2">
                     <DetailRow label="安装费（公司支付）" value={fmt(item.serviceFee)} color="text-blue-600" />

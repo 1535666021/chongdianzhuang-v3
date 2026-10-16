@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { DEFAULT_PACKAGE_METERS, isFreeQuotaMaterial } from '@/constants/package'
+import { calcPackageSplit } from '@/shared/utils/orderCalc'
 import type { MaterialInput } from '../types/completion'
 
 export interface PackageBreakdown {
@@ -21,9 +22,7 @@ export function usePackageMeters(materials: MaterialInput[], packageMeters: numb
     for (const m of materials) {
       const isFree = isFreeQuotaMaterial(m.name)
       if (isFree && m.quantity > 0) {
-        const freeQty = Math.min(m.quantity, packageMeters)
-        const overQty = Math.max(0, m.quantity - packageMeters)
-        const customerSub = overQty * m.settlementPrice
+        const { freeQty, overQty, customerAmount: customerSub } = calcPackageSplit(m.quantity, packageMeters, m.settlementPrice) // P0-186：分解唯一出口
         result.push({
           materialName: m.name,
           quantity: m.quantity,

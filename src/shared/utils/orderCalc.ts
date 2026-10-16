@@ -59,6 +59,15 @@ export interface OverFeeResult {
   overFee: number
 }
 
+/** 套餐分解（P0-186：写入端唯一出口，R-0.1计算集中化）
+ * freeQty=min(qty,套餐米数)；overQty=max(0,qty−套餐米数)；customerAmount=overQty×结算价（计费同源）。
+ */
+export function calcPackageSplit(qty: number, packageMeters: number, settlementPrice: number) {
+  const freeQty = Math.min(qty, packageMeters)
+  const overQty = Math.max(0, qty - packageMeters)
+  return { freeQty, overQty, customerAmount: overQty * settlementPrice }
+}
+
 export function calcOverFee(
   actualMeters: number,
   packageMeters = DEFAULT_PACKAGE_METERS,
@@ -304,7 +313,11 @@ export function calcInstallFee(packageMeters: number): number {
 export function resolveDoneDate(order: { actualInstallDate?: string; completeDate?: string; createdAt?: number }): string {
   if (order.actualInstallDate) return order.actualInstallDate
   if (order.completeDate) return order.completeDate
-  if (order.createdAt) return new Date(order.createdAt).toISOString().slice(0, 10)
+  if (order.createdAt) {
+    // P0-186：createdAt回退改本地时区（禁用UTC toISOString，北京时间20:00后跨日偏差一天；参照todayLocal先例）
+    const d = new Date(order.createdAt)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
   return ''
 }
 
