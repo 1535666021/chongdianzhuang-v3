@@ -47,7 +47,7 @@ export default function Statistics() {
     const financials = getCompletedOrderFinancials(order)
     return {
       orderCount: total.orderCount + 1,
-      customerPay: total.customerPay + financials.customerPay, // P0-183/P0-185：公司流水合计（增项+安装费），禁称客户付费
+      customerPay: total.customerPay + financials.customerPay, // P0-185-R2：内部合计（增项+安装费）仅留存不屏显，禁称客户付费
       customerPriceTotal: total.customerPriceTotal + financials.customerPrice, // P0-185：客户付费=ΣcustomerPrice（增项，唯一定义）
       netIncome: total.netIncome + financials.customerPrice - Math.abs(financials.platformFee || 0),
       reconciliationProfit: total.reconciliationProfit + calcReconciliationProfit(order),
@@ -71,7 +71,6 @@ export default function Statistics() {
           <div className="grid grid-cols-3 gap-4">
             <Metric label="当月完成" value={stats.orderCount} color="text-blue-600" amount={false} />
             <Metric label="客户总付费（增项）" value={stats.customerPriceTotal} color="text-purple-600" />
-            <Metric label="公司流水合计" value={stats.customerPay} color="text-indigo-500" />
             <Metric label="扣点后收入" value={stats.netIncome} color="text-purple-600" />
           </div>
           <div className="flex justify-between px-2 text-xs text-gray-400"><span>安装/维修：待数据支撑</span><span>已扣平台点</span></div>
