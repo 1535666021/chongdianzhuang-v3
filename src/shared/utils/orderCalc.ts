@@ -184,6 +184,60 @@ export function extractCableMeters(materials: Array<{ name: string; quantity: nu
   return cable ? cable.quantity : 0
 }
 
+/** 材料成本统一出口（P0-188-R1，RULES §5.1）：凡实际使用即有成本，超不超米都算。
+ * 构成=电缆全量+PVC全量+漏保盒1+漏保器按§1.6矩阵（不含/吉利厂家提供=0）+增项Σ数量×成本价。
+ * 成本价唯一来源=成本绑定表 findCostPrice（R-5.2），禁售价充成本。
+ */
+export interface FullMaterialCostInput {
+  brandName?: string
+  powerKw?: string
+  cableMeters?: number
+  /** P0-188-R1：PVC独立米数（默认=电缆米数）与漏保盒数量（默认1），保写入端等价性 */
+  pvcMeters?: number
+  breakerCount?: number
+  extraItems: { name: string; quantity: number }[]
+  breakerType?: string
+}
+export interface FullMaterialCostItem { name: string; quantity: number; unitCost: number; amount: number }
+export interface FullMaterialCostResult { total: number; items: FullMaterialCostItem[]; unmatched: string[] }
+
+export function calcFullMaterialCost(input: FullMaterialCostInput): FullMaterialCostResult {
+  const items: FullMaterialCostItem[] = []
+  const unmatched: string[] = []
+  const meterCost = (name: string, quantity: number, forceZero = false) => {
+    if (!quantity || quantity <= 0) return
+    if (forceZero) { items.push({ name, quantity, unitCost: 0, amount: 0 }); return }
+    const unitCost = findCostPrice(name)
+    if (unitCost === null) { unmatched.push(name); items.push({ name, quantity, unitCost: 0, amount: 0 }); return }
+    items.push({ name, quantity, unitCost, amount: round2(unitCost * quantity) })
+  }
+  // 电缆/PVC 全量计价（§5.1）
+  meterCost('电缆', input.cableMeters || 0)
+  meterCost('PVC', input.pvcMeters ?? input.cableMeters ?? 0)
+  // 漏保盒每单必含（§1.6，不参与矩阵；默认1个）
+  meterCost('漏保盒', input.breakerCount ?? 1)
+  // 漏保器按矩阵：领克全不含/五菱3.5kW不含/吉利厂家提供=0（§1.6）
+  const geelyFree = isGeelyBrand(input.brandName || '')
+  if (shouldIncludeBreaker(input.brandName || '', input.powerKw) && !geelyFree) {
+    let breakerName = input.breakerType || ''
+    if (!breakerName) {
+      const fb = resolveCostMaterials().find((c) => /漏保|漏电保护/.test(c.name) && !/盒/.test(c.name))
+      breakerName = fb?.name || ''
+    }
+    if (breakerName) meterCost(breakerName, 1)
+  }
+  // 增项 Σ数量×成本价
+  for (const m of input.extraItems) meterCost(m.name, m.quantity)
+  return { total: round2(items.reduce((s, x) => s + x.amount, 0)), items, unmatched }
+}
+
+/** 收入侧同源出口（P0-188-R1）：勘测单=勘测费50/勘察单=勘察费50/维修单=维修费60/
+ * 常规安装单=套餐分档（20米200/30米300）。与完工核算 getServiceFee 同表同值零分叉。
+ */
+export function calcOrderServiceFee(order: { notes?: string; packageMeters?: number }): number {
+  return getServiceFee(order.notes || '', order.packageMeters ?? DEFAULT_PACKAGE_METERS)
+}
+
 export function calcMaterialCost(materials: Array<{ name: string; quantity: number }>): MaterialCostResult {
   const unmatched: string[] = []
   const total = materials.reduce((sum, m) => {
@@ -272,13 +326,12 @@ export function calcSalaryEstimate(input: SalaryEstimateInput): SalaryEstimate {
   const addonNonCable = nonCable.reduce((s, m) => s + m.quantity * m.settlementPrice, 0)
   const addonFee = Math.round((overFee + addonNonCable) * 100) / 100
 
-  const costItems = [
-    { name: '电缆', quantity: actualMeters },
-    { name: 'PVC', quantity: actualMeters },
-    { name: '漏保盒', quantity: 1 },
-    ...nonCable.map((m) => ({ name: m.name, quantity: m.quantity })),
-  ]
-  const materialCost = Math.round(calcMaterialCost(costItems).total * 100) / 100
+  // P0-188-R1：本地costItems改调统一出口calcFullMaterialCost（漏保器矩阵随之补全，数值变化属口径修正）
+  const materialCost = calcFullMaterialCost({
+    brandName: brand,
+    cableMeters: actualMeters,
+    extraItems: nonCable.map((m) => ({ name: m.name, quantity: m.quantity })),
+  }).total
 
   const platformFee = geely ? 0 : Math.round(calcPlatformFee(addonFee, platformRate) * 100) / 100
 

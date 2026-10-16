@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice } from '@/shared/utils/orderCalc'
+import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInventoryStore } from '@/stores/inventoryStore'
@@ -301,15 +301,23 @@ export function useCompletion(orderId: string) {
     }
     const customerReceivable = addonReceivable + cableReceivable
 
-    // P0-109：成本侧按实际使用米数全额计价——成本/客户价两系统独立，套餐减免只作用客户应收侧
-    const cableCost = Math.round(form.fixedAux.cableMeters * cableCostPrice * 100) / 100
-    const pvcCost = Math.round(form.fixedAux.pvcMeters * pvcCostPrice * 100) / 100
-    const fixedCost = cableCost + pvcCost + (form.fixedAux.breakerCount * (breaker?.costPrice || 5)) + breakerTypeCost
-
-    // 增项材料成本：排除电缆/PVC（已由固定辅材计入），吉利单漏保成本归零
+    // 增项材料成本：排除电缆/PVC/漏保（由统一出口按矩阵计入），吉利单漏保成本归零
     const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name) && !(geelyBreakerFree && isBreakerMaterial(m.name)))
-    const { total: addonCost } = calcMaterialCost(chargeableMaterials)
-    const materialCost = Math.round((addonCost + fixedCost) * 100) / 100
+    // P0-188-R1：手工ctx成本构造改调统一出口 calcFullMaterialCost（§5.1 凡使用即有成本；
+    // 等价性=甲方成本绑定表值与既有硬编码口径一致（监理已核）；漏保器矩阵随之补全）
+    // P0-188-R1：展示项电缆/PVC金额同步取出口值（消除展示与计算两皮）
+    const fullCostResult = calcFullMaterialCost({
+      brandName: order?.brandName,
+      powerKw: order?.powerKw,
+      cableMeters: form.fixedAux.cableMeters,
+      pvcMeters: form.fixedAux.pvcMeters,
+      breakerCount: form.fixedAux.breakerCount,
+      extraItems: chargeableMaterials.map((m) => ({ name: m.name, quantity: m.quantity })),
+      breakerType: form.fixedAux.breakerType,
+    })
+    const materialCost = fullCostResult.total
+    const cableCost = fullCostResult.items.find((i) => i.name === '电缆')?.amount ?? 0
+    const pvcCost = fullCostResult.items.find((i) => i.name === 'PVC')?.amount ?? 0
 
     // 平台扣点（吉利品牌无扣点）；支持手动覆盖（P0-104-D 编辑项）
     const geelyOrder = isGeelyBrand(order?.brandName || '')

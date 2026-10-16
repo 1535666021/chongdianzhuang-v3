@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
-import { calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
+import { calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable, calcFullMaterialCost, calcOrderServiceFee, isBreakerBoxRow, isBreakerMaterial } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
@@ -49,14 +49,25 @@ export function useSurvey(order: Order) {
 
   const materialUsageCount = useSettingsStore((s) => s.materialUsageCount)
   const platformRate = useSettingsStore((s) => s.getPlatformFeeRate(order.platform))
-  // P0-181：勘测预估安装费按订单套餐米数分档（calcInstallFee唯一出口，20米→200/30米→300）
-  const serviceFee = calcInstallFee(resolveOrderPackageMeters(order))
+  // P0-188-R1：收入侧同源口径（calcOrderServiceFee：勘测50/勘察50/维修60/常规套餐分档，与完工核算同表同值）
+  const serviceFee = calcOrderServiceFee({ notes: order.notes || '', packageMeters: resolveOrderPackageMeters(order) })
+  const notesText = order.notes || ''
+  const feeLabel = /维修/.test(notesText) ? '维修费' : /勘察/.test(notesText) ? '勘察费' : /勘测/.test(notesText) ? '勘测费' : '安装费（米数分档）'
 
   // P0-103：万帮"线缆 X*Ymm²"行与电缆同口径（按布线距离超米计费），勘测/完工全链路同源
   const isCableMat = (name: string) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
     return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
   }
+
+  // P0-188-R1：成本侧统一出口 calcFullMaterialCost（电缆全量+PVC+漏保盒+漏保器矩阵自动计入；
+  // 列表内电缆/漏保盒/漏保器行由出口统一处理故过滤；未绑定→unmatched 橙色警示 §5.3）
+  const fullCost = useMemo(() => calcFullMaterialCost({
+    brandName: effectiveBrand,
+    powerKw: order.powerKw,
+    cableMeters: form.cableDistance || 0,
+    extraItems: (form.estimatedMaterials || []).filter((m) => !isCableMat(m.name) && !isBreakerBoxRow(m.name) && !isBreakerMaterial(m.name)).map((m) => ({ name: m.name, quantity: m.quantity })),
+  }), [effectiveBrand, order.powerKw, form.cableDistance, form.estimatedMaterials])
 
   const calcCableCost = (name: string, distance: number) => {
     const mat = addonMaterialsData.find((a) => a.name === name)
@@ -205,6 +216,8 @@ export function useSurvey(order: Order) {
     totalEstimatedCost,
     calcCableCost,
     serviceFee,
+    feeLabel,
+    fullCost,
     platformRate,
     save,
   }

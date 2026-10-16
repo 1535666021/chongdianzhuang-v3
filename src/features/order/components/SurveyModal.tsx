@@ -33,7 +33,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     selectedBrand, setSelectedBrand,
     updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
     calcCableCost,
-    serviceFee, platformRate, save,
+    serviceFee, feeLabel, fullCost, platformRate, save,
   } = useSurvey(order)
 
   const [showDropdown, setShowDropdown] = useState(false)
@@ -391,6 +391,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               cableCost={form.estimatedCableCost}
               materials={form.estimatedMaterials}
               serviceFee={serviceFee}
+              feeLabel={feeLabel}
+              fullCostResult={fullCost}
               platformRate={platformRate}
               geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
             />
@@ -420,6 +422,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
           {/* P0-180：利润预估结论区——费用预估=成本侧在上，本区=结论侧在最底部（确认按钮上方）；
               应收=实收覆盖后 finalFee，材料成本与费用预估卡同源实时联动，全程 orderCalc 唯一出口 */}
           <SurveyProfitConclusion
+            feeLabel={feeLabel}
             receivable={finalFee}
             estimatedCost={totalEstimatedCost}
             serviceFee={serviceFee}
