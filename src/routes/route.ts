@@ -5,6 +5,7 @@ export enum RoutePath {
   MATERIALS = '/materials',
   STATS = '/stats',
   SETTINGS = '/settings',
+  MINE = '/mine',
 }
 
 export const ROUTES = [

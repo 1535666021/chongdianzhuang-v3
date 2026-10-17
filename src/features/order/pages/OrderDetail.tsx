@@ -297,7 +297,7 @@ export default function OrderDetail() {
         />
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-3 py-3 z-20">
+      <div className="fixed left-0 right-0 bg-white border-t border-gray-200 px-3 py-3 z-20" style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
         {order.status === '待办' && (
           <button
             onClick={handleEdit}

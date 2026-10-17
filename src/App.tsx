@@ -14,8 +14,7 @@ import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
 import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
 import { runAppointmentRangeMigration } from '@/shared/dataFix/migrateAppointmentRange'
 import OnboardingGuide from '@/shared/components/OnboardingGuide'
-import AppDrawer from '@/shared/components/AppDrawer'
-import { ChevronRight } from 'lucide-react'
+import BottomTabBar from '@/shared/components/BottomTabBar'
 
 // 导出全局 toast
 export { toast }
@@ -60,31 +59,6 @@ export default function App() {
     '已预约': orders.filter((o) => o.status === '已预约').length,
   }
 
-  // P0-148/P0-154：左侧抽屉——左缘把手唤出 + 左缘20px热区右滑手势（轴向判定防列表滚动误触）
-  const [drawerOpen, setDrawerOpen] = useState(false)
-  useEffect(() => {
-    let startX = 0
-    let startY = 0
-    const onTouchStart = (e: TouchEvent) => {
-      const t = e.touches[0]
-      if (t && t.clientX <= 20) { startX = t.clientX; startY = t.clientY } else { startX = -1 }
-    }
-    const onTouchMove = (e: TouchEvent) => {
-      if (startX < 0) return
-      const t = e.touches[0]
-      if (!t) return
-      const dx = t.clientX - startX
-      const dy = t.clientY - startY
-      if (dx > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) { setDrawerOpen(true); startX = -1 }
-    }
-    window.addEventListener('touchstart', onTouchStart, { passive: true })
-    window.addEventListener('touchmove', onTouchMove, { passive: true })
-    return () => {
-      window.removeEventListener('touchstart', onTouchStart)
-      window.removeEventListener('touchmove', onTouchMove)
-    }
-  }, [])
-
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col" data-network={isOffline ? 'offline' : 'online'}>
       {/* 离线状态提示 */}
@@ -108,22 +82,11 @@ export default function App() {
       {/* P0-146：新版本首次启动功能引导（按版本号一次） */}
       <OnboardingGuide />
 
-      <main className="flex-1 overflow-auto">
+      <main className="app-main flex-1 overflow-auto">
         <Outlet context={{ checkNow, toast: appToast }} />
       </main>
-      {/* P0-154：左缘抽屉把手（12×56，替代 40×40 悬浮汉堡钮，全局根治遮挡） */}
-      <button
-        type="button"
-        className="app-drawer-toggle"
-        onClick={() => setDrawerOpen(true)}
-        aria-label="打开导航菜单"
-        title="打开导航菜单（或从左缘右滑）"
-      >
-        <ChevronRight size={12} strokeWidth={3} />
-      </button>
-
-      {/* P0-148：左侧抽屉导航（6项+徽标） */}
-      <AppDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} badgeMap={badgeMap} />
+      {/* P0-173：底部 Tab 栏（抽屉退役；徽章同源=badgeMap；安全区见 .app-tabbar） */}
+      <BottomTabBar badgeMap={badgeMap} />
     </div>
   )
 }

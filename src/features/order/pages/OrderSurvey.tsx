@@ -65,7 +65,7 @@ function OrderSurveyContent({ order }: { order: NonNullable<ReturnType<typeof us
         />
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+      <div className="fixed left-0 right-0 bg-white border-t border-gray-200 p-4" style={{ bottom: 'calc(56px + env(safe-area-inset-bottom))' }}>
         <button
           onClick={handleSave}
           className="btn btn--primary w-full flex items-center justify-center gap-2"

@@ -11,6 +11,7 @@ import BatchParser from '@/features/batchParser/pages/BatchParser'
 const MaterialList = lazy(() => import('@/features/material/pages/MaterialList'))
 const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'))
+const MinePage = lazy(() => import('@/features/settings/pages/MinePage'))
 const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
 const OrderComplete = lazy(() => import('@/features/order/pages/OrderComplete'))
 const RecycleBinPage = lazy(() => import('@/features/order/pages/RecycleBinPage'))
@@ -80,6 +81,14 @@ export default function AppRoutes() {
               element={
                 <Suspense fallback={<LoadingFallback />}>
                   <InventoryPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path={RoutePath.MINE}
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <MinePage />
                 </Suspense>
               }
             />
