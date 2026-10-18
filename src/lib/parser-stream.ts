@@ -24,6 +24,12 @@ const STREAM_REMARK_HINT_RE = /已安装|漏保|彩打/;
 /* 平台词终止信号：必须以平台词开头且紧跟品牌词边界或括号/结尾，
  * 防止"京东苑小区"这类地址被"包含匹配"误截 */
 const STREAM_PLATFORM_LEAD_RE = /^(?:挚达|万帮|京东|天猫|拼多多|抖音|淘宝)[一-龥]{0,4}(?:[（(]|$)/;
+/* P0-193-R1 新增，只增不改：installMode 空值补提词表（stream 路径后处理，非空不执行） */
+const INSTALL_MODE_KEYWORDS_STREAM = ['地面壁挂', '壁挂', '立柱', '电表已安装', '吊装']
+const INSTALL_MODE_RE_STREAM = new RegExp(`(${INSTALL_MODE_KEYWORDS_STREAM.join('|')})`)
+/* P0-193-R1 新增，只增不改：姓名兜底变体排除词（备注键名，命中即不匹配） */
+const P0193_NAME_EXCLUDE_RE = /线缆|备注|说明|安装前|核销|备选/
+
 /* R2-B 单号保护：D/HW 开头的字母数字串是订单号，不得入 VIN */
 const ORDER_NO_PREFIX_RE = /^(?:D|HW)/;
 
@@ -91,6 +97,20 @@ function cleanNameToken(token: string): string {
   return /^[一-龥]{2,4}$/.test(name) && !NAME_EXCLUDE_RE.test(name) ? name : '';
 }
 
+/** P0-193-R1 新增，只增不改：姓名兜底变体——既有中文token提取失败时补尝试，
+ * 允许字母/数字/中英混合（长度≤20字符、含空格≤2处），排除备注键名；
+ * 单号/VIN/电话格式不取。既有成功路径先于本变体执行，结果零变化。
+ */
+function tryStreamNameVariant193(token: string): string {
+  const t = token.trim()
+  if (!t || t.length > 20) return ''
+  if ((t.match(/\s/g) || []).length > 2) return ''
+  if (P0193_NAME_EXCLUDE_RE.test(t)) return ''
+  if (/^[\u4e00-\u9fa5A-Za-z0-9\s]+$/.test(t) && /[\u4e00-\u9fa5A-Za-z]/.test(t)
+    && !ORDER_NO_PREFIX_RE.test(t) && !VIN_FULL_RE.test(t) && !PHONE_RE.test(t)) return t
+  return ''
+}
+
 /** 品牌提取：桩产品名称值优先走品牌词表精修，无匹配再取 "-" 前缀 */
 function brandFromPileName(raw: string): string {
   return extractBrandName(raw) || raw.split('-')[0].trim();
@@ -120,6 +140,13 @@ export function parseStreamTableRow(block: string): ParsedOrderItem {
         for (let j = i - 1; j >= 1; j--) {
           const cand = cleanNameToken(tokens[j]);
           if (cand) { item.customerName = cand; break; }
+        }
+        // P0-193-R1 新增，只增不改：既有提取失败时补尝试中英/字母数字混合变体（失败保持空=原行为）
+        if (!item.customerName) {
+          for (let j = i - 1; j >= 1; j--) {
+            const cand193 = tryStreamNameVariant193(tokens[j]);
+            if (cand193) { item.customerName = cand193; break; }
+          }
         }
       }
       continue;
@@ -179,5 +206,10 @@ export function parseStreamTableRow(block: string): ParsedOrderItem {
   if (tail.includes('安装')) item.installType = '安装';
   if (remarks.length > 0) item.remark = remarks.join('\n');
   fillFallbacks(item, block);
+  // P0-193-R1 新增，只增不改：stream 路径 installMode 空值补提（全文新词表；非空零变化）
+  if (!item.installMode) {
+    const im193 = block.match(INSTALL_MODE_RE_STREAM);
+    if (im193) item.installMode = im193[1];
+  }
   return item;
 }
