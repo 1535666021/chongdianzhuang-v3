@@ -3,17 +3,21 @@ import { usePackageMeters } from './usePackageMeters'
 import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { useInventoryStore } from '@/stores/inventoryStore'
 import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
+import { adjustStock, previewShortfall } from '@/shared/utils/stockCalc'
 import { WANBANG_GEELY_ADDON_PRICES, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
 import { updateMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
-import { BRAND_DEFAULTS, BREAKER_NAMES, DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
+import { BRAND_DEFAULTS, DEFAULT_GEELY_POWER_KW } from '@/constants/brands'
 import { PLATFORM_FEE_RATE } from '@/constants/policy'
 import { todayLocal } from '@/constants/availableWindow'
 import type { Order } from '@/types'
 import type { MaterialInput, FixedAuxInput, ProfitBreakdownItem, ProfitPreview, CompletionFormData } from '../types/completion'
+
+function findCostMaterial(name: string) {
+  return getAllCostMaterials().find((m) => m.name === name)
+}
 
 /** P0-130：同名按品牌——候选=精确名匹配集，优先命中订单品牌组（万帮吉利/挚达五菱/品牌名口径，与useSurvey customTarget一致）；无同组命中回退首个 */
 function findAddonMaterial(name: string, brand?: string) {
@@ -21,10 +25,6 @@ function findAddonMaterial(name: string, brand?: string) {
   if (matches.length <= 1 || !brand) return matches[0]
   const target = isWanbangGeelyOrder(brand) ? '万帮吉利' : isZhidaWulingOrder(brand) ? '挚达/五菱' : brand
   return matches.find((m) => m.brand === target) ?? matches[0]
-}
-
-function findCostMaterial(name: string) {
-  return getAllCostMaterials().find((m) => m.name === name)
 }
 
 function inferBreakerType(order: Order | undefined): FixedAuxInput['breakerType'] {
@@ -152,39 +152,10 @@ function buildSettlementBase(form: CompletionFormData, profit: ProfitPreview, sa
   }
 }
 
-function doStockOut(form: CompletionFormData, customerName: string, stockOut: (id: string, name: string, qty: number, reason: string) => void) {
-  const reason = `订单完成: ${customerName}`
-  form.materials.forEach((m) => {
-    if (m.name && m.quantity > 0) {
-      const addon = findAddonMaterial(m.name)
-      if (addon) stockOut(addon.id, addon.name, m.quantity, reason)
-    }
-  })
-  const pairs: Array<[number, string]> = [
-    [form.fixedAux.cableMeters, '电缆'],
-    [form.fixedAux.pvcMeters, 'PVC'],
-  ]
-  for (const [qty, name] of pairs) {
-    if (qty > 0) {
-      const mat = findCostMaterial(name)
-      if (mat) stockOut(mat.id, mat.name, qty, reason)
-    }
-  }
-  if (form.fixedAux.breakerCount > 0) {
-    const b = findCostMaterial('漏保盒')
-    if (b) stockOut(b.id, b.name, form.fixedAux.breakerCount, reason)
-  }
-  if (form.fixedAux.breakerType) {
-    const btName = BREAKER_NAMES[form.fixedAux.breakerType]
-    if (btName) stockOut('breaker-' + form.fixedAux.breakerType, btName, 1, reason)
-  }
-}
-
 export function useCompletion(orderId: string) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
   const completeOrder = useOrderStore((s) => s.completeOrder)
   const updateOrderStore = useOrderStore((s) => s.updateOrder)
-  const stockOut = useInventoryStore((s) => s.stockOut)
   const recordMaterialUsage = useSettingsStore((s) => s.recordMaterialUsage)
 
   // P0-104-D：已完成单进入编辑态（不改动状态/完成时间，仅改结算数据）
@@ -406,16 +377,41 @@ export function useCompletion(orderId: string) {
     const base = buildSettlementBase(form, profit, savedMaterials, order)
 
     if (isEditMode) {
-      // P0-104-D：编辑态——不改动状态/完成时间，仅更新结算数据，留痕
+      // P0-104-D：编辑态——不改动状态/完成时间，仅更新结算数据，留痕；P0-206-M：已完工单编辑不动库存（不回滚不重减）
       updateOrderStore(orderId, { ...base, completionNotes: form.notes, lastEditedAt: Date.now(), editCount: (order.editCount || 0) + 1 })
     } else {
-      doStockOut(form, order.customerName, stockOut)
+      // P0-206-M：完工落库（R-11.4①）——calcFullMaterialCost items 逐项经 adjustStock 唯一出口（R-11.11），
+      // 输入与 profit memo 同源（免费配额材料已由出口按矩阵计入电缆/PVC行，不重复）；
+      // R-11.8 按订单 stockDeducted 防重；删除/取消完工不回滚
+      if (!order.stockDeducted) {
+        const geelyFree = isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
+        const chargeable = form.materials.filter((m) => !isFreeQuotaMaterial(m.name) && !(geelyFree && isBreakerMaterial(m.name)))
+        const costItems = calcFullMaterialCost({
+          brandName: order.brandName,
+          powerKw: order.powerKw,
+          cableMeters: form.fixedAux.cableMeters,
+          pvcMeters: form.fixedAux.pvcMeters,
+          breakerCount: form.fixedAux.breakerCount,
+          extraItems: chargeable.map((m) => ({ name: m.name, quantity: m.quantity })),
+          breakerType: form.fixedAux.breakerType,
+        }).items
+        // R-11.7 缺口确认弹窗：列"名称缺N"，确认才落库
+        const gaps = costItems.filter((i) => i.quantity > 0 && previewShortfall(i.name, i.quantity) > 0)
+        if (gaps.length > 0) {
+          const detail = gaps.map((g) => `${g.name} 缺${previewShortfall(g.name, g.quantity)}`).join('\n')
+          if (!window.confirm(`库存不足（缺口仅记录提示，库存扣至0即止）：\n${detail}\n\n确认完工落库？`)) return false
+        }
+        costItems.forEach((i) => {
+          if (i.quantity > 0) adjustStock(i.name, -i.quantity, 'complete', order.id, { reason: `订单完成: ${order.customerName}` })
+        })
+        updateOrderStore(orderId, { stockDeducted: true })
+      }
       completeOrder(orderId, { ...base, notes: form.notes })
       recordMaterialUsage(form.materials.map((m) => m.name))
       updateMaterialFrequency({ ...order, status: '已完成', materials: savedMaterials })
     }
     return true
-  }, [order, orderId, form, profit, completeOrder, stockOut, isEditMode, updateOrderStore])
+  }, [order, orderId, form, profit, completeOrder, isEditMode, updateOrderStore])
 
   return {
     order,
