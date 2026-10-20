@@ -1,5 +1,8 @@
-import { getServiceFee } from '@/shared/utils/orderCalc'
-import { useState } from 'react'
+import { getServiceFee, calcFullMaterialCost, isBusinessTripOrder, getOrderBusinessDate, isFreeQuotaMaterial } from '@/shared/utils/orderCalc'
+import { POLICY_FIX_TRIP_START, POLICY_FIX_TRIP_END } from '@/constants/policy'
+import { CostItemsTable } from '@/shared/components/CostItemsTable'
+import type { Order } from '@/types'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -11,6 +14,27 @@ import SurveyModal from '../components/SurveyModal'
 import ConfirmModal from '../components/ConfirmModal'
 import { OrderDetailInfoSections } from '../components/OrderDetailInfoSections'
 import { formatCurrency } from '@/shared/utils/format'
+
+// P0-194：出差判定来源标注（展示只读，镜像 isBusinessTripOrder 优先级：人工>窗口>启发式，禁改判定链）
+function tripSourceLabel(order: Order): string | null {
+  if (!isBusinessTripOrder(order)) return null
+  if (typeof order.isBusinessTrip === 'boolean') return '出差·手动标记'
+  const d = getOrderBusinessDate(order)
+  if (d >= POLICY_FIX_TRIP_START && d <= POLICY_FIX_TRIP_END) return '出差·9-10月窗口'
+  return '出差·扣点0判定'
+}
+
+/** P0-194：材料成本逐项重算（存值 survey.cableDistance/materials 经 calcFullMaterialCost 唯一出口；老单缺字段由出口兜底显"—"） */
+function MaterialCostDetail({ order }: { order: Order }) {
+  const detailCost = useMemo(() => calcFullMaterialCost({
+    brandName: order.brandName,
+    powerKw: order.powerKw,
+    cableMeters: order.survey?.cableDistance ?? 0,
+    extraItems: (order.materials || []).filter((m) => !isFreeQuotaMaterial(m.name)).map((m) => ({ name: m.name, quantity: m.quantity })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [order])
+  return <CostItemsTable fullCostResult={detailCost} />
+}
 
 export default function OrderDetail() {
   const { id } = useParams<{ id: string }>()
@@ -201,7 +225,13 @@ export default function OrderDetail() {
               onClick={() => setExpandedSections(prev => ({ ...prev, platformFee: !prev.platformFee }))}
               className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 hover:bg-gray-100 transition-colors"
             >
-              <span className="text-sm font-medium text-gray-700">平台扣点</span>
+              <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                平台扣点
+                {/* P0-194：出差判定来源标注（仅 isBusinessTripOrder=true 时显示，只读不改判定） */}
+                {tripSourceLabel(order) && (
+                  <span className="text-xs text-gray-400 font-normal">{tripSourceLabel(order)}</span>
+                )}
+              </span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-red-600">-{formatCurrency(Math.abs(order.platformFee || 0))}</span>
                 {expandedSections.platformFee ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -209,7 +239,7 @@ export default function OrderDetail() {
             </button>
             {expandedSections.platformFee && (
               <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
-                平台收取的服务费（{order.platform}）
+                平台收取的服务费（{order.platform}）{tripSourceLabel(order) ? ` · ${tripSourceLabel(order)}：出差单扣点为0、补助+¥30已计入利润` : ''}
               </div>
             )}
           </div>
@@ -250,6 +280,11 @@ export default function OrderDetail() {
             {expandedSections.materialCost && (
               <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200">
                 材料采购成本（含增项材料和固定辅材）
+
+                {/* P0-194：材料成本逐项明细（存值字段经 calcFullMaterialCost 唯一出口重算，金额读 amount 禁自算） */}
+                <div className="mt-1">
+                  <MaterialCostDetail order={order} />
+                </div>
               </div>
             )}
           </div>

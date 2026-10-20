@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CollapsePanel } from '@/shared/components/CollapsePanel'
 import CostItemPicker from '@/shared/components/CostItemPicker'
+import { CostItemsTable } from '@/shared/components/CostItemsTable'
 import { formatCurrency } from '@/shared/utils/format'
 import { calcMaterialCost, calcPlatformFee, calcActualProfitByPolicy, calcTripSubsidy, isBreakerMaterial } from '@/shared/utils/orderCalc'
 import type { FullMaterialCostItem } from '@/shared/utils/orderCalc'
@@ -18,68 +19,6 @@ function resolveSurveyCost(
   const costMaterials = geelyExemptBreaker ? materials.filter((m) => !isBreakerMaterial(m.name)) : materials
   const costResult = calcMaterialCost(costMaterials)
   return fullCostResult ? fullCostResult.total : costResult.total
-}
-
-/** P0-191-R3：成本逐项明细表+行内改绑/绑定（主区/结论区共用同一渲染，禁复制第二份实现）。
- * 数据源=fullCostResult.items（金额读 amount 禁自算）；改绑走 onCostRebound 通知重算。
- */
-function CostItemsTable({
-  fullCostResult,
-  onCostRebound,
-}: {
-  fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] }
-  onCostRebound?: () => void
-}) {
-  const [pickerFor, setPickerFor] = useState<string | null>(null)
-  const unitMeta = useMemo(() => getAllCostMaterials(), [])
-  const unitOf = (name: string) => unitMeta.find((m) => m.name === name)?.unit || ''
-  if (!fullCostResult) return <div className="text-xs text-gray-400 py-0.5">—（预估不可用）</div>
-  return (
-    <div className="mt-1 border-t border-dashed border-gray-200 pt-1">
-      {(fullCostResult.items || []).map((item) => {
-        const isUnmatched = fullCostResult!.unmatched.includes(item.name)
-        const isFreeRow = item.amount === 0 && item.unitCost === 0
-        return (
-          <div key={item.name} className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 items-center py-0.5 text-xs">
-            <span className="text-gray-700 truncate">{item.name}</span>
-            <span className="text-gray-500">{item.quantity}{unitOf(getCostMapping(item.name) || item.name)}</span>
-            <span className="text-gray-500">¥{item.unitCost}</span>
-            <span className="text-gray-700 text-right w-14">{formatCurrency(item.amount)}</span>
-            <span className="w-12 text-right">
-              {isUnmatched ? (
-                <button type="button" className="text-orange-600 underline" onClick={() => setPickerFor(item.name)}>绑定</button>
-              ) : isFreeRow ? (
-                <span className="text-gray-300">—</span>
-              ) : (
-                <button type="button" className="text-blue-600 underline" onClick={() => setPickerFor(item.name)}>改绑</button>
-              )}
-            </span>
-          </div>
-        )
-      })}
-      <div className="grid grid-cols-[1fr_auto_auto_auto_auto] gap-x-2 items-center py-0.5 text-xs font-medium border-t border-gray-100 mt-0.5">
-        <span className="text-gray-700">合计</span><span /><span /><span className="text-right w-14">{formatCurrency(fullCostResult.total)}</span><span className="w-12" />
-      </div>
-      {fullCostResult.unmatched.length > 0 && (
-        <div className="py-0.5 text-xs" style={{ color: '#ea580c' }}>
-          <span>⚠ {fullCostResult.unmatched.join('、')}未绑定成本价，预估偏低</span>
-        </div>
-      )}
-      {pickerFor && (
-        <CostItemPicker
-          materialName={pickerFor}
-          selectedCostName={getCostMapping(pickerFor)}
-          onSelect={(costName) => {
-            // P0-191-R2/R3：改绑/绑定落库 cdz_cost_mapping_v1，通知重算→明细/合计/利润实时刷新
-            setCostMapping(pickerFor, costName)
-            setPickerFor(null)
-            onCostRebound?.()
-          }}
-          onClose={() => setPickerFor(null)}
-        />
-      )}
-    </div>
-  )
 }
 
 interface SurveyProfitPreviewProps {
