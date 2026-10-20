@@ -3,7 +3,9 @@ import { X } from 'lucide-react'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { buildRestockShipmentText, restockTargets, powerOf } from '../restock'
+import { buildRestockShipmentText, restockTargets, powerOf, buildRestockBatchHash } from '../restock'
+import { adjustStock } from '@/shared/utils/stockCalc'
+import { stockLogStorage } from '@/shared/storage/stockLogStorage'
 import type { RestockMaterialRow } from '../restock'
 import { toast } from '@/shared/hooks/useToast'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
@@ -93,6 +95,22 @@ export default function RestockDialog({ open, onClose, scopeOrders }: RestockDia
       ta.select()
       document.execCommand('copy')
       document.body.removeChild(ta)
+    }
+    // P0-206-M：发货明细全部条目入库（R-11.2①/R-11.6 桩按台计数；R-11.8 批次哈希幂等查重）
+    const batchHash = buildRestockBatchHash(ids, materials)
+    if (stockLogStorage.hasRefId(batchHash)) {
+      toast.info('该发货批次已入库，跳过重复入账')
+    } else {
+      targets.forEach(() => adjustStock('桩', 1, 'restock', batchHash)) // 桩0元只计数：1单=1台
+      // 与 buildRestockShipmentText 同口径：五菱3.5kW 按跨平台合计台数自动配漏保 C25
+      const wuling35 = targets.filter((o) => (o.brandName || '').includes('五菱') && powerOf(o) === '3.5').length
+      if (wuling35 > 0) adjustStock('漏保C25', wuling35, 'restock', batchHash)
+      materials
+        .filter((m) => m.name.trim() && m.quantity.trim())
+        .forEach((m) => {
+          const qty = parseFloat(m.quantity.trim())
+          if (qty > 0) adjustStock(m.name.trim(), qty, 'restock', batchHash)
+        })
     }
     ids.forEach((id) => updateOrder(id, { restockStatus: 'done' }))
     setMaterials([])
