@@ -184,7 +184,6 @@ export function useCompletion(orderId: string) {
   const order = useOrderStore((s) => s.orders.find((o) => o.id === orderId))
   const completeOrder = useOrderStore((s) => s.completeOrder)
   const updateOrderStore = useOrderStore((s) => s.updateOrder)
-  const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
   const stockOut = useInventoryStore((s) => s.stockOut)
   const recordMaterialUsage = useSettingsStore((s) => s.recordMaterialUsage)
 
@@ -322,13 +321,13 @@ export function useCompletion(orderId: string) {
     // 平台扣点（吉利品牌无扣点）；支持手动覆盖（P0-104-D 编辑项）
     const geelyOrder = isGeelyBrand(order?.brandName || '')
     // P0-177-R3：无平台配置预填统一政策费率10%（禁0.2旧值硬编码）
-    const platformRate = geelyOrder ? 0 : (order ? getPlatformFeeRate(order.platform) : PLATFORM_FEE_RATE)
+    const platformRate = geelyOrder ? 0 : PLATFORM_FEE_RATE // P0-204：费率唯一来源=PLATFORM_FEE_RATE（旧按平台取率+0.2兜底废止）
     // P0-184①：出差不扣点——auto路径落库0；override手改照存（P0-104-D特批留痕分支不受影响）
     const isTripOrder = order ? isBusinessTripOrder(order) : false
     const autoPlatformFee = isTripOrder
       ? 0
       : order
-        ? Math.round(getOrderPlatformFee(order, customerReceivable, getPlatformFeeRate) * 100) / 100
+        ? Math.round(getOrderPlatformFee(order, customerReceivable) * 100) / 100
         : Math.round(calcPlatformFee(customerReceivable, PLATFORM_FEE_RATE) * 100) / 100
     const platformFee = form.platformFeeOverride ?? autoPlatformFee
 
@@ -374,7 +373,7 @@ export function useCompletion(orderId: string) {
         materialItems,
       },
     }
-  }, [form, order, getPlatformFeeRate, packageMeters, packageBreakdown, bindVersion])
+  }, [form, order, packageMeters, packageBreakdown, bindVersion])
 
   const pendingCostBind = useMemo(() => {
     const chargeable = form.materials.filter((m) => m.name && m.quantity > 0)

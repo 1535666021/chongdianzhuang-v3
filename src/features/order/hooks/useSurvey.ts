@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
+import { PLATFORM_FEE_RATE } from '@/constants/policy'
 import { useOrderStore } from '@/stores/orderStore'
-import { calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable, calcFullMaterialCost, calcOrderServiceFee, isBreakerBoxRow, isBreakerMaterial } from '@/shared/utils/orderCalc'
+import { isGeelyBrand, calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable, calcFullMaterialCost, calcOrderServiceFee, isBreakerBoxRow, isBreakerMaterial } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
@@ -48,7 +49,7 @@ export function useSurvey(order: Order) {
   const effectiveBrand = order.brandName || selectedBrand
 
   const materialUsageCount = useSettingsStore((s) => s.materialUsageCount)
-  const platformRate = useSettingsStore((s) => s.getPlatformFeeRate(order.platform))
+  const platformRate = isGeelyBrand(order.brandName || '') ? 0 : PLATFORM_FEE_RATE // P0-204：费率唯一来源
   // P0-188-R1：收入侧同源口径（calcOrderServiceFee：勘测50/勘察50/维修60/常规套餐分档，与完工核算同表同值）
   const serviceFee = calcOrderServiceFee({ notes: order.notes || '', packageMeters: resolveOrderPackageMeters(order) })
   const notesText = order.notes || ''

@@ -3,7 +3,8 @@ import { Calculator, Search, X, RotateCcw } from 'lucide-react'
 import { brandList, addonMaterialsData } from '@/constants/materialData'
 import { PLATFORMS } from '@/constants/order'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { calcSalaryEstimate } from '@/shared/utils/orderCalc'
+import { calcSalaryEstimate, isGeelyBrand } from '@/shared/utils/orderCalc'
+import { PLATFORM_FEE_RATE } from '@/constants/policy'
 import { formatCurrency } from '@/shared/utils/format'
 
 interface SelectedMaterial {
@@ -16,7 +17,6 @@ interface SelectedMaterial {
 const MAX_RESULT = 50
 
 export default function SalaryCalculator() {
-  const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
   const [open, setOpen] = useState(true)
   const [brand, setBrand] = useState('万帮吉利')
   const [platform, setPlatform] = useState<string>(PLATFORMS[0])
@@ -43,10 +43,10 @@ export default function SalaryCalculator() {
       brand,
       packageMeters: parseFloat(packageMeters) || 0,
       actualMeters: parseFloat(actualMeters) || 0,
-      platformRate: getPlatformFeeRate(platform),
+      platformRate: isGeelyBrand(brand || '') ? 0 : PLATFORM_FEE_RATE, // P0-204
       materials,
     })
-  }, [brand, packageMeters, actualMeters, platform, selected, getPlatformFeeRate])
+  }, [brand, packageMeters, actualMeters, platform, selected])
 
   const toggleMaterial = (name: string, settlementPrice: number, unit: string) => {
     setSelected((prev) => {

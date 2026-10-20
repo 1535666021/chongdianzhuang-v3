@@ -27,6 +27,7 @@ R-0.5 真实订单数据（姓名/电话/地址/金额）禁止入仓库、禁�
 ### 1.3 平台扣点
 - 不出差：基数=客户付款(customerPrice)×10%，由平台从安装费结算里扣
   （20米实结190 / 30米实结290）；存值可为负，读时取 abs。
+  平台差异化费率与0.2默认兜底已废止（P0-204），费率唯一来源=PLATFORM_FEE_RATE。
 - 出差：扣点=0（平台不抽）。
 - 唯一出口：写入 getOrderPlatformFee；展示 getCompletedOrderFinancials 内
   (geely || 出差) → 0。

@@ -1,6 +1,7 @@
 import type { InstallType, OrderMaterialItem, OrderStatus, OrderSurvey, Platform, Region } from '@/types'
 import { extractBrandName, extractPlatformName, METERS_RE, POWER_RE } from '@/lib/parser-core'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { PLATFORM_FEE_RATE } from '@/constants/policy' // P0-204：费率唯一来源
 
 export const STATUS_MAP: Record<string, OrderStatus> = {
   pending: '待办', surveyed: '待办', appointed: '已预约', appointment: '已预约', scheduled: '已预约', booked: '已预约',
@@ -73,8 +74,9 @@ export function getMoneyContainer(raw: Record<string, unknown>): Record<string, 
   return {}
 }
 
+/** P0-204：费率唯一来源=PLATFORM_FEE_RATE（平台差异化费率与0.2兜底已废止）；platform 参保留兼容外部调用签名 */
 export function platformRate(platform: Platform): number {
-  return useSettingsStore.getState().getPlatformFeeRate(platform)
+  return PLATFORM_FEE_RATE
 }
 
 export function inferInstallType(serviceType: string, remark: string): InstallType | undefined {

@@ -43,14 +43,13 @@ export function getSettlementFee(order: Order): number {
   return getOrderServiceFee(order)
 }
 
+/** P0-204：费率唯一来源=PLATFORM_FEE_RATE（平台差异化费率与0.2默认兜底已废止）；吉利=0 保留 */
 export function getOrderPlatformFee(
   order: Order,
-  customerReceivable: number,
-  getPlatformRate: (platform: string) => number
+  customerReceivable: number
 ): number {
   if (isGeelyBrand(order.brandName || '')) return 0
-  const rate = getPlatformRate(order.platform)
-  return calcPlatformFee(customerReceivable, rate)
+  return calcPlatformFee(customerReceivable, PLATFORM_FEE_RATE)
 }
 
 export interface OverFeeResult {

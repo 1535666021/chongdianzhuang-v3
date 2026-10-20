@@ -30,7 +30,6 @@ import CostSheetManager from '../components/CostSheetManager'
 import ExtraItemManager from '../components/ExtraItemManager'
 import EngineerInfo from '../components/EngineerInfo'
 import RestoreFactory from '../components/RestoreFactory'
-import PlatformConfig from '../components/PlatformConfig'
 import FormPresets from '../components/FormPresets'
 import BrandTemplates from '../components/BrandTemplates'
 import WatermarkTemplate from '../components/WatermarkTemplate'
@@ -81,7 +80,6 @@ export default function SettingsPage() {
     { id: 'cost' as const, label: '成本表管理', icon: DollarSign, desc: '编辑20项辅材成本价' },
     { id: 'addon' as const, label: '增项表管理', icon: Package, desc: '编辑572项增项材料价格' },
     { id: 'engineer' as const, label: '工程师信息', icon: User, desc: '姓名、电话、收货地址' },
-    { id: 'platform' as const, label: '平台配置', icon: Sliders, desc: '各平台扣点比例设置' },
     { id: 'presets' as const, label: '表单预设', icon: ClipboardList, desc: '勘测/完工默认值' },
     { id: 'brand' as const, label: '品牌话术', icon: MessageSquare, desc: '各品牌专用话术模板' },
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
@@ -127,8 +125,6 @@ export default function SettingsPage() {
         return <ExtraItemManager />
       case 'engineer':
         return <EngineerInfo />
-      case 'platform':
-        return <PlatformConfig />
       case 'presets':
         return <FormPresets />
       case 'brand':

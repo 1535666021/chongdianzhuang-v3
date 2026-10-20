@@ -37,7 +37,6 @@ interface PersistedSettings {
   costPriceOverrides: Record<string, number>
   addonPriceOverrides: Record<string, number>
   packageConfig: { name: string; meterLength: number; basePrice: number }[]
-  platformFeeRates: Record<string, number>
   formPresets: FormPreset
   brandTemplates: Record<string, string>
   watermark: WatermarkConfig
@@ -51,8 +50,6 @@ interface SettingsState extends PersistedSettings {
   setAddonPrice: (materialId: string, price: number) => void
   getCostPrice: (materialId: string, defaultPrice: number) => number
   getAddonPrice: (materialId: string, defaultPrice: number) => number
-  setPlatformFeeRate: (platform: string, rate: number) => void
-  getPlatformFeeRate: (platform: string) => number
   setFormPresets: (presets: Partial<FormPreset>) => void
   setBrandTemplate: (brand: string, template: string) => void
   setWatermark: (config: Partial<WatermarkConfig>) => void
@@ -120,7 +117,6 @@ const defaults: PersistedSettings = {
   costPriceOverrides: {},
   addonPriceOverrides: {},
   packageConfig: [],
-  platformFeeRates: { ...defaultPlatformRates },
   formPresets: { ...defaultFormPresets },
   brandTemplates: {},
   watermark: { text: '', enabled: false },
@@ -133,7 +129,6 @@ const defaults: PersistedSettings = {
 const initial: PersistedSettings = {
   ...defaults,
   ...saved,
-  platformFeeRates: { ...defaultPlatformRates, ...(saved?.platformFeeRates || {}) },
   formPresets: { ...defaultFormPresets, ...(saved?.formPresets || {}) },
   brandTemplates: { ...(saved?.brandTemplates || {}) },
   watermark: { ...defaults.watermark, ...(saved?.watermark || {}) },
@@ -176,15 +171,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   getAddonPrice: (materialId, defaultPrice) => {
     return get().addonPriceOverrides[materialId] ?? defaultPrice
   },
-  setPlatformFeeRate: (platform, rate) => {
-    const rates = { ...get().platformFeeRates, [platform]: rate }
-    const next = { ...get(), platformFeeRates: rates }
-    set(next)
-    persist(next)
-  },
-  getPlatformFeeRate: (platform) => {
-    return get().platformFeeRates[platform] ?? 0.2
-  },
+  
   setFormPresets: (presets) => {
     const next = { ...get(), formPresets: { ...get().formPresets, ...presets } }
     set(next)

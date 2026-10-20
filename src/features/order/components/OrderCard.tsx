@@ -9,7 +9,7 @@ import AppointmentModal from './AppointmentModal'
 import ConfirmModal from './ConfirmModal'
 import { STATUS_COLORS } from '@/constants/order'
 import { Calendar, MapPin, Phone, User, ClipboardList, Check, CheckCircle, ChevronDown, ChevronUp, Copy, StickyNote, FileText, X } from 'lucide-react'
-import { calcActualProfitByPolicy, calcMaterialCost, getOrderServiceFee, resolveDoneDate } from '@/shared/utils/orderCalc'
+import { isGeelyBrand, calcActualProfitByPolicy, calcMaterialCost, getOrderServiceFee, resolveDoneDate } from '@/shared/utils/orderCalc'
 import { getPlatformLabel } from '@/constants/platforms'
 import { toast } from '@/shared/hooks/useToast'
 import SwipeActionRow from './SwipeActionRow'
@@ -19,7 +19,7 @@ import { hapticVibrate } from '@/shared/utils/haptics'
 import OrderRawModals from './OrderRawModals'
 import RawTextModal from '@/shared/components/RawTextModal'
 import OrderCardTags from './OrderCardTags'
-import { TRIP_SUBSIDY_PER_UNIT } from '@/constants/policy'
+import { PLATFORM_FEE_RATE, TRIP_SUBSIDY_PER_UNIT } from '@/constants/policy'
 import '../../../shared/components/OrderCard.css'
 import '../../../shared/components/Modal.css'
 import { formatCurrency, formatNumber } from '@/shared/utils/format'
@@ -45,10 +45,9 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
   const isScheduled = order.status === '已预约'
   const appt = useAppointment(order) // P0-160：预约信息唯一读出口
   const countdown = getAppointmentCountdown(order) // P0-145：预约倒计时徽章（每次渲染按当天动态算；P0-160起由预约模块承载）
-  const getPlatformFeeRate = useSettingsStore((s) => s.getPlatformFeeRate)
 
   const customerPrice = order.customerPrice || 0
-  const platformRate = getPlatformFeeRate(order.platform)
+  const platformRate = isGeelyBrand(order.brandName || '') ? 0 : PLATFORM_FEE_RATE // P0-204：费率唯一来源
   const serviceFee = getOrderServiceFee(order)
   const { total: materialCost } = calcMaterialCost(order.materials || [])
   // P0-177-A：展示利润唯一化——只读 orderCalc 新政策出口（存储字段驱动），删除旧费率模型现算
