@@ -68,6 +68,8 @@ export interface Order extends BaseEntity {
   nature?: string
   /** 补桩状态（仅安装单）：needed=需补桩 / done=已补桩 */
   restockStatus?: 'needed' | 'done'
+  /** P0-206-M：完工落库标记（R-11.8 按订单deducted防重；true=库存已按完工扣减，编辑/删除不回滚） */
+  stockDeducted?: boolean
   /** 结算编辑最后时间（完工单事后修改留痕） */
   lastEditedAt?: number
   /** 结算编辑次数 */
