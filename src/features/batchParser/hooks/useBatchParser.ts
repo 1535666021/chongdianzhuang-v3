@@ -43,6 +43,8 @@ export interface ParseOutcome {
   /** 重复跳过总数（批内重复 + 库内重复 + 库内同id跳过） */
   skipped: number
   blockCount: number
+  /** P0-199-R1：静默隔离条数（重复单已入库但 dupQuarantine=true 不进主页） */
+  quarantined: number
 }
 
 export function useBatchParser() {
@@ -112,7 +114,7 @@ export function useBatchParser() {
       if (ordersWithNature.length === 0) {
         setPreviewEntries([])
         setBlockCount(result.blockCount)
-        return { total: 0, added: 0, updated: 0, skipped: 0, blockCount: result.blockCount }
+        return { total: 0, added: 0, updated: 0, skipped: 0, blockCount: result.blockCount, quarantined: 0 }
       }
 
       // P0-093：批内自查优先（同批重复只保留首条），首条再查库内重复，规则原样
@@ -124,6 +126,10 @@ export function useBatchParser() {
         if (existingMatch) {
           // P0-196-R2：铁命中（单号/VIN）拦截+去向提示；电话疑命中软拦截待确认
           const guard = orderExists(order, existingOrders)
+          // P0-199-R1：铁命中已预约/已完成→静默隔离（存单但 dupQuarantine=true 不进主页，零打扰不弹窗）
+          if (guard.exists && (guard.matchBy === 'orderNo' || guard.matchBy === 'vin') && (guard.where === '已预约' || guard.where === '已完成')) {
+            return { order: { ...order, dupQuarantine: true }, status: 'blocked' as const, existingMatch, guardNote: `重复（${guard.matchBy === 'orderNo' ? '单号' : 'VIN'}）已存在于【${guard.where}】→导入时将静默隔离` }
+          }
           if (guard.exists && (guard.matchBy === 'orderNo' || guard.matchBy === 'vin')) {
             return { order, status: 'blocked' as const, existingMatch, guardNote: `单号/VIN 已存在于【${guard.where}】，已拦截` }
           }
@@ -138,11 +144,15 @@ export function useBatchParser() {
       setBlockCount(result.blockCount)
 
       // 一键入库：仅新增项直推，重复项自动跳过
-      const newOrders = entries.filter((e) => e.status === 'new' || (e.status === 'phone-dup' && e.confirmed)).map((e) => e.order)
+      // P0-199-R1：blocked 且带 dupQuarantine 的重复单静默入库（隔离），其余 blocked 仍拦截
+      const newOrders = entries.filter((e) => e.status === 'new' || (e.status === 'phone-dup' && e.confirmed) || (e.status === 'blocked' && e.order.dupQuarantine)).map((e) => e.order)
       const res = importOrders(newOrders)
       const skippedTotal = entries.length - newOrders.length + res.skipped
+      // P0-199-R1：隔离条数=入库集中 dupQuarantine=true 者
+      const quarantined = newOrders.filter((o) => o.dupQuarantine).length
       return {
         total: entries.length,
+        quarantined,
         added: res.added,
         updated: res.updated,
         skipped: skippedTotal,

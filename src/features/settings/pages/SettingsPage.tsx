@@ -21,6 +21,7 @@ import {
   Vibrate,
   Wrench,
   ShieldCheck,
+  Inbox,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION, APP_BUILD_TIME } from '@/constants/common'
 import { runBrandBackfillManual } from '@/shared/dataFix/backfillBrand'
@@ -38,6 +39,7 @@ import ScriptManager from '../components/ScriptManager'
 import AmapConfig from '../components/AmapConfig'
 import SalaryCalculator from '../components/SalaryCalculator'
 import PolicyFixTool from '../components/PolicyFixTool'
+import { useOrderStore } from '@/stores/orderStore'
 import TripFeeZeroTool from '../components/TripFeeZeroTool'
 import BreakerCostBackfillTool from '../components/BreakerCostBackfillTool'
 import ProfitAuditTool from '../components/ProfitAuditTool'
@@ -59,9 +61,11 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'tripfix' | 'breakercost'
+  | 'profitAudit' | 'tripfix' | 'breakercost' | 'quarantine'
   | null
 export default function SettingsPage() {
+  // P0-199-R1：隔离箱角标=箱内条数
+  const qCount = useOrderStore((s) => s.orders).filter((o) => o.dupQuarantine).length
   const [activeSection, setActiveSection] = useState<SettingSection>(null)
   const [isChecking, setIsChecking] = useState(false)
   const navigate = useNavigate()
@@ -72,6 +76,7 @@ export default function SettingsPage() {
   const menuItems = [
     { id: 'backup' as const, label: '数据导入', icon: Upload, desc: '从老系统导入订单数据' },
     { id: 'dupcheck' as const, label: '订单查重', icon: ShieldCheck, desc: '铁重/疑重扫描与自动清理（数据全程本地）' },
+    { id: 'quarantine' as const, label: `重复隔离箱${qCount > 0 ? `（${qCount}）` : ''}`, icon: Inbox, desc: '录入时静默隔离的重复单（主页零污染）' },
     { id: 'map' as const, label: '地图配置', icon: MapPin, desc: '高德Key、缩放级别' },
     { id: 'cost' as const, label: '成本表管理', icon: DollarSign, desc: '编辑20项辅材成本价' },
     { id: 'addon' as const, label: '增项表管理', icon: Package, desc: '编辑572项增项材料价格' },
@@ -101,6 +106,10 @@ export default function SettingsPage() {
     // P0-196-R2：订单查重独立页
     if (id === 'dupcheck') {
       navigate('/settings/dupcheck')
+      return
+    }
+    if (id === 'quarantine') {
+      navigate('/settings/quarantine')
       return
     }
     if (id === activeSection) {

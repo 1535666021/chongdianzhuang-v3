@@ -15,7 +15,8 @@ export default function DupCheckPage() {
 
   const ironCount = useMemo(() => (scan ? scan.ironA.length + scan.ironB.length : 0), [scan])
 
-  const runScan = () => setScan(detectDuplicates(orders))
+  // P0-199-R1：隔离单视为不存在（detectDuplicates 纯函数零改动，由调用方过滤）
+  const runScan = () => setScan(detectDuplicates(orders.filter((o) => !o.dupQuarantine)))
 
   const cleanupIron = () => {
     if (!scan) return

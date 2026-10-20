@@ -138,17 +138,20 @@ export function extractPlatformOptions(orders: Order[]): string[] {
 export function useOrderList(filter?: OrderFilter) {
   const orders = useOrderStore((state) => state.orders)
 
+  // P0-199-R1：隔离单不进主页/任何过滤列表
+  const visibleOrders = useMemo(() => orders.filter((o) => !o.dupQuarantine), [orders])
   const filteredOrders = useMemo(() => {
-    return sortOrders(filterOrders(orders, filter), filter)
-  }, [orders, filter])
+    return sortOrders(filterOrders(visibleOrders, filter), filter)
+  }, [visibleOrders, filter])
 
   const stats = useMemo(() => {
-    const total = orders.length
-    const pending = orders.filter((o) => o.status === '待办').length
-    const scheduled = orders.filter((o) => o.status === '已预约').length
-    const completed = orders.filter((o) => o.status === '已完成').length
+    // P0-199-R1：计数同过滤（隔离单不计入）
+    const total = visibleOrders.length
+    const pending = visibleOrders.filter((o) => o.status === '待办').length
+    const scheduled = visibleOrders.filter((o) => o.status === '已预约').length
+    const completed = visibleOrders.filter((o) => o.status === '已完成').length
     return { total, pending, scheduled, completed }
-  }, [orders])
+  }, [visibleOrders])
 
   return { orders: filteredOrders, stats }
 }

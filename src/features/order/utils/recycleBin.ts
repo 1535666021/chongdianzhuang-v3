@@ -15,7 +15,7 @@ export function isDeletedOrder(order: Order): boolean {
 
 /** 正常业务流订单（全部列表/统计/材料/补桩/话术统一走此过滤） */
 export function activeOrders(orders: Order[]): Order[] {
-  return orders.filter((o) => !isDeletedOrder(o))
+  return orders.filter((o) => !isDeletedOrder(o) && !o.dupQuarantine) // P0-199-R1：隔离单视为不存在
 }
 
 /** 回收站订单列表（新→旧） */

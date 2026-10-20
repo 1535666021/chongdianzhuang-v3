@@ -77,7 +77,7 @@ function calcMonthStats(orders: Order[], year: number, month: number): MonthlySt
 }
 
 export function useStatistics() {
-  const orders = useOrderStore((s) => s.orders)
+  const orders = useOrderStore((s) => s.orders).filter((o) => !o.dupQuarantine) // P0-199-R1：隔离单不进统计
 
   // 生成月份选项：2024-05 到 2026-07
   const monthOptions = useMemo(() => {

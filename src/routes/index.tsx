@@ -13,6 +13,7 @@ const Statistics = lazy(() => import('@/features/statistics/pages/Statistics'))
 const SettingsPage = lazy(() => import('@/features/settings/pages/SettingsPage'))
 const MinePage = lazy(() => import('@/features/settings/pages/MinePage'))
 const DupCheckPage = lazy(() => import('@/features/settings/pages/DupCheckPage'))
+const DupQuarantinePage = lazy(() => import('@/features/settings/pages/DupQuarantinePage'))
 const FinancePage = lazy(() => import('@/features/finance/pages/FinancePage'))
 const OrderComplete = lazy(() => import('@/features/order/pages/OrderComplete'))
 const RecycleBinPage = lazy(() => import('@/features/order/pages/RecycleBinPage'))
@@ -98,6 +99,14 @@ export default function AppRoutes() {
               element={
                 <Suspense fallback={<LoadingFallback />}>
                   <DupCheckPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/settings/quarantine"
+              element={
+                <Suspense fallback={<LoadingFallback />}>
+                  <DupQuarantinePage />
                 </Suspense>
               }
             />

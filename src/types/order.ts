@@ -16,6 +16,8 @@ export interface Order extends BaseEntity {
   address: string
   platform: Platform
   status: OrderStatus
+  /** P0-199-R1：重复隔离箱标记（true=隔离中，主页/已完成/统计/查重均视为不存在） */
+  dupQuarantine?: boolean
   region: Region
   appointmentDate?: string; appointmentTime?: string; appointmentNote?: string
   materialCost: number; laborCost: number
