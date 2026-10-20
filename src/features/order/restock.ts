@@ -39,6 +39,17 @@ export function powerOf(order: Order): string {
 
 export interface RestockMaterialRow { name: string; quantity: string }
 
+/** P0-206-M：批次哈希=日期+目标单ID集+材料摘要（R-11.8 补桩按批次哈希查重，重复点击不重复入账） */
+export function buildRestockBatchHash(ids: string[], materials: RestockMaterialRow[]): string {
+  const day = new Date().toISOString().slice(0, 10)
+  const idSet = [...ids].sort().join(',')
+  const summary = materials
+    .filter((m) => m.name.trim() && m.quantity.trim())
+    .map((m) => `${m.name.trim()}×${m.quantity.trim()}`)
+    .join(';')
+  return `restock|${day}|${idSet}|${summary}`
+}
+
 export function platformNameOf(order: Order): string {
   return (order.platformName || order.platform || '').trim()
 }
