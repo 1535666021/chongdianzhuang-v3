@@ -424,5 +424,18 @@ export function splitOrderBlocks(rawText: string): string[] {
     }
   }
   // P0-132：剥离块首尾成对英文/中文引号（微信导出装饰），再交字段抽取
-  return blocks.map((b) => b.replace(/^[\"\"\"\'']+|[\"\"\"\'']+$/g, ''));
+  // P0-195-R1 新增，只增不改：行首锚点再切分守卫——块内某行（非首行）行首匹配
+  // 单号锚点（可带 X月X日 前缀）→ 从该行切为新块；发送者行/相邻粘连单不再同块合成妖单。
+  // 守卫失败（无锚点行）原样回落既有切块结果，既有空行/说话人逻辑零改动。
+  const anchored: string[] = [];
+  const BLOCK_START_ORDER_RE = /^(?:\d{1,2}月\d{1,2}日)?[DW]\d{10,}\w*/;
+  for (const block of blocks) {
+    const bl = block.split('\n');
+    if (bl.length < 2) { anchored.push(block); continue; }
+    const cut = bl.findIndex((l, idx) => idx > 0 && BLOCK_START_ORDER_RE.test(l.trim()));
+    if (cut === -1) { anchored.push(block); continue; }
+    anchored.push(bl.slice(0, cut).join('\n'));
+    anchored.push(bl.slice(cut).join('\n'));
+  }
+  return anchored.map((b) => b.replace(/^[\"\"\"\'']+|[\"\"\"\'']+$/g, ''));
 }

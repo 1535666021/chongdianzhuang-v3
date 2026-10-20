@@ -281,12 +281,19 @@ function parseWanlianFlowBlock(block: string): ParsedOrderItem | null {
  * 安装方式/电表/桩型/漏保。锚点不足或顺序异常→返回 null 原样回落既有逻辑。
  */
 function parseGluedFlowBlock(block: string): ParsedOrderItem | null {
-  let text = block.replace(TIMESTAMP_PREFIX_RE, '').trim()
+  let raw = block.replace(TIMESTAMP_PREFIX_RE, '').trim()
+  // P0-195-R1 修：月日前缀判定必须在剥离之前（原始行首），剥离后再判恒 false
+  const hasDatePrefix = /^\d{1,2}月\d{1,2}日/.test(raw)
   // P0-195：行首"X月X日"日期前缀剥离（解析不出完整日期则弃，不落 appointmentDate）
-  text = text.replace(/^\d{1,2}月\d{1,2}日/, '').trim()
+  let text = raw.replace(/^\d{1,2}月\d{1,2}日/, '').trim()
+  // P0-195-R1 修：块首行 glued——首行行首单号锚点且首行自身空格≤2（块可能粘连线缆行致块级空格多），只用首行切分
+  const firstLine = text.split('\n')[0].trim()
+  const FL_GLUED_RE = /^(?:W\d{12,14}|[DW]\d{12,16}(?:WL)?)/
+  if (FL_GLUED_RE.test(firstLine) && (firstLine.match(/\s/g) || []).length <= 2) text = firstLine
   const spaceCount = (text.match(/\s/g) || []).length
   const isWNew = /^W\d{12,14}/.test(text)
-  if (spaceCount > 1 && !isWNew) return null // 非粘连非W新格式→回落既有路径
+  // P0-195-R1：微信粘连恢复后行首带"X月X日"前缀（且行内可能含空格，如" 3.5KW"）——前缀即粘连标志，放行 glued
+  if (spaceCount > 1 && !isWNew && !hasDatePrefix) return null // 非粘连非W新格式→回落既有路径
   const mNo = text.match(P0195_GLUED_ORDER_RE)
   const mPh = text.match(P0195_GLUED_PHONE_RE)
   if (!mNo || !mPh) return null // 锚点不足→回落
@@ -329,7 +336,14 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
   const glued195 = parseGluedFlowBlock(block);
   if (glued195) return glued195;
   const compactItem = parseCompactFlowBlock(block);
-  if (compactItem) return compactItem;
+  if (compactItem) {
+    // P0-195-R1 新增，只增不改：compact 早退出口的电表空值补提（与主路径同词表；非空不动）
+    if (!compactItem.meterStatus) {
+      const ms195c = block.match(P0195_METER_RE);
+      if (ms195c) compactItem.meterStatus = ms195c[0].includes('未申请') ? '未申请' : '已安装';
+    }
+    return compactItem;
+  }
   const item = emptyItem();
   const lines = block.split('\n');
   const remarks: string[] = [];
