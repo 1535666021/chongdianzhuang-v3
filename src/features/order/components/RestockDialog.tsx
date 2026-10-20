@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { buildRestockShipmentText, restockTargets, powerOf } from '../restock'
 import type { RestockMaterialRow } from '../restock'
 import { toast } from '@/shared/hooks/useToast'
+import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
 import '../../../shared/components/Modal.css'
 
 interface RestockDialogProps {
@@ -48,15 +49,12 @@ export default function RestockDialog({ open, onClose, scopeOrders }: RestockDia
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, shipmentText, previewDirty])
 
-  const materialOptions = useMemo(() => {
-    const names = new Set<string>()
-    for (const order of orders) {
-      for (const m of order.materials || []) {
-        if (m.name?.trim()) names.add(m.name.trim())
-      }
-    }
-    return [...names]
-  }, [orders])
+  // P0-203：辅材下拉数据源=成本绑定表全量条目（公司采购/库存名目，含 custom_ 绑定项），
+  // 禁客户售价体系/订单增项列表（R-5.5）；按 name 排序展示
+  const materialOptions = useMemo(
+    () => [...getAllCostMaterials()].sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN')).map((m) => m.name),
+    []
+  )
 
   const patchMaterial = (index: number, patch: Partial<RestockMaterialRow>) =>
     setMaterials((prev) => prev.map((m, i) => (i === index ? { ...m, ...patch } : m)))
