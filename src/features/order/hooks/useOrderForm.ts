@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { orderExists } from '@/features/order/utils/orderGuard'
 import { TRIP_SUBSIDY_PER_UNIT } from '@/constants/policy'
 import { calcActualProfitByPolicy } from '@/shared/utils/orderCalc'
 import type { Order, Platform, OrderStatus, InstallType } from '@/types'
@@ -122,6 +123,16 @@ export function useOrderForm(orderId?: string) {
 
   const submit = useCallback((): Order | null => {
     if (!validate()) return null
+    // P0-196-R2：手动新增防重（编辑模式不过防重，禁误伤改单）；铁命中禁保存，疑命中确认制
+    if (!isEdit) {
+      const allOrders = useOrderStore.getState().orders
+      // P0-196-R2 说明：手动新增表单不录单号/VIN（FormData 无此两字段），故只能电话疑检；
+      // 铁级拦截由批量导入路径承担（单号/VIN 唯批量解析可得）。
+      const guard = orderExists({ orderNo: '', vin: '', phone: form.phone }, allOrders.filter((o) => o.id !== orderId))
+      if (guard.exists && guard.matchBy === 'phone') {
+        if (!confirm(`电话 ${form.phone} 已有单在【${guard.where}】（${guard.existing?.orderNo || ''}）\n确认真双桩可继续保存，取消则拦截。继续？`)) return null
+      }
+    }
     const order: Order = {
       id: isEdit ? orderId! : String(Date.now()),
       ...form,

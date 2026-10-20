@@ -42,6 +42,7 @@ import TripFeeZeroTool from '../components/TripFeeZeroTool'
 import ProfitAuditTool from '../components/ProfitAuditTool'
 type SettingSection =
   | 'haptics'
+  | 'dupcheck'
   | 'cost'
   | 'addon'
   | 'engineer'
@@ -69,6 +70,7 @@ export default function SettingsPage() {
   const handleVersionCheck = async () => { if (isChecking) return; setIsChecking(true); if (!await checkNow()) toast.success('当前已是最新版本'); window.setTimeout(() => setIsChecking(false), 3000) }
   const menuItems = [
     { id: 'backup' as const, label: '数据导入', icon: Upload, desc: '从老系统导入订单数据' },
+    { id: 'dupcheck' as const, label: '订单查重', icon: ShieldCheck, desc: '铁重/疑重扫描与自动清理（数据全程本地）' },
     { id: 'map' as const, label: '地图配置', icon: MapPin, desc: '高德Key、缩放级别' },
     { id: 'cost' as const, label: '成本表管理', icon: DollarSign, desc: '编辑20项辅材成本价' },
     { id: 'addon' as const, label: '增项表管理', icon: Package, desc: '编辑572项增项材料价格' },
@@ -92,6 +94,11 @@ export default function SettingsPage() {
     if (id === 'haptics') { setHapticsEnabled(!hapticsEnabled); return } // P0-146：行内开关，不进子面板
     if (id === 'backup') {
       navigate('/settings/backup')
+      return
+    }
+    // P0-196-R2：订单查重独立页
+    if (id === 'dupcheck') {
+      navigate('/settings/dupcheck')
       return
     }
     if (id === activeSection) {

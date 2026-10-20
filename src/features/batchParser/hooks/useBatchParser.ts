@@ -16,15 +16,20 @@ import {
   type ExistingDupMatch,
   type BatchDupMatch,
 } from './batchDedupe'
+import { orderExists } from '@/features/order/utils/orderGuard'
 
 type ParsedOrderWithNature = ParsedOrderItem & { nature?: string }
 
 /** 导入结果条目：订单 + 判重结论（新增 / 库内重复 / 批内重复），只读回显 */
 export interface PreviewEntry {
   order: Order
-  status: 'new' | 'existing-dup' | 'batch-dup'
+  status: 'new' | 'existing-dup' | 'batch-dup' | 'blocked' | 'phone-dup'
   existingMatch?: ExistingDupMatch
   batchMatch?: BatchDupMatch
+  /** P0-196-R2：拦截/疑重提示文案 */
+  guardNote?: string
+  /** P0-196-R2：phone-dup 用户确认后可录入 */
+  confirmed?: boolean
 }
 
 /** P0-106 一键解析+入库结果汇总 */
@@ -43,6 +48,11 @@ export interface ParseOutcome {
 export function useBatchParser() {
   const [rawText, setRawText] = useState('')
   const [previewEntries, setPreviewEntries] = useState<PreviewEntry[]>([])
+
+  // P0-196-R2：phone-dup 软确认（用户点确认后可录入）
+  const confirmPhoneDup = useCallback((index: number) => {
+    setPreviewEntries((prev) => prev.map((e, i) => (i === index && e.status === 'phone-dup' ? { ...e, confirmed: true } : e)))
+  }, [])
   const [blockCount, setBlockCount] = useState(0)
   const [isParsing, setIsParsing] = useState(false)
   const existingOrders = useOrderStore((state) => state.orders)
@@ -111,14 +121,24 @@ export function useBatchParser() {
         const batchMatch = batchDups[index]
         if (batchMatch) return { order, status: 'batch-dup' as const, batchMatch }
         const existingMatch = matchExistingDuplicate(order, existingOrders)
-        if (existingMatch) return { order, status: 'existing-dup' as const, existingMatch }
+        if (existingMatch) {
+          // P0-196-R2：铁命中（单号/VIN）拦截+去向提示；电话疑命中软拦截待确认
+          const guard = orderExists(order, existingOrders)
+          if (guard.exists && (guard.matchBy === 'orderNo' || guard.matchBy === 'vin')) {
+            return { order, status: 'blocked' as const, existingMatch, guardNote: `单号/VIN 已存在于【${guard.where}】，已拦截` }
+          }
+          if (guard.exists && guard.matchBy === 'phone') {
+            return { order, status: 'phone-dup' as const, existingMatch, guardNote: `电话 ${order.phone} 已有单在【${guard.where}】，确认后可录入`, confirmed: false }
+          }
+          return { order, status: 'existing-dup' as const, existingMatch }
+        }
         return { order, status: 'new' as const }
       })
       setPreviewEntries(entries)
       setBlockCount(result.blockCount)
 
       // 一键入库：仅新增项直推，重复项自动跳过
-      const newOrders = entries.filter((e) => e.status === 'new').map((e) => e.order)
+      const newOrders = entries.filter((e) => e.status === 'new' || (e.status === 'phone-dup' && e.confirmed)).map((e) => e.order)
       const res = importOrders(newOrders)
       const skippedTotal = entries.length - newOrders.length + res.skipped
       return {
@@ -143,6 +163,7 @@ export function useBatchParser() {
     rawText,
     setRawText,
     previewEntries,
+    confirmPhoneDup,
     blockCount,
     isParsing,
     parse,

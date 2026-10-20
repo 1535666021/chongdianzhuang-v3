@@ -7,6 +7,13 @@ const MATCHED_BY_LABEL = { orderNo: '单号', phone: '电话', name: '姓名' } 
 
 /** 状态徽标：新增 / 重复跳过（注明与哪条既有单重复）/ 批内重复 */
 function StatusBadge({ entry }: { entry: PreviewEntry }) {
+  // P0-196-R2：铁重拦截 / 电话疑重复（软，确认后可录入）
+  if (entry.status === 'blocked') {
+    return <span className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-1.5 py-0.5">🚫 {entry.guardNote || '单号/VIN 已存在，已拦截'}</span>
+  }
+  if (entry.status === 'phone-dup') {
+    return <span className="text-xs text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">{entry.confirmed ? '✅ 已确认录入' : `⚠️ ${entry.guardNote || '电话已有单，待确认'}`}</span>
+  }
   if (entry.status === 'new') {
     return <span className="text-xs text-green-600 bg-green-50 border border-green-200 rounded px-1.5 py-0.5">新增✅ 已入库</span>
   }
@@ -30,7 +37,7 @@ function StatusBadge({ entry }: { entry: PreviewEntry }) {
 
 export default function BatchParser() {
   const navigate = useNavigate()
-  const { rawText, setRawText, previewEntries, blockCount, isParsing, parse, clear } =
+  const { rawText, setRawText, previewEntries, confirmPhoneDup, blockCount, isParsing, parse, clear } =
     useBatchParser()
 
   /** P0-106 一键流程：点一次 = 解析+去重+自动入库+toast汇总 */
@@ -119,8 +126,13 @@ export default function BatchParser() {
                     {po.remark && (
                       <div className="text-xs text-gray-400 mt-1">备注: {po.remark}</div>
                     )}
-                    <div className="mt-1.5">
+                    <div className="mt-1.5 flex items-center gap-2">
                       <StatusBadge entry={entry} />
+                      {/* P0-196-R2：电话疑重复确认录入按钮（防真双桩被堵死的软拦截） */}
+                      {entry.status === 'phone-dup' && !entry.confirmed && (
+                        <button type="button" onClick={() => confirmPhoneDup(idx)}
+                          className="text-xs text-blue-600 underline">确认录入</button>
+                      )}
                     </div>
                   </div>
                 )
