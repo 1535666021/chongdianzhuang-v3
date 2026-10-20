@@ -64,6 +64,10 @@ export function buildRestockShipmentText(date: Date, orders: Order[], materials:
     parts.push(row.power ? `${row.power}kW` : '功率未填')
     lines.push(`${parts.join(' ')} ${row.count}台`)
   }
+  // P0-205：五菱3.5kW（任意平台，brand含"五菱"兼容"上汽通用五菱"；判定源=powerOf 与汇总行同源）按跨平台合计台数自动配漏保 C25；
+  // 紧随桩型块末行、在"辅材："前、无空行；不去重（手动辅材区已加照加）；五菱7kW/其他品牌不加
+  const wuling35Count = rows.filter((r) => r.brand.includes('五菱') && r.power === '3.5').reduce((s, r) => s + r.count, 0)
+  if (wuling35Count > 0) lines.push(`漏保 C25 ${wuling35Count}个`)
   const materialLines = materials.filter((m) => m.name.trim() !== '' && m.quantity.trim() !== '').map((m) => `${m.name.trim()} ${m.quantity.trim()}`)
   if (materialLines.length > 0) { lines.push('辅材：'); lines.push(...materialLines) }
   const addr = receiveAddr.trim()
