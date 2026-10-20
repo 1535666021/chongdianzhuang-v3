@@ -1,3 +1,4 @@
+import { BRAND_NAMES, getBrandLabel } from '@/constants/brands'
 import { useNavigate } from 'react-router-dom'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import type { Order, OrderFilter, OrderStatus } from '@/types'
@@ -76,6 +77,8 @@ export default function OrderList({ fixedStatus }: Props) {
   const [surveyOrder, setSurveyOrder] = useState<Order | null>(null)
   const [scriptOrder, setScriptOrder] = useState<Order | null>(null)
   const [editPlatformOrder, setEditPlatformOrder] = useState<Order | null>(null)
+  // P0-201-R2：品牌缺失槽点击编辑的选择器
+  const [editBrandOrder, setEditBrandOrder] = useState<Order | null>(null)
   const [showRestock, setShowRestock] = useState(false)
   const [restockScope, setRestockScope] = useState<Order[] | null>(null) // P0-144：批量补桩限定范围
   const [showBatchAppointment, setShowBatchAppointment] = useState(false)
@@ -114,6 +117,7 @@ export default function OrderList({ fixedStatus }: Props) {
       onGenerateScript={setScriptOrder}
       onDelete={(item) => doSoftDelete([item])} // P0-144：删除→撤销条（3秒内可撤销）
       onEditPlatform={setEditPlatformOrder}
+            onEditBrand={setEditBrandOrder}
     />
   )
   const displayOrders = useMemo(() => orders.slice(0, showCount), [orders, showCount])
@@ -299,6 +303,23 @@ export default function OrderList({ fixedStatus }: Props) {
           </div>
         </div>
       )}
+      {editBrandOrder && (
+        <div className="modal-overlay" onClick={() => setEditBrandOrder(null)}>
+          <div className="modal-content" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-header"><h3 className="modal-title">选择品牌</h3></div>
+            <div className="modal-body">
+              {BRAND_NAMES.map((b) => (
+                <button
+                  key={b}
+                  className="modal-btn modal-btn--secondary w-full mb-2"
+                  onClick={() => { updateOrder(editBrandOrder.id, { brandName: b }); setEditBrandOrder(null) }}
+                >{getBrandLabel(b)}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }

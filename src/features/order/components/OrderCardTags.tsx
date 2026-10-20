@@ -19,56 +19,80 @@ interface OrderCardTagsProps {
   onPackageMetersSave?: (value: string) => void
   /** P0-165-R8：出差就地切换（true=出差橙态/false=不出差灰态） */
   onTripToggle?: (isTrip: boolean) => void
+  /** P0-201-R2：品牌缺失槽点击编辑（OrderList 层品牌选择器） */
+  onEditBrand?: (order: Order) => void
 }
 
-export default function OrderCardTags({ order, onEditPlatform, onPowerChange, onRestockToggle, onPackageMetersSave, onTripToggle }: OrderCardTagsProps) {
+export default function OrderCardTags({ order, onEditPlatform, onPowerChange, onRestockToggle, onPackageMetersSave, onTripToggle, onEditBrand }: OrderCardTagsProps) {
   const powerKw = order.powerKw?.toString().match(/\d+(?:\.\d+)?/)?.[0]
   const installType = order.installType || '其他'
-  const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他']
-  const isInstall = isInstallOrder(order)
-
+  const typeColors = INSTALL_TYPE_COLORS[installType]
+  // P0-201-R2：五固定槽缺失判定；米数红胶囊点击唤就地编辑（initialEditing swap）
+  const slots = tagSlotStates(order)
+  const [metersEditing, setMetersEditing] = useState(false)
+  const missingStyle: React.CSSProperties = { background: '#fff', color: '#dc2626', border: '1px solid #dc2626', cursor: 'pointer' }
   return (
     <div className="order-card__tags">
-      {order.status === '待办' && effectiveRestock(order) === 'needed' && (
-        <span
-          className="order-card__tag order-card__tag--pile"
-          title="点击标记为已补桩"
-          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('done') }}
-        >
-          需补桩
-        </span>
+      {/* ===== 固定槽位顺序：品牌｜功率｜米数｜平台｜已补桩；缺失=白底红字红框胶囊，点击唤同槽既有编辑入口 ===== */}
+      {slots.brand ? (
+        <BrandTag brand={order.brandName} />
+      ) : (
+        <span className="order-card__tag" style={missingStyle} title="缺品牌，点击选择"
+          onClick={(event) => { event.stopPropagation(); onEditBrand?.(order) }}>缺 品牌</span>
       )}
-      {order.status === '待办' && effectiveRestock(order) === 'done' && (
-        <span
-          className="order-card__tag order-card__tag--restock-done"
-          title="点击打回需补桩"
-          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('needed') }}
-        >
-          已补桩
-        </span>
+      {slots.power ? (
+        <PowerTag powerKw={powerKw} geelyDefault={!powerKw && isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)} onPowerChange={onPowerChange} />
+      ) : (
+        <span className="order-card__tag" style={missingStyle} title="缺功率，点击选择"
+          onClick={(event) => { event.stopPropagation(); onPowerChange?.(order.powerKw || '') }}>缺 功率</span>
       )}
-      <PlatformTag order={order} onEditPlatform={onEditPlatform} />
-      <BrandTag brand={order.brandName} />
-      <PowerTag powerKw={powerKw} geelyDefault={!powerKw && isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)} onPowerChange={onPowerChange} />
-      {/* P0-165-R8：出差就地切换标签（橙态=出差/灰虚线态=不出差，同米数标签交互） */}
+      {metersEditing ? (
+        <PackageMetersTag value={order.packageMeters ?? ''} initialEditing onSave={(v) => { setMetersEditing(false); onPackageMetersSave?.(v) }} />
+      ) : slots.meters ? (
+        <PackageMetersTag value={order.packageMeters ?? ''} onSave={onPackageMetersSave} />
+      ) : (
+        <span className="order-card__tag" style={missingStyle} title="缺米数，点击填写"
+          onClick={(event) => { event.stopPropagation(); setMetersEditing(true) }}>缺 米数</span>
+      )}
+      {slots.platform ? (
+        <PlatformTag order={order} onEditPlatform={onEditPlatform} />
+      ) : (
+        <span className="order-card__tag" style={missingStyle} title="缺平台，点击选择"
+          onClick={(event) => { event.stopPropagation(); onEditPlatform?.(order) }}>缺 平台</span>
+      )}
+      {order.status === '待办' && (effectiveRestock(order) === 'needed' ? (
+        <span className="order-card__tag order-card__tag--pile" title="点击标记为已补桩"
+          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('done') }}>需补桩</span>
+      ) : effectiveRestock(order) === 'done' ? (
+        <span className="order-card__tag order-card__tag--restock-done" title="点击打回需补桩"
+          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('needed') }}>已补桩</span>
+      ) : (
+        <span className="order-card__tag" style={missingStyle} title="缺补桩标记，点击标记已补桩"
+          onClick={(event) => { event.stopPropagation(); onRestockToggle?.('done') }}>缺 已补桩</span>
+      ))}
+      {/* 出差/安装类型=固定槽位表外，保持原渲染（尾附） */}
       <span
         className={`order-card__tag ${order.isBusinessTrip === true ? '' : 'order-card__tag--meters'}`}
         style={order.isBusinessTrip === true ? { backgroundColor: '#f97316', color: '#fff', cursor: 'pointer' } : { cursor: 'pointer', borderStyle: 'dashed' }}
         title={order.isBusinessTrip === true ? '点击切回不出差' : '点击标记出差（免扣点+补助30/台）'}
         onClick={(event) => { event.stopPropagation(); onTripToggle?.(order.isBusinessTrip !== true) }}
       >{order.isBusinessTrip === true ? '出差' : '不出差'}</span>
-      {/* P0-175-B：米数标签恒渲染——有值"N米"零变化，无值灰虚线"未填米数"占位（点进编辑，保存语义同P0-156） */}
-      <PackageMetersTag value={order.packageMeters ?? ''} onSave={onPackageMetersSave} />
       {installType !== '其他' && <span className="order-card__tag" style={{ backgroundColor: typeColors.bg, color: typeColors.text }}><Tag size={10} />{installType}</span>}
     </div>
   )
 }
+/** P0-201-R2：五固定槽缺失判定（品牌/功率/米数/平台/已补桩）。geelyDefault 功率显示默认标签=非缺失；非待办无补桩槽。 */
+export function tagSlotStates(order: Order): { brand: boolean; power: boolean; meters: boolean; platform: boolean; restock: boolean } {
+  const brand = !!order.brandName
+  const power = !!(order.powerKw || (order.brandName ? DEFAULT_GEELY_POWER_KW : ''))
+  const meters = !!(order.packageMeters ?? '')
+  const platform = !!(order.platformName || order.platform)
+  const restock = order.status !== '待办' || !!order.restockStatus
+  return { brand, power, meters, platform, restock }
+}
 
-// P0-156：套餐米数标签就地编辑——点击标签变小型输入框，✓确认/✗取消/Enter保存/Esc取消，
-// 焦点移出整组视为取消。校验与保存语义同 P0-155（仅空或正数；清空=删字段回落品牌默认），
-// 保存由 OrderCard 走 orderStore.updateOrder 标准通道，详情/统计/超米计费自动联动
-function PackageMetersTag({ value, onSave }: { value: string; onSave?: (value: string) => void }) {
-  const [editing, setEditing] = useState(false)
+function PackageMetersTag({ value, onSave, initialEditing = false }: { value: string; onSave?: (value: string) => void; initialEditing?: boolean }) {
+  const [editing, setEditing] = useState(initialEditing)
   const [draft, setDraft] = useState('')
   const [invalid, setInvalid] = useState(false)
 

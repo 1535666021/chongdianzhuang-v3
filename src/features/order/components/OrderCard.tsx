@@ -32,12 +32,14 @@ interface OrderCardProps {
   onGenerateScript?: (order: Order) => void
   onDelete?: (order: Order) => void
   onEditPlatform?: (order: Order) => void
+  /** P0-201-R2：品牌缺失槽点击编辑 */
+  onEditBrand?: (order: Order) => void
   isToday?: boolean
 }
 
 const dedupeAddress = (address: string) => address.replace(/^(.+?市)\1/, '$1')
 
-export default function OrderCard({ order, onClick, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform }: OrderCardProps) {
+export default function OrderCard({ order, onClick, isToday = false, onSurvey, onGenerateScript, onDelete, onEditPlatform, onEditBrand }: OrderCardProps) {
   const statusColor = STATUS_COLORS[order.status as keyof typeof STATUS_COLORS] || '#6b7280'
   const isCompleted = order.status === '已完成'
   const isScheduled = order.status === '已预约'
@@ -178,6 +180,7 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
         <OrderCardTags
           order={order}
           onEditPlatform={onEditPlatform}
+          onEditBrand={onEditBrand}
           onPowerChange={(powerKw) => updateOrder(order.id, { powerKw })}
           onRestockToggle={(restockStatus) => updateOrder(order.id, { restockStatus })}
           // P0-156：米数标签就地编辑——与 P0-155 同通道同语义；''=清字段（undefined 合并后 JSON 持久化键丢弃）
