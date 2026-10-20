@@ -4,6 +4,8 @@ import { ArrowLeft } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { getStockStatus, getStatusColor } from '../types/inventory'
+import { adjustStock } from '@/shared/utils/stockCalc'
+import { stockLogStorage } from '@/shared/storage/stockLogStorage'
 
 type FilterType = 'all' | '紧张' | '缺货'
 
@@ -11,12 +13,23 @@ export default function InventoryPage() {
   const navigate = useNavigate()
   const { allMaterials } = useMaterial()
   const inventory = useInventoryStore((s) => s.inventory)
-  const stockIn = useInventoryStore((s) => s.stockIn)
-  const stockOut = useInventoryStore((s) => s.stockOut)
-  const stockCheck = useInventoryStore((s) => s.stockCheck)
   const setMinStock = useInventoryStore((s) => s.setMinStock)
 
   const [filter, setFilter] = useState<FilterType>('all')
+  // P0-206-M：本月现金支出按月翻页（R-11.3：当月入库金额合计，import来源除外）
+  const [monthOffset, setMonthOffset] = useState(0)
+  const [showImport, setShowImport] = useState(false)
+  const [importText, setImportText] = useState('')
+  const cashMonth = useMemo(() => {
+    const d = new Date()
+    const t = new Date(d.getFullYear(), d.getMonth() + monthOffset, 1)
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}`
+  }, [monthOffset])
+  const cashOut = useMemo(
+    () => stockLogStorage.sumMonthAmount(cashMonth, ['import']),
+    // inventory 为依赖：任何出入库后按最新日志重算
+    [cashMonth, inventory]
+  )
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editQty, setEditQty] = useState('')
   const [editMin, setEditMin] = useState('')
@@ -53,12 +66,14 @@ export default function InventoryPage() {
     const material = allMaterials.find((m) => m.id === editingId)
     if (!material) return
 
+    // P0-206-M：一切变动走 adjustStock 唯一出口（R-11.11）；盘点=设值换算为增量
+    const current = inventory[editingId]?.currentStock ?? 0
     if (editMode === 'in') {
-      stockIn(editingId, material.name, qty, editNotes)
+      adjustStock(material.name, qty, 'manual', '', { reason: editNotes })
     } else if (editMode === 'out') {
-      stockOut(editingId, material.name, qty, editNotes)
+      adjustStock(material.name, -qty, 'manual', '', { reason: editNotes })
     } else if (editMode === 'check') {
-      stockCheck(editingId, material.name, qty, editNotes)
+      adjustStock(material.name, qty - current, 'manual', '', { reason: editNotes })
     }
 
     // 更新最低库存
@@ -96,6 +111,21 @@ export default function InventoryPage() {
         <h1 className="font-semibold text-lg">库存管理</h1>
       </div>
 
+      {/* P0-206-M：本月现金支出大字一行（R-11.3；不进统计页） */}
+      <div className="px-3 pt-3">
+        <div className="bg-white border border-orange-200 rounded-xl p-3 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setMonthOffset((v) => v - 1)} className="px-2 py-1 text-gray-500 border border-gray-200 rounded text-xs">‹</button>
+            <span className="text-sm text-gray-600">{cashMonth.replace('-', '年')}月</span>
+            <button onClick={() => setMonthOffset((v) => Math.min(0, v + 1))} disabled={monthOffset >= 0} className="px-2 py-1 text-gray-500 border border-gray-200 rounded text-xs disabled:opacity-30">›</button>
+          </div>
+          <div className="text-right">
+            <span className="text-xs text-gray-400">现金支出 </span>
+            <span className="text-xl font-bold text-gray-800">¥{cashOut}</span>
+          </div>
+        </div>
+      </div>
+
       {/* 统计卡片 */}
       <div className="p-3 grid grid-cols-3 gap-2">
         {(['充足', '紧张', '缺货'] as const).map((s) => (
@@ -131,6 +161,12 @@ export default function InventoryPage() {
             {f === 'all' ? '全部' : f}
           </button>
         ))}
+        <button
+          onClick={() => setShowImport(true)}
+          className="ml-auto px-3 py-1 rounded-full text-xs border bg-white text-gray-600 border-gray-200"
+        >
+          批量导入
+        </button>
       </div>
 
       {/* 库存列表 */}
@@ -252,6 +288,47 @@ export default function InventoryPage() {
               className="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-medium active:bg-blue-700"
             >
               确认{editMode === 'in' ? '入库' : editMode === 'out' ? '出库' : '盘点'}
+            </button>
+          </div>
+        </div>
+      )}
+      {/* P0-206-M：批量导入（R-11.2③ 期初建账不计现金 R-11.3；逐行"名称 数量 [成本价]"） */}
+      {showImport && (
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
+          <div className="bg-white w-full rounded-t-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">批量导入（期初建账）</h3>
+              <button onClick={() => setShowImport(false)} className="p-1">
+                <ArrowLeft size={20} className="rotate-90" />
+              </button>
+            </div>
+            <p className="text-xs text-gray-400">每行一条：名称 数量 [成本价]。导入不计入本月现金支出。</p>
+            <textarea
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+              rows={6}
+              placeholder={'电缆3*6 10 45\n漏保盒 5'}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              onClick={() => {
+                importText.split('\n').forEach((line, idx) => {
+                  const parts = line.trim().split(/\s+/)
+                  if (parts.length < 2) return
+                  const qty = parseFloat(parts[1])
+                  if (!parts[0] || isNaN(qty) || qty <= 0) return
+                  const price = parts[2] !== undefined ? parseFloat(parts[2]) : undefined
+                  // R-11.8 手动天然幂等：refId=行号；同名重复行按行号各记一笔
+                  adjustStock(parts[0], qty, 'import', `import-L${idx + 1}`, {
+                    unitCostOverride: price !== undefined && !isNaN(price) ? price : undefined,
+                  })
+                })
+                setImportText('')
+                setShowImport(false)
+              }}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg text-sm font-medium active:bg-blue-700"
+            >
+              确认导入
             </button>
           </div>
         </div>
