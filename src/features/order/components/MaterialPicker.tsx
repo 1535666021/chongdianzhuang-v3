@@ -9,6 +9,7 @@ import { useMaterialStore } from '@/stores/materialStore'
 import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
 import { formatCurrency } from '@/shared/utils/format'
+import StockTag from '@/shared/components/StockTag'
 
 interface Props {
   materials: MaterialInput[]
@@ -145,6 +146,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
                 className="w-14 text-right border border-gray-200 rounded px-1 py-0.5"
               />
               <span className="text-gray-400">{m.unit}</span>
+              <StockTag name={m.name} quantity={m.quantity || 0} />
               {isFreeQuotaMaterial(m.name) && m.quantity > 0 ? (
                 <span className="ml-auto font-medium text-green-600">
                   超出{m.quantity - pkgMeters}米 {formatCurrency(Math.max(0, m.quantity - pkgMeters) * m.settlementPrice)}
