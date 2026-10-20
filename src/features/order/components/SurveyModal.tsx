@@ -11,6 +11,7 @@ import { useToast } from '@/shared/hooks/useToast'
 import { calcOverFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
 import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { SurveyProfitPreview, SurveyProfitConclusion } from './SurveyProfitPreview'
+import StockTag from '@/shared/components/StockTag'
 import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
 import { formatCurrency } from '@/shared/utils/format'
@@ -248,6 +249,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                                   超米费
                                 </span>
                               )}
+                              <StockTag name={m.name} quantity={m.quantity || 0} />
                             </span>
                             <button
                               type="button"
