@@ -26,10 +26,11 @@ interface OrderCardTagsProps {
 export default function OrderCardTags({ order, onEditPlatform, onPowerChange, onRestockToggle, onPackageMetersSave, onTripToggle, onEditBrand }: OrderCardTagsProps) {
   const powerKw = order.powerKw?.toString().match(/\d+(?:\.\d+)?/)?.[0]
   const installType = order.installType || '其他'
-  const typeColors = INSTALL_TYPE_COLORS[installType]
+  const typeColors = INSTALL_TYPE_COLORS[installType] || INSTALL_TYPE_COLORS['其他'] // P0-201-R3：恢复防御回退（脏值不白屏）
   // P0-201-R2：五固定槽缺失判定；米数红胶囊点击唤就地编辑（initialEditing swap）
   const slots = tagSlotStates(order)
   const [metersEditing, setMetersEditing] = useState(false)
+  const [powerEditing, setPowerEditing] = useState(false)
   const missingStyle: React.CSSProperties = { background: '#fff', color: '#dc2626', border: '1px solid #dc2626', cursor: 'pointer' }
   return (
     <div className="order-card__tags">
@@ -40,14 +41,16 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
         <span className="order-card__tag" style={missingStyle} title="缺品牌，点击选择"
           onClick={(event) => { event.stopPropagation(); onEditBrand?.(order) }}>缺 品牌</span>
       )}
-      {slots.power ? (
-        <PowerTag powerKw={powerKw} geelyDefault={!powerKw && isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)} onPowerChange={onPowerChange} />
+      {powerEditing ? (
+        <PowerTag order={order} initialEditing onPowerChange={(v) => { setPowerEditing(false); onPowerChange?.(v) }} onCancel={() => setPowerEditing(false)} />
+      ) : slots.power ? (
+        <PowerTag order={order} onPowerChange={onPowerChange} />
       ) : (
         <span className="order-card__tag" style={missingStyle} title="缺功率，点击选择"
-          onClick={(event) => { event.stopPropagation(); onPowerChange?.(order.powerKw || '') }}>缺 功率</span>
+          onClick={(event) => { event.stopPropagation(); setPowerEditing(true) }}>缺 功率</span>
       )}
       {metersEditing ? (
-        <PackageMetersTag value={order.packageMeters ?? ''} initialEditing onSave={(v) => { setMetersEditing(false); onPackageMetersSave?.(v) }} />
+        <PackageMetersTag value={order.packageMeters ?? ''} initialEditing onSave={(v) => { setMetersEditing(false); onPackageMetersSave?.(v) }} onCancel={() => setMetersEditing(false)} />
       ) : slots.meters ? (
         <PackageMetersTag value={order.packageMeters ?? ''} onSave={onPackageMetersSave} />
       ) : (
@@ -81,17 +84,23 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
     </div>
   )
 }
+/** P0-201-R3：功率"有值"判定与渲染同源（禁两处各写一份）——含万邦吉利默认功率兜底链。 */
+export function resolveShownPowerKw(order: Order): string {
+  if (order.powerKw) return order.powerKw
+  return isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText) ? DEFAULT_GEELY_POWER_KW : ''
+}
+
 /** P0-201-R2：五固定槽缺失判定（品牌/功率/米数/平台/已补桩）。geelyDefault 功率显示默认标签=非缺失；非待办无补桩槽。 */
 export function tagSlotStates(order: Order): { brand: boolean; power: boolean; meters: boolean; platform: boolean; restock: boolean } {
   const brand = !!order.brandName
-  const power = !!(order.powerKw || (order.brandName ? DEFAULT_GEELY_POWER_KW : ''))
+  const power = !!resolveShownPowerKw(order) // P0-201-R3：与 PowerTag 渲染同源（含万邦吉利兜底）
   const meters = !!(order.packageMeters ?? '')
   const platform = !!(order.platformName || order.platform)
   const restock = order.status !== '待办' || !!order.restockStatus
   return { brand, power, meters, platform, restock }
 }
 
-function PackageMetersTag({ value, onSave, initialEditing = false }: { value: string; onSave?: (value: string) => void; initialEditing?: boolean }) {
+function PackageMetersTag({ value, onSave, initialEditing = false, onCancel }: { value: string; onSave?: (value: string) => void; initialEditing?: boolean; onCancel?: () => void }) {
   const [editing, setEditing] = useState(initialEditing)
   const [draft, setDraft] = useState('')
   const [invalid, setInvalid] = useState(false)
@@ -110,7 +119,7 @@ function PackageMetersTag({ value, onSave, initialEditing = false }: { value: st
     setEditing(false)
     setInvalid(false)
   }
-  const cancel = () => { setEditing(false); setInvalid(false) }
+  const cancel = () => { setEditing(false); setInvalid(false); onCancel?.() } // P0-201-R3：取消复位外部编辑态（红胶囊重现）
 
   if (!editing) {
     return (
@@ -162,9 +171,10 @@ function BrandTag({ brand }: { brand?: string }) {
 }
 
 // P0-135：吉利系空功率默认7kW标签（样式同有功率），点击可展开下拉改选；有功率标签同样点击可改
-function PowerTag({ powerKw, geelyDefault, onPowerChange }: { powerKw?: string; geelyDefault?: boolean; onPowerChange: (powerKw: string) => void }) {
-  const [editing, setEditing] = useState(false)
-  const shown = powerKw || (geelyDefault ? DEFAULT_GEELY_POWER_KW : '')
+function PowerTag({ order, onPowerChange, initialEditing = false, onCancel }: { order: Order; onPowerChange: (powerKw: string) => void; initialEditing?: boolean; onCancel?: () => void }) {
+  const [editing, setEditing] = useState(initialEditing)
+  const shown = resolveShownPowerKw(order) // P0-201-R3：同源（含万邦吉利默认功率兜底）
+  const geelyDefault = shown === DEFAULT_GEELY_POWER_KW && !order.powerKw
   if (shown && !editing) {
     return (
       <span
@@ -177,5 +187,5 @@ function PowerTag({ powerKw, geelyDefault, onPowerChange }: { powerKw?: string; 
       </span>
     )
   }
-  return <span className="order-card__tag order-card__tag--power"><Zap size={10} /><select aria-label="选择功率" className="bg-transparent outline-none" defaultValue="" autoFocus onClick={(event) => event.stopPropagation()} onBlur={() => setEditing(false)} onChange={(event) => { onPowerChange(event.target.value); setEditing(false) }}><option value="" disabled>选择功率</option>{POWER_OPTIONS.map((value) => <option key={value} value={value}>{getPowerLabel(value)}</option>)}</select></span>
+  return <span className="order-card__tag order-card__tag--power"><Zap size={10} /><select aria-label="选择功率" className="bg-transparent outline-none" defaultValue="" autoFocus onClick={(event) => event.stopPropagation()} onBlur={() => { setEditing(false); onCancel?.() /* P0-201-R3：取消复位外部编辑态 */ }} onChange={(event) => { onPowerChange(event.target.value); setEditing(false) }}><option value="" disabled>选择功率</option>{POWER_OPTIONS.map((value) => <option key={value} value={value}>{getPowerLabel(value)}</option>)}</select></span>
 }
