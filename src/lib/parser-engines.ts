@@ -18,6 +18,17 @@ import { isWanbangBlock, parseWanbangBlock } from './parser-wanbang';
 import { isStreamTableRow, parseStreamTableRow, sanitizeStreamLikeAddress, STREAM_PILE_ANY_KV_RE } from './parser-stream';
 
 /* R2-B 单号保护：D/HW 开头的字母数字串是订单号，不得入 VIN */
+
+/* P0-195 新增，只增不改：粘连流/W单号新格式 锚点与词表 */
+const P0195_GLUED_ORDER_RE = /[DW]\d{12,16}(?:WL)?|W\d{12,14}/
+const P0195_GLUED_PHONE_RE = /1[3-9]\d{9}/
+const P0195_GLUED_VIN_RE = /[A-HJ-NPR-Z][A-HJ-NPR-Z0-9]{16}/i
+const P0195_GLUED_INSTALL_RE = /地下|地面壁挂|壁挂|立柱|吊装/g
+const P0195_GLUED_BRAND_RE = /广汽埃安|五菱|特斯拉|比亚迪|吉利|领克|欧拉|长安|奇瑞|零跑|哪吒|小鹏|理想|蔚来|问界|极氪|深蓝|宝骏|埃安|熊猫|缤果|海鸥|海豚|五菱宏光|宏光|MINIEV/
+const P0195_GLUED_PLATFORM_RE = /挚达|循道|一航|国网|特来电|星星充电|云快充|小蜂|万帮/
+/* P0-195 新增，只增不改：电表状态词表（电表前缀版优先，裸词兜底） */
+const P0195_METER_RE = /电表\s*已安装|电表\s*未申请|已安装|未申请/
+
 const ORDER_NO_PREFIX_RE = /^(?:D|HW)/;
 
 /* --------------------------------------------------------------
@@ -264,7 +275,59 @@ function parseWanlianFlowBlock(block: string): ParsedOrderItem | null {
   return item
 }
 
+/** P0-195 新增，只增不改：粘连流/W单号新格式变体（guard 式）。
+ * 触发：剥离日期前缀后空格≤1（微信丢空格粘连）或以 W\d{12,14} 新单号开头；
+ * 以 单号/手机号/VIN 三锚点切分 单号|姓名|电话|地址|VIN 五段，尾段补功率/品牌/
+ * 安装方式/电表/桩型/漏保。锚点不足或顺序异常→返回 null 原样回落既有逻辑。
+ */
+function parseGluedFlowBlock(block: string): ParsedOrderItem | null {
+  let text = block.replace(TIMESTAMP_PREFIX_RE, '').trim()
+  // P0-195：行首"X月X日"日期前缀剥离（解析不出完整日期则弃，不落 appointmentDate）
+  text = text.replace(/^\d{1,2}月\d{1,2}日/, '').trim()
+  const spaceCount = (text.match(/\s/g) || []).length
+  const isWNew = /^W\d{12,14}/.test(text)
+  if (spaceCount > 1 && !isWNew) return null // 非粘连非W新格式→回落既有路径
+  const mNo = text.match(P0195_GLUED_ORDER_RE)
+  const mPh = text.match(P0195_GLUED_PHONE_RE)
+  if (!mNo || !mPh) return null // 锚点不足→回落
+  if (mPh.index! <= mNo.index!) return null // 顺序异常→回落
+  // VIN 仅在电话之后搜索且首字符强制字母（防吞单号/姓名段/地址尾数字前缀）
+  const mVin = text.slice(mPh.index! + 11).match(P0195_GLUED_VIN_RE)
+  if (!mVin) return null // 缺 VIN 锚点→回落
+  mVin.index = mVin.index! + mPh.index! + 11
+  const nameSeg = text.slice(mNo.index! + mNo[0].length, mPh.index!).trim()
+  if (nameSeg.length > 20) return null
+  const addrSeg = text.slice(mPh.index! + 11, mVin.index!).trim()
+  const tailSeg = text.slice(mVin.index! + 17).trim()
+  const item = emptyItem()
+  item.orderNo = mNo[0]
+  item.customerName = nameSeg
+  item.phone = mPh[0]
+  item.address = addrSeg
+  item.vin = mVin[0].toUpperCase()
+  item.rawText = block
+  // 尾段补提（补不到留空，禁回填）
+  const mPow = tailSeg.match(/(\d+(?:\.\d+)?)\s*KW/i)
+  if (mPow) item.powerKw = mPow[1]
+  const mBrand = tailSeg.match(P0195_GLUED_BRAND_RE)
+  if (mBrand) item.brandName = mBrand[0]
+  const mPlat = tailSeg.match(P0195_GLUED_PLATFORM_RE)
+  if (mPlat) item.platformName = mPlat[0]
+  const installHits = tailSeg.match(P0195_GLUED_INSTALL_RE)
+  if (installHits) item.installMode = installHits.join('')
+  const mMeter = tailSeg.match(P0195_METER_RE)
+  if (mMeter) item.meterStatus = mMeter[0].includes('未申请') ? '未申请' : '已安装'
+  const mPile = tailSeg.match(/带(\S+?)桩/)
+  const hasLeak = /(^|\s)是(\s|$)/.test(tailSeg)
+  item.remark = tailSeg + (hasLeak ? ' 漏保:是' : '')
+  if (mPile && !item.remark.includes(mPile[0])) item.remark = (item.remark + ' ' + mPile[0]).trim()
+  return item
+}
+
 export function parseFlowBlock(block: string): ParsedOrderItem {
+  // P0-195 新增，只增不改：粘连流/W单号变体 guard——成功用之，失败原样回落既有
+  const glued195 = parseGluedFlowBlock(block);
+  if (glued195) return glued195;
   const compactItem = parseCompactFlowBlock(block);
   if (compactItem) return compactItem;
   const item = emptyItem();
@@ -500,6 +563,11 @@ function parseBlockLegacy(block: string): ParsedOrderItem {  if (isWanbangBlock(
       : parseFlowBlock(block);
   inferInstallType(item);
   inferNature(item);
+  // P0-195 新增，只增不改：电表状态空值补提（既有流式输出；已提取非空不动）
+  if (!item.meterStatus) {
+    const ms195 = block.match(P0195_METER_RE);
+    if (ms195) item.meterStatus = ms195[0].includes('未申请') ? '未申请' : '已安装';
+  }
   return item;
 }
 

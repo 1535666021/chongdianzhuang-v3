@@ -211,5 +211,10 @@ export function parseStreamTableRow(block: string): ParsedOrderItem {
     const im193 = block.match(INSTALL_MODE_RE_STREAM);
     if (im193) item.installMode = im193[1];
   }
+  // P0-195 新增，只增不改：电表状态空值补提（词表与 engines 一致；已提取非空不动）
+  if (!item.meterStatus) {
+    const ms195 = block.match(/电表\s*已安装|电表\s*未申请|已安装|未申请/);
+    if (ms195) item.meterStatus = ms195[0].includes('未申请') ? '未申请' : '已安装';
+  }
   return item;
 }

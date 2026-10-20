@@ -27,6 +27,8 @@ export interface ParsedOrderItem {
   platformName: string;
   remark: string;
   installType: string;
+  /** P0-195 新增，只增不改：电表状态（已安装/未申请），流式空值补提 */
+  meterStatus?: string;
   /** P0-140-R3：万联流式 */
   vehicleModel?: string;
   pileName?: string;
