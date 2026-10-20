@@ -19,7 +19,8 @@ import { groupOrdersByTag } from '../components/OrderFilterBar/utils'
 import { restockTargets } from '../restock'
 import { activeOrders } from '../utils/recycleBin'
 import { toast } from '@/shared/hooks/useToast'
-import { Recycle, Plus, FileText, PackagePlus, CalendarPlus } from 'lucide-react'
+import { Recycle, Plus, FileText, PackagePlus, CalendarPlus, Boxes } from 'lucide-react'
+import { useInventoryStore } from '@/stores/inventoryStore'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
@@ -139,6 +140,12 @@ export default function OrderList({ fixedStatus }: Props) {
 
   const hasAnyOrder = allOrders.length > 0
   const resetFilters = () => setResetKey((key) => key + 1)
+  // P0-206-M：库存入口角标（R-11.10：stock≤minStock且minStock>0 的条目数；默认0不预警）
+  const inventory = useInventoryStore((s) => s.inventory)
+  const stockAlertCount = useMemo(
+    () => Object.values(inventory).filter((i) => i.minStock > 0 && i.currentStock <= i.minStock).length,
+    [inventory]
+  )
   const restockCount = useMemo(
     () => restockTargets(allOrders).length,
     [allOrders],
@@ -163,6 +170,14 @@ export default function OrderList({ fixedStatus }: Props) {
           >
             <FileText size={16} />
             批量解析
+          </button>
+          <button
+            onClick={() => navigate('/inventory')}
+            className="order-list__btn order-list__btn--secondary"
+          >
+            <Boxes size={16} />
+            库存
+            {stockAlertCount > 0 && <span className="order-list__badge">{stockAlertCount}</span>}
           </button>
           <button
             onClick={() => setShowRestock(true)}
