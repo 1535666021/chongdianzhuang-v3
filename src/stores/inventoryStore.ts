@@ -58,7 +58,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   stockIn: (materialId, name, quantity, notes = '') => {
     const inv = { ...get().inventory }
     const current = inv[materialId]?.currentStock ?? 0
-    inv[materialId] = { ...inv[materialId], materialId, currentStock: current + quantity, minStock: inv[materialId]?.minStock ?? 20 }
+    inv[materialId] = { ...inv[materialId], materialId, currentStock: current + quantity, minStock: inv[materialId]?.minStock ?? 0 }
 
     const record: StockRecord = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2),
@@ -78,7 +78,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   stockOut: (materialId, name, quantity, notes = '') => {
     const inv = { ...get().inventory }
     const current = inv[materialId]?.currentStock ?? 0
-    inv[materialId] = { ...inv[materialId], materialId, currentStock: current - quantity, minStock: inv[materialId]?.minStock ?? 20 }
+    inv[materialId] = { ...inv[materialId], materialId, currentStock: current - quantity, minStock: inv[materialId]?.minStock ?? 0 }
 
     const record: StockRecord = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2),
@@ -98,7 +98,7 @@ export const useInventoryStore = create<InventoryState>((set, get) => ({
   stockCheck: (materialId, name, actual, notes = '') => {
     const inv = { ...get().inventory }
     const oldStock = inv[materialId]?.currentStock ?? 0
-    inv[materialId] = { ...inv[materialId], materialId, currentStock: actual, minStock: inv[materialId]?.minStock ?? 20 }
+    inv[materialId] = { ...inv[materialId], materialId, currentStock: actual, minStock: inv[materialId]?.minStock ?? 0 }
 
     const record: StockRecord = {
       id: Date.now().toString(36) + Math.random().toString(36).slice(2),
