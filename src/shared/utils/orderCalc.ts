@@ -217,8 +217,8 @@ export function calcFullMaterialCost(input: FullMaterialCostInput): FullMaterial
   // 漏保盒每单必含（§1.6，不参与矩阵；默认1个）
   meterCost('漏保盒', input.breakerCount ?? 1)
   // 漏保器按矩阵：领克全不含/五菱3.5kW不含/吉利厂家提供=0（§1.6）
-  const geelyFree = isGeelyBrand(input.brandName || '')
-  if (shouldIncludeBreaker(input.brandName || '', input.powerKw) && !geelyFree) {
+  // P0-197-R1：漏保矩阵新语义（不含=需自购计成本）；geelyFree 已并入 needBreakerCost
+  if (needBreakerCost(input.brandName || '', input.powerKw)) {
     let breakerName = input.breakerType || ''
     if (!breakerName) {
       const fb = resolveCostMaterials().find((c) => /漏保|漏电保护/.test(c.name) && !/盒/.test(c.name))
@@ -399,6 +399,18 @@ export function calcPolicyPlatformFee(receivable: number): number {
 }
 
 /** 漏保矩阵（仅漏保器）：领克全不含 / 五菱3.5kW不含 / 其余含 */
+/** P0-197-R1 新增：漏保成本矩阵新语义——含=出厂自带免配0成本；不含=出厂未配需自购计成本。
+ * true=需自购（领克全系/五菱3.5kW）；false=免配（五菱7kW/其余品牌/吉利厂家提供）。
+ * 漏保盒每单必含永远计成本，不参与本判定。旧 shouldIncludeBreaker 保留（调用点已迁移）。
+ */
+export function needBreakerCost(brandName: string, powerKw: string | undefined): boolean {
+  const b = brandName || ''
+  if (isGeelyBrand(b)) return false // 吉利厂家提供=0成本
+  if (BREAKER_EXCLUDE_BRANDS.some((k) => b.includes(k))) return true // 领克全系不含→需自购
+  if (b.includes('五菱') && String(powerKw || '').trim() === BREAKER_EXCLUDE_WULING_POWER) return true // 五菱3.5kW不含→需自购
+  return false // 五菱7kW/其余品牌 出厂自带→免配
+}
+
 export function shouldIncludeBreaker(brandName: string, powerKw: string | undefined): boolean {
   const b = brandName || ''
   if (BREAKER_EXCLUDE_BRANDS.some((k) => b.includes(k))) return false

@@ -39,6 +39,7 @@ import AmapConfig from '../components/AmapConfig'
 import SalaryCalculator from '../components/SalaryCalculator'
 import PolicyFixTool from '../components/PolicyFixTool'
 import TripFeeZeroTool from '../components/TripFeeZeroTool'
+import BreakerCostBackfillTool from '../components/BreakerCostBackfillTool'
 import ProfitAuditTool from '../components/ProfitAuditTool'
 type SettingSection =
   | 'haptics'
@@ -58,7 +59,7 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'tripfix'
+  | 'profitAudit' | 'tripfix' | 'breakercost'
   | null
 export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<SettingSection>(null)
@@ -84,6 +85,7 @@ export default function SettingsPage() {
     { id: 'salary' as const, label: '工资计算器', icon: Calculator, desc: '快速估算单笔订单工资' },
     { id: 'policyfix' as const, label: '9-10月旧账修正', icon: Wrench, desc: '政策包自动重算（一次性）' },
     { id: 'tripfix' as const, label: '出差扣点归0', icon: Wrench, desc: '存量出差单platformFee修正（一次性）' },
+    { id: 'breakercost' as const, label: '漏保成本回填', icon: ShieldCheck, desc: 'P0-197-R1 漏保矩阵语义反转后存量材料成本纠正（幂等）' },
     { id: 'profitAudit' as const, label: '利润一致性巡检', icon: ShieldCheck, desc: 'actualProfit重算核对回写（一次性）' },
     { id: 'haptics' as const, label: '触感反馈', icon: Vibrate, desc: '复制/删除/预约成功轻震' },
     { id: 'reset' as const, label: '恢复出厂设置', icon: RotateCcw, desc: '清空所有本地数据' },
@@ -136,6 +138,8 @@ export default function SettingsPage() {
         return <PolicyFixTool />
       case 'tripfix':
         return <TripFeeZeroTool />
+      case 'breakercost':
+        return <BreakerCostBackfillTool />
       case 'profitAudit':
         return <ProfitAuditTool />
       case 'reset':

@@ -1,5 +1,5 @@
-import { getServiceFee, calcFullMaterialCost, isBusinessTripOrder, getOrderBusinessDate, isFreeQuotaMaterial } from '@/shared/utils/orderCalc'
-import { POLICY_FIX_TRIP_START, POLICY_FIX_TRIP_END } from '@/constants/policy'
+import { getServiceFee, calcFullMaterialCost, isBusinessTripOrder, getOrderBusinessDate, isFreeQuotaMaterial, calcActualProfitByPolicy } from '@/shared/utils/orderCalc'
+import { POLICY_FIX_TRIP_START, POLICY_FIX_TRIP_END, PLATFORM_FEE_RATE } from '@/constants/policy'
 import { CostItemsTable } from '@/shared/components/CostItemsTable'
 import type { Order } from '@/types'
 import { useState, useMemo } from 'react'
@@ -34,6 +34,29 @@ function MaterialCostDetail({ order }: { order: Order }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [order])
   return <CostItemsTable fullCostResult={detailCost} />
+}
+
+/** P0-197-R1：出差误判单条纠正——确认→单条备份→人工开关覆盖(false)→扣点按客户应收重算→补助0→实际利润重算落库 */
+function correctTripMisjudge(order: Order): void {
+  if (!confirm(`将本单纠正为不出差：\n平台扣点重算 = 客户应收 × ${Math.round(PLATFORM_FEE_RATE * 100)}%，出差补助归 0，实际利润重算。\n执行前单条备份到 localStorage，确认继续？`)) return
+  const newFee = Math.round(((order.customerPrice || 0) * PLATFORM_FEE_RATE) * 100) / 100
+  const newProfit = calcActualProfitByPolicy({
+    customerPrice: order.customerPrice,
+    platformFee: -newFee,
+    serviceFee: order.serviceFee,
+    tripSubsidy: 0,
+    materialCost: order.materialCost,
+    laborCost: order.laborCost,
+  })
+  const backupKey = `cdz_v3_trip_correct_backup_${order.id}_${Date.now()}`
+  localStorage.setItem(backupKey, JSON.stringify(order))
+  useOrderStore.getState().updateOrder(order.id, {
+    isBusinessTrip: false,
+    platformFee: -newFee,
+    tripSubsidy: 0,
+    actualProfit: newProfit,
+  })
+  alert(`已纠正为不出差：扣点 ${newFee}、补助 0、新实际利润 ${newProfit}（备份键 ${backupKey}）`)
 }
 
 export default function OrderDetail() {
@@ -231,6 +254,14 @@ export default function OrderDetail() {
                 {tripSourceLabel(order) && (
                   <span className="text-xs text-gray-400 font-normal">{tripSourceLabel(order)}</span>
                 )}
+                {/* P0-197-R1：出差误判单条纠正（仅出差单且未人工纠正过；判定链不动，人工开关覆盖生效） */}
+                {tripSourceLabel(order) && order.isBusinessTrip !== false && (
+                  <button
+                    type="button"
+                    className="text-xs text-blue-600 underline"
+                    onClick={() => correctTripMisjudge(order)}
+                  >纠正为不出差</button>
+                )}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-red-600">-{formatCurrency(Math.abs(order.platformFee || 0))}</span>
@@ -303,7 +334,18 @@ export default function OrderDetail() {
             </button>
             {expandedSections.profit && (
               <div className="px-3 py-2 text-sm text-green-700 border-t border-green-200">
-                计算公式：客户应收 - 平台扣点 + 安装费 - 材料成本 - 工资
+                {/* P0-197-R1：实际利润逐项明细——全部读存值字段，禁自算 */}
+                <div className="space-y-0.5">
+                  <div className="flex justify-between"><span>客户应收</span><span>+{formatCurrency(order.customerPrice || 0)}</span></div>
+                  <div className="flex justify-between"><span>平台扣点</span><span>-{formatCurrency(Math.abs(order.platformFee || 0))}</span></div>
+                  <div className="flex justify-between"><span>安装费</span><span>+{formatCurrency(order.serviceFee || 0)}</span></div>
+                  {(order.tripSubsidy || 0) !== 0 && (
+                    <div className="flex justify-between"><span>出差补助</span><span>+{formatCurrency(order.tripSubsidy || 0)}</span></div>
+                  )}
+                  <div className="flex justify-between"><span>材料成本</span><span>-{formatCurrency(order.materialCost || 0)}</span></div>
+                  <div className="flex justify-between"><span>工资</span><span>-{formatCurrency(order.laborCost || 0)}</span></div>
+                  <div className="flex justify-between font-semibold border-t border-green-200 mt-1 pt-1"><span>= 实际利润</span><span>{formatCurrency(order.actualProfit || 0)}</span></div>
+                </div>
               </div>
             )}
           </div>

@@ -14,7 +14,7 @@ import {
 } from '@/constants/policy'
 import {
   calcInstallFee, calcTripSubsidy, calcPolicyPlatformFee,
-  shouldIncludeBreaker, isBreakerDeviceRow, isBreakerBoxRow,
+  needBreakerCost, isBreakerDeviceRow, isBreakerBoxRow,
   calcReconciliationProfit, calcActualProfitByPolicy,
   resolveOrderPackageMeters, findCostPrice, getOrderBusinessDate, absPlatformFee,
 } from '@/shared/utils/orderCalc'
@@ -102,9 +102,9 @@ export function planPolicyFix(orders: Order[]): { items: PolicyFixPlanItem[]; sk
 
     // e. 漏保拆分（D）：矩阵只判漏保器；漏保盒每单必含
     const materials = [...(order.materials || [])]
-    const shouldInclude = shouldIncludeBreaker(order.brandName || '', order.powerKw)
+    const needCost = needBreakerCost(order.brandName || '', order.powerKw) // P0-197-R1：新语义 true=需自购
     let materialCost = order.materialCost || 0
-    if (!shouldInclude) {
+    if (!needCost) { // 免配（含/厂家提供）却录了漏保器行→移除
       // 只移除漏保器行，漏保盒行保留
       const deviceRows = materials.filter((m) => isBreakerDeviceRow(m.name))
       if (deviceRows.length > 0) {
