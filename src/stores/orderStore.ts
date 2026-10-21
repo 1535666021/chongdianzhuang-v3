@@ -74,15 +74,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },
-  deleteOrder: (id: string) => {
+  deleteOrder: (id) => {
     const newOrders = get().orders.filter((o) => (o as any).id !== id)
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },
-  softDeleteOrder: (id: string) => {
+  softDeleteOrder: (id) => {
     set((state) => ({ orders: state.orders.map((o) => (o.id === id ? { ...o, deletedAt: Date.now() } : o)) }))
   },
-  restoreOrder: (id: string) => {
+  restoreOrder: (id) => {
     set((state) => ({ orders: state.orders.map((o) => {
       if (o.id !== id) return o
       const next = { ...o }
@@ -90,7 +90,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       return next
     }) }))
   },
-  purgeOrder: (id: string) => {
+  purgeOrder: (id) => {
     set((state) => ({ orders: state.orders.filter((o) => o.id !== id) }))
   },
   emptyRecycleBin: () => {
