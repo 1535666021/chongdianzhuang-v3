@@ -272,7 +272,8 @@ export function useCompletion(orderId: string) {
     const customerReceivable = addonReceivable + cableReceivable
 
     // 增项材料成本：排除电缆/PVC/漏保（由统一出口按矩阵计入），吉利单漏保成本归零
-    const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name) && !(geelyBreakerFree && isBreakerMaterial(m.name)))
+    // P0-202（§1.6 增补裁定1）：手加漏保行统一由 calcFullMaterialCost 出口按 needBreakerCost 拦截，此处只滤免费配额材料
+    const chargeableMaterials = form.materials.filter((m) => !isFreeQuotaMaterial(m.name))
     // P0-188-R1：手工ctx成本构造改调统一出口 calcFullMaterialCost（§5.1 凡使用即有成本；
     // 等价性=甲方成本绑定表值与既有硬编码口径一致（监理已核）；漏保器矩阵随之补全）
     // P0-188-R1：展示项电缆/PVC金额同步取出口值（消除展示与计算两皮）
@@ -384,8 +385,8 @@ export function useCompletion(orderId: string) {
       // 输入与 profit memo 同源（免费配额材料已由出口按矩阵计入电缆/PVC行，不重复）；
       // R-11.8 按订单 stockDeducted 防重；删除/取消完工不回滚
       if (!order.stockDeducted) {
-        const geelyFree = isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
-        const chargeable = form.materials.filter((m) => !isFreeQuotaMaterial(m.name) && !(geelyFree && isBreakerMaterial(m.name)))
+        // P0-202（§1.6 增补裁定1）：出口统一拦截手加漏保行（needBreakerCost 唯一判定），此处直传非免费配额材料
+        const chargeable = form.materials.filter((m) => !isFreeQuotaMaterial(m.name))
         const costItems = calcFullMaterialCost({
           brandName: order.brandName,
           powerKw: order.powerKw,

@@ -9,7 +9,6 @@ import { X } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { useToast } from '@/shared/hooks/useToast'
 import { calcOverFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
-import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { SurveyProfitPreview, SurveyProfitConclusion } from './SurveyProfitPreview'
 import StockTag from '@/shared/components/StockTag'
 import { SurveyReportModal } from './SurveyReportModal'
@@ -397,7 +396,6 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
               fullCostResult={fullCost}
               onCostRebound={refreshCost}
               platformRate={platformRate}
-              geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
             />
           </div>
 
@@ -415,7 +413,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                 style={{ flex: 1 }}
               />
               {finalFee !== totalEstimatedCost && (
-                <span style={{ fontSize: '13px', color: 'var(--color-primary)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '13px', color: 'var(--color-color-primary)', whiteSpace: 'nowrap' }}>
                   应收按 {formatCurrency(finalFee)} 计
                 </span>
               )}
@@ -429,7 +427,6 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
             receivable={finalFee}
             serviceFee={serviceFee}
             materials={form.estimatedMaterials}
-            geelyExemptBreaker={isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)}
             fullCostResult={fullCost}
             onCostRebound={refreshCost}
             platformRate={platformRate}

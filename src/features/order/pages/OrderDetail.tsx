@@ -1,4 +1,4 @@
-import { getServiceFee, calcFullMaterialCost, isBusinessTripOrder, getOrderBusinessDate, isFreeQuotaMaterial, calcActualProfitByPolicy } from '@/shared/utils/orderCalc'
+import { getServiceFee, calcFullMaterialCost, isBusinessTripOrder, getOrderBusinessDate, isFreeQuotaMaterial, calcActualProfitByPolicy, getOrderPlatformFee } from '@/shared/utils/orderCalc'
 import { POLICY_FIX_TRIP_START, POLICY_FIX_TRIP_END, PLATFORM_FEE_RATE } from '@/constants/policy'
 import { CostItemsTable } from '@/shared/components/CostItemsTable'
 import type { Order } from '@/types'
@@ -39,7 +39,8 @@ function MaterialCostDetail({ order }: { order: Order }) {
 /** P0-197-R1：出差误判单条纠正——确认→单条备份→人工开关覆盖(false)→扣点按客户应收重算→补助0→实际利润重算落库 */
 function correctTripMisjudge(order: Order): void {
   if (!confirm(`将本单纠正为不出差：\n平台扣点重算 = 客户应收 × ${Math.round(PLATFORM_FEE_RATE * 100)}%，出差补助归 0，实际利润重算。\n执行前单条备份到 localStorage，确认继续？`)) return
-  const newFee = Math.round(((order.customerPrice || 0) * PLATFORM_FEE_RATE) * 100) / 100
+  // P0-202（§1.6 增补裁定2）：扣点唯一走 getOrderPlatformFee（吉利免扣判定不丢），禁手写乘法
+  const newFee = getOrderPlatformFee(order, order.customerPrice || 0)
   const newProfit = calcActualProfitByPolicy({
     customerPrice: order.customerPrice,
     platformFee: -newFee,
@@ -207,7 +208,7 @@ export default function OrderDetail() {
               />
             )}
             {showMap && !location && !geoLoading && (
-              <div className="h-24 bg-gray-100 rounded-xl flex items-center justify-center text-xs text-gray-400">
+              <div className="h-24 bg-amber-100 rounded-xl flex items-center justify-center text-xs text-gray-400">
                 暂无地图位置，请先配置高德Key或检查地址
               </div>
             )}
@@ -379,7 +380,7 @@ export default function OrderDetail() {
           <button
             onClick={handleEdit}
             className="w-full flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-            style={{ height: '48px' }}
+            style={{ height: '48px' }
           >
             <Calendar size={16} />
             预约
@@ -390,7 +391,7 @@ export default function OrderDetail() {
             <button
               onClick={handleSurvey}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }}
+              style={{ height: '48px' }
             >
               <ClipboardList size={16} />
               {order.survey ? '查看勘测' : '勘测'}
@@ -398,7 +399,7 @@ export default function OrderDetail() {
             <button
               onClick={handleComplete}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }}
+              style={{ height: '48px' }
             >
               <CheckCircle size={16} />
               标记完成
@@ -410,7 +411,7 @@ export default function OrderDetail() {
             <button
               onClick={() => navigate(`/order/complete/${id}`)}
               className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }}
+              style={{ height: '48px' }
             >
               <FileText size={16} />
               修改结算
@@ -418,7 +419,7 @@ export default function OrderDetail() {
             <button
               onClick={handleEdit}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }}
+              style={{ height: '48px' }
             >
               <FileText size={16} />
               查看报告

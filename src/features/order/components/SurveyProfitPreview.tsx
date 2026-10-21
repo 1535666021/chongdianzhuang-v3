@@ -3,7 +3,7 @@ import { CollapsePanel } from '@/shared/components/CollapsePanel'
 import CostItemPicker from '@/shared/components/CostItemPicker'
 import { CostItemsTable } from '@/shared/components/CostItemsTable'
 import { formatCurrency } from '@/shared/utils/format'
-import { calcMaterialCost, calcPlatformFee, calcActualProfitByPolicy, calcTripSubsidy, isBreakerMaterial } from '@/shared/utils/orderCalc'
+import { calcMaterialCost, calcPlatformFee, calcActualProfitByPolicy, calcTripSubsidy } from '@/shared/utils/orderCalc'
 import type { FullMaterialCostItem } from '@/shared/utils/orderCalc'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
 import { setCostMapping, getCostMapping } from '@/shared/storage/costMappingStorage'
@@ -11,13 +11,13 @@ import type { SurveyMaterialItem } from '../types/survey'
 import './SurveyProfitPreview.css'
 
 // P0-191-R3：材料成本同源解析（主区/结论区共用，禁两份实现）
+// P0-202（§1.6 增补裁定1）：第二判定已废——漏保行过滤唯一在 calcFullMaterialCost 出口（needBreakerCost），
+// 本函数简化为 fullCostResult 优先、回退 calcMaterialCost 原样不过滤
 function resolveSurveyCost(
   materials: SurveyMaterialItem[],
-  geelyExemptBreaker: boolean,
   fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] },
 ) {
-  const costMaterials = geelyExemptBreaker ? materials.filter((m) => !isBreakerMaterial(m.name)) : materials
-  const costResult = calcMaterialCost(costMaterials)
+  const costResult = calcMaterialCost(materials)
   return fullCostResult ? fullCostResult.total : costResult.total
 }
 
@@ -33,8 +33,6 @@ interface SurveyProfitPreviewProps {
   fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] }
   onCostRebound?: () => void
   platformRate: number
-  /** P0-100：吉利品牌单漏保厂家提供，预估材料成本剔除漏保行（客户价照列） */
-  geelyExemptBreaker?: boolean
 }
 
 export function SurveyProfitPreview({
@@ -45,7 +43,6 @@ export function SurveyProfitPreview({
   fullCostResult,
   onCostRebound,
   platformRate,
-  geelyExemptBreaker = false,
 }: SurveyProfitPreviewProps) {
   const { customerReceivable, platformFee, materialCost, profit } = useMemo(() => {
     const receivable = estimatedCost
@@ -54,18 +51,18 @@ export function SurveyProfitPreview({
       customerReceivable: receivable,
       platformFee: fee,
       // P0-191-R3：材料成本与结论区同源（resolveSurveyCost 唯一实现）
-      materialCost: resolveSurveyCost(materials, geelyExemptBreaker, fullCostResult),
+      materialCost: resolveSurveyCost(materials, fullCostResult),
       // P0-177-R3：勘测预览与完工/卡片/统计同出口（数值等价：fee取abs）
       profit: calcActualProfitByPolicy({
         customerPrice: receivable,
-        materialCost: resolveSurveyCost(materials, geelyExemptBreaker, fullCostResult),
+        materialCost: resolveSurveyCost(materials, fullCostResult),
         platformFee: fee,
         serviceFee,
         tripSubsidy: 0,
         laborCost: 0,
       }),
     }
-  }, [estimatedCost, materials, platformRate, serviceFee, geelyExemptBreaker, fullCostResult])
+  }, [estimatedCost, materials, platformRate, serviceFee, fullCostResult])
 
   return (
     <CollapsePanel
@@ -115,7 +112,6 @@ interface SurveyProfitConclusionProps {
   isBusinessTrip?: boolean
   /** P0-191-R3：成本同源入参（与主区同式） */
   materials: SurveyMaterialItem[]
-  geelyExemptBreaker?: boolean
   fullCostResult?: { total: number; unmatched: string[]; items?: FullMaterialCostItem[] }
   onCostRebound?: () => void
 }
@@ -127,12 +123,11 @@ export function SurveyProfitConclusion({
   platformRate,
   isBusinessTrip = false,
   materials,
-  geelyExemptBreaker = false,
   fullCostResult,
   onCostRebound,
 }: SurveyProfitConclusionProps) {
   // P0-191-R3：材料成本与主区同源（resolveSurveyCost 唯一实现），旧 estimatedCost 进成本路径清零
-  const materialCost = resolveSurveyCost(materials, geelyExemptBreaker, fullCostResult)
+  const materialCost = resolveSurveyCost(materials, fullCostResult)
   const platformFee = isBusinessTrip ? 0 : calcPlatformFee(receivable, platformRate)
   const tripSubsidy = isBusinessTrip ? calcTripSubsidy(true) : 0
   const profit = calcActualProfitByPolicy({
