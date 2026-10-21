@@ -74,15 +74,15 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },
-  deleteOrder: (id) => {
+  deleteOrder: (id: string) => {
     const newOrders = get().orders.filter((o) => (o as any).id !== id)
     storage.set('list', newOrders)
     set({ orders: newOrders })
   },
-  softDeleteOrder: (id) => {
+  softDeleteOrder: (id: string) => {
     set((state) => ({ orders: state.orders.map((o) => (o.id === id ? { ...o, deletedAt: Date.now() } : o)) }))
   },
-  restoreOrder: (id) => {
+  restoreOrder: (id: string) => {
     set((state) => ({ orders: state.orders.map((o) => {
       if (o.id !== id) return o
       const next = { ...o }
@@ -90,7 +90,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       return next
     }) }))
   },
-  purgeOrder: (id) => {
+  purgeOrder: (id: string) => {
     set((state) => ({ orders: state.orders.filter((o) => o.id !== id) }))
   },
   emptyRecycleBin: () => {
@@ -139,19 +139,20 @@ export const useOrderStore = create<OrderState>((set, get) => ({
           appointmentDate: oldOrder.appointmentDate ?? (order as any).appointmentDate,
           appointmentTime: oldOrder.appointmentTime ?? (order as any).appointmentTime,
           // P0-008-R1：合并13个缺失字段
-          rawText: (order as any).rawText || oldOrder.rawText || undefined,
-          brandName: (order as any).brandName || oldOrder.brandName || undefined,
-          platformName: (order as any).platformName || oldOrder.platformName || undefined,
-          orderNo: (order as any).orderNo || oldOrder.orderNo || undefined,
-          vin: (order as any).vin || oldOrder.vin || undefined,
-          powerKw: (order as any).powerKw || oldOrder.powerKw || undefined,
-          packageMeters: (order as any).packageMeters || oldOrder.packageMeters || undefined,
-          serviceType: (order as any).serviceType || oldOrder.serviceType || undefined,
-          installType: (order as any).installType || oldOrder.installType || undefined,
-          remark: (order as any).remark || oldOrder.remark || undefined,
-          installer: (order as any).installer || oldOrder.installer || undefined,
-          materials: (order as any).materials || oldOrder.materials || undefined,
-          survey: (order as any).survey || oldOrder.survey || undefined,
+          // P0-202-R3 G1：合并方向翻转 old||new——库内已存优先，新解析只补空缺（对齐 RULES §12.2）
+          rawText: oldOrder.rawText || (order as any).rawText || undefined,
+          brandName: oldOrder.brandName || (order as any).brandName || undefined,
+          platformName: oldOrder.platformName || (order as any).platformName || undefined,
+          orderNo: oldOrder.orderNo || (order as any).orderNo || undefined,
+          vin: oldOrder.vin || (order as any).vin || undefined,
+          powerKw: oldOrder.powerKw || (order as any).powerKw || undefined,
+          packageMeters: oldOrder.packageMeters || (order as any).packageMeters || undefined,
+          serviceType: oldOrder.serviceType || (order as any).serviceType || undefined,
+          installType: oldOrder.installType || (order as any).installType || undefined,
+          remark: oldOrder.remark || (order as any).remark || undefined,
+          installer: oldOrder.installer || (order as any).installer || undefined,
+          materials: oldOrder.materials || (order as any).materials || undefined,
+          survey: oldOrder.survey || (order as any).survey || undefined,
           updatedAt: Date.now(),
         }
         updated++
