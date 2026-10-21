@@ -447,6 +447,25 @@ export function shouldIncludeBreaker(brandName: string, powerKw: string | undefi
   return true
 }
 
+/**
+ * P0-210 G3：漏保器成本价同款回退唯一出口（P0-197-R1 breakerUnitCost 提升归并，消除重复实现）——
+ * breakerType 有成本价取之；否则成本表首个漏保器（非盒）成本价；再无→0。
+ * 供存量纠偏自检与回填器共用；calcFullMaterialCost 本体语义不动。
+ */
+export function resolveBreakerUnitCost(order: Order): number {
+  const named = findCostPrice((order as { fixedAux?: { breakerType?: string } }).fixedAux?.breakerType || '')
+  if (named !== null) return named
+  const fb = resolveCostMaterials().find((c) => /漏保|漏电保护/.test(c.name) && !/盒/.test(c.name))
+  return fb ? (fb.costPrice ?? 0) : 0
+}
+
+/** P0-210 G3：漏保器行名称同款回退（与 calcFullMaterialCost 矩阵行同链：breakerType→成本表首个漏保器名） */
+export function resolveBreakerRowName(order: Order): string {
+  const bt = (order as { fixedAux?: { breakerType?: string } }).fixedAux?.breakerType
+  if (bt) return bt
+  return resolveCostMaterials().find((c) => /漏保|漏电保护/.test(c.name) && !/盒/.test(c.name))?.name || ''
+}
+
 /** 漏保器行判定（别名：漏保/漏电保护器/漏保开关，非盒） */
 export function isBreakerDeviceRow(name: string): boolean {
   return isBreakerMaterial(name)
