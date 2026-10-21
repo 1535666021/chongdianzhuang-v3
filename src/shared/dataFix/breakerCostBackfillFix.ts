@@ -3,8 +3,7 @@
  * plan+run分离；执行前 localStorage 全量备份（固定前缀+时间戳）；幂等（需自购且已含漏保器行/免配且无行的单跳过）
  */
 import { useOrderStore } from '@/stores/orderStore'
-import { needBreakerCost, findCostPrice, isBreakerDeviceRow } from '@/shared/utils/orderCalc'
-import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
+import { needBreakerCost, isBreakerDeviceRow, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
 import type { Order } from '@/types'
 
 export const BREAKER_COST_BACKUP_PREFIX = 'cdz_v3_breaker_cost_backfill_backup'
@@ -23,14 +22,6 @@ export interface BreakerCostReport {
   runAt: number
 }
 
-/** 漏保器成本价（与 calcFullMaterialCost 同款回退：breakerType 未存则匹配首个漏保器绑定项） */
-function breakerUnitCost(order: Order): number {
-  const named = findCostPrice((order as { fixedAux?: { breakerType?: string } }).fixedAux?.breakerType || '')
-  if (named !== null) return named
-  const fb = getAllCostMaterials().find((c) => /漏保|漏电保护/.test(c.name) && !/盒/.test(c.name))
-  return fb ? (fb.costPrice ?? 0) : 0
-}
-
 /** 纯函数 plan（不写库）：已完成单；需自购却无漏保器行→补计差额；免配却有漏保器行→移除差额；重跑即空=幂等 */
 export function planBreakerCostBackfillFix(orders: Order[]): { items: BreakerCostPlanItem[] } {
   const items: BreakerCostPlanItem[] = []
@@ -39,7 +30,7 @@ export function planBreakerCostBackfillFix(orders: Order[]): { items: BreakerCos
     const need = needBreakerCost(order.brandName || '', order.powerKw)
     const hasDevice = (order.materials || []).some((m) => isBreakerDeviceRow(m.name))
     if (need === hasDevice) continue // 幂等：口径一致跳过
-    const unit = breakerUnitCost(order)
+    const unit = resolveBreakerUnitCost(order) // P0-210 G3：归并唯一出口（原私有 breakerUnitCost 已提升 orderCalc）
     if (need && !hasDevice) {
       const add = Math.round(unit * 100) / 100
       items.push({

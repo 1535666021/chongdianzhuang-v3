@@ -13,6 +13,7 @@ import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformSt
 import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
 import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
 import { runAppointmentRangeMigration } from '@/shared/dataFix/migrateAppointmentRange'
+import { runBreakerRowSelfCheck } from '@/shared/dataFix/breakerRowSelfCheckFix'
 import OnboardingGuide from '@/shared/components/OnboardingGuide'
 import BottomTabBar from '@/shared/components/BottomTabBar'
 
@@ -39,6 +40,7 @@ export default function App() {
     orderRepairRepository.repairWailianContacts() // P0-138：外联单车主姓名优先+双联系人补录（标记幂等）
     purgeExpiredRecycleBin() // P0-139-R1：回收站到期自动彻底删除（30天，报告console）
     orderRepairRepository.repairWanlianFlowOrders() // P0-140-R3：万联流式错单自动更正（_flowRepaired幂等）
+    runBreakerRowSelfCheck() // P0-210 G3：已完成单漏保器行存量纠偏（纯比对幂等零写入；写前备份；只纠漏保器行）
   }, [setOrders])
 
   useEffect(() => {

@@ -91,11 +91,17 @@ export function resolveShownPowerKw(order: Order): string {
 }
 
 /** P0-201-R2：五固定槽缺失判定（品牌/功率/米数/平台/已补桩）。geelyDefault 功率显示默认标签=非缺失；非待办无补桩槽。 */
+/** P0-210 G5：槽位填充判定——值 trim 后精确等值'其他'一律视为缺槽（品牌/功率/米数/平台四槽同口径） */
+const isSlotFilled = (v: unknown): boolean => {
+  const s = String(v ?? '').trim()
+  return s !== '' && s !== '其他'
+}
+
 export function tagSlotStates(order: Order): { brand: boolean; power: boolean; meters: boolean; platform: boolean; restock: boolean } {
-  const brand = !!order.brandName
-  const power = !!resolveShownPowerKw(order) // P0-201-R3：与 PowerTag 渲染同源（含万邦吉利兜底）
-  const meters = !!(order.packageMeters ?? '')
-  const platform = !!(order.platformName || order.platform)
+  const brand = isSlotFilled(order.brandName) // P0-210 G5：'其他'→缺槽
+  const power = isSlotFilled(resolveShownPowerKw(order)) // P0-201-R3：与 PowerTag 渲染同源（含万邦吉利兜底）；G5：'其他'→缺槽
+  const meters = isSlotFilled(order.packageMeters ?? '') // P0-210 G5：'其他'→缺槽
+  const platform = isSlotFilled(order.platformName || order.platform) // P0-210 G5：'其他'→缺槽
   const restock = order.status !== '待办' || !!order.restockStatus
   return { brand, power, meters, platform, restock }
 }
