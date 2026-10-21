@@ -1,4 +1,4 @@
-import { getServiceFee, calcFullMaterialCost, isBusinessTripOrder, getOrderBusinessDate, isFreeQuotaMaterial, calcActualProfitByPolicy, getOrderPlatformFee } from '@/shared/utils/orderCalc'
+import { getServiceFee, calcFullMaterialCost, buildFullMaterialCostInput, isBusinessTripOrder, getOrderBusinessDate, calcActualProfitByPolicy, getOrderPlatformFee } from '@/shared/utils/orderCalc'
 import { POLICY_FIX_TRIP_START, POLICY_FIX_TRIP_END, PLATFORM_FEE_RATE } from '@/constants/policy'
 import { CostItemsTable } from '@/shared/components/CostItemsTable'
 import type { Order } from '@/types'
@@ -26,13 +26,8 @@ function tripSourceLabel(order: Order): string | null {
 
 /** P0-194：材料成本逐项重算（存值 survey.cableDistance/materials 经 calcFullMaterialCost 唯一出口；老单缺字段由出口兜底显"—"） */
 function MaterialCostDetail({ order }: { order: Order }) {
-  const detailCost = useMemo(() => calcFullMaterialCost({
-    brandName: order.brandName,
-    powerKw: order.powerKw,
-    cableMeters: order.survey?.cableDistance ?? 0,
-    extraItems: (order.materials || []).filter((m) => !isFreeQuotaMaterial(m.name)).map((m) => ({ name: m.name, quantity: m.quantity })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [order])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const detailCost = useMemo(() => calcFullMaterialCost(buildFullMaterialCostInput(order)), [order]) // P0-210 G1：输入组装收编共用函数（与卡片同源同出口）
   return <CostItemsTable fullCostResult={detailCost} />
 }
 
