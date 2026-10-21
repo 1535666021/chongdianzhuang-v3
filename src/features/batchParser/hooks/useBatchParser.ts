@@ -57,7 +57,7 @@ export function useBatchParser() {
     setPreviewEntries((prev) => prev.map((e, i) => (i === index && e.status === 'phone-dup' ? { ...e, confirmed: true } : e)))
   }, [])
   const [blockCount, setBlockCount] = useState(0)
-  const [isParsing, useIsParsing] = useState(false)
+  const [isParsing, setIsParsing] = useState(false)
   const existingOrders = useOrderStore((state) => state.orders)
   const importOrders = useOrderStore((state) => state.importOrders)
 
