@@ -19,6 +19,9 @@ const PRESET_RULES: PresetRule[] = [
   { keywords: ['泡钉'], costName: '泡钉' },
   { keywords: ['浪涌'], costName: '浪涌' },
   { keywords: ['镀锌管'], costName: '镀锌管' },
+  // P0-210 G4：接地类各写法全量归一到标准名"接地极"（addonMaterialData 全量扫描 12 变体：接地/接地极各后缀/
+  // 接地极及安装/预埋接地线（有接地极免费）/工作接地/接地线…等，凡含"接地"即归一）。价格仍走 findCostPrice 既有链。
+  { keywords: ['接地'], costName: '接地极' },
 ]
 
 function matchesRule(name: string, rule: PresetRule): boolean {
