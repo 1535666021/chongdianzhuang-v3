@@ -226,7 +226,12 @@ export function calcFullMaterialCost(input: FullMaterialCostInput): FullMaterial
     if (breakerName) meterCost(breakerName, 1)
   }
   // 增项 Σ数量×成本价
-  for (const m of input.extraItems) meterCost(m.name, m.quantity)
+  // P0-202（§1.6 增补裁定1）：手加漏保行与内置矩阵行同一判定——needBreakerCost=false 的免配单
+  // （吉利厂家提供/五菱7kW/其余品牌）用户手加漏保行 skip 不计价；需自配单（领克/五菱3.5）照计
+  for (const m of input.extraItems) {
+    if (isBreakerMaterial(m.name) && !needBreakerCost(input.brandName || '', input.powerKw)) continue
+    meterCost(m.name, m.quantity)
+  }
   return { total: round2(items.reduce((s, x) => s + x.amount, 0)), items, unmatched }
 }
 

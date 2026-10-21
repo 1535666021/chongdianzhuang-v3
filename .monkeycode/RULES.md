@@ -48,6 +48,11 @@ R-0.5 真实订单数据（姓名/电话/地址/金额）禁止入仓库、禁�
 - 成本判定唯一出口：needBreakerCost(brand, power)——true=需自购（领克全系/
   五菱3.5kW），false=免配（含五菱7kW与其余品牌/吉利厂家提供）；三链同源
   补桩发货：五菱3.5kW（任意平台）按台数自动配漏保 C25（发货文本规则，2026-10-20甲方裁定）。
+- P0-202 增补裁定1（2026-10-21）：漏保成本唯一判定=needBreakerCost——在 calcFullMaterialCost
+  出口内对内置矩阵行与 extraItems 用户手加行一视同仁（免配单手加漏保行 skip 不计价）；
+  显示侧/完工侧不得另设 geelyExemptBreaker 类第二判定。
+- P0-202 增补裁定2（2026-10-21）：扣点计算唯一走 getOrderPlatformFee/calcPolicyPlatformFee，
+  页面/工具函数禁手写 customerPrice×PLATFORM_FEE_RATE 乘法（吉利免扣判定不得丢失）。
 
 ## 2. 利润口径（双口径，出口均为 orderCalc）
 
