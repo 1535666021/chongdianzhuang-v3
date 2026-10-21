@@ -208,7 +208,7 @@ export default function OrderDetail() {
               />
             )}
             {showMap && !location && !geoLoading && (
-              <div className="h-24 bg-amber-100 rounded-xl flex items-center justify-center text-xs text-gray-400">
+              <div className="h-24 bg-gray-100 rounded-xl flex items-center justify-center text-xs text-gray-400">
                 暂无地图位置，请先配置高德Key或检查地址
               </div>
             )}
@@ -380,7 +380,7 @@ export default function OrderDetail() {
           <button
             onClick={handleEdit}
             className="w-full flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-            style={{ height: '48px' }
+            style={{ height: '48px' }}
           >
             <Calendar size={16} />
             预约
@@ -391,7 +391,7 @@ export default function OrderDetail() {
             <button
               onClick={handleSurvey}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }
+              style={{ height: '48px' }}
             >
               <ClipboardList size={16} />
               {order.survey ? '查看勘测' : '勘测'}
@@ -399,7 +399,7 @@ export default function OrderDetail() {
             <button
               onClick={handleComplete}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }
+              style={{ height: '48px' }}
             >
               <CheckCircle size={16} />
               标记完成
@@ -411,7 +411,7 @@ export default function OrderDetail() {
             <button
               onClick={() => navigate(`/order/complete/${id}`)}
               className="flex-1 flex items-center justify-center gap-2 bg-orange-500 text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }
+              style={{ height: '48px' }}
             >
               <FileText size={16} />
               修改结算
@@ -419,7 +419,7 @@ export default function OrderDetail() {
             <button
               onClick={handleEdit}
               className="flex-1 flex items-center justify-center gap-2 bg-[var(--color-primary)] text-white py-3 rounded-lg text-sm font-medium"
-              style={{ height: '48px' }
+              style={{ height: '48px' }}
             >
               <FileText size={16} />
               查看报告

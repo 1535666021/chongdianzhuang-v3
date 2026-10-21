@@ -413,7 +413,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                 style={{ flex: 1 }}
               />
               {finalFee !== totalEstimatedCost && (
-                <span style={{ fontSize: '13px', color: 'var(--color-color-primary)', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: '13px', color: 'var(--color-primary)', whiteSpace: 'nowrap' }}>
                   应收按 {formatCurrency(finalFee)} 计
                 </span>
               )}
