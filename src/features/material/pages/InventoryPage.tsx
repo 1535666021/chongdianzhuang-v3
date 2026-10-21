@@ -37,10 +37,17 @@ export default function InventoryPage() {
   const [editMode, setEditMode] = useState<'in' | 'out' | 'check'>('in')
 
   // P0-202-R2 G6a：弹窗打开期间锁 body 滚动（编辑/批量导入任一弹窗开着即锁，全关还原）
+  // P0-202-R4 G2：同步挂/摘 modal-open——index.css:230 既有规范 body.modal-open .app-tabbar 自动隐藏，
+  // 面板贴视口底，确认键完整露出；关闭/卸载即恢复（禁改 index.css/BottomTabBar/面板内部）
   useEffect(() => {
     const open = editingId !== null || showImport
     document.body.style.overflow = open ? 'hidden' : ''
-    return () => { document.body.style.overflow = '' }
+    if (open) document.body.classList.add('modal-open')
+    else document.body.classList.remove('modal-open')
+    return () => {
+      document.body.style.overflow = ''
+      document.body.classList.remove('modal-open')
+    }
   }, [editingId, showImport])
 
   const items = useMemo(() => {
@@ -230,7 +237,7 @@ export default function InventoryPage() {
       {/* 编辑弹窗 */}
       {editingId && (
         // P0-202-R2 G6c：蒙层 touch 拦截（滚动权不再落到背后列表）
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onTouchMove={(e) => e.preventDefault()}>
+        <div className="fixed inset-0 bg-black/50 flex items-end z-[9999]" onTouchMove={(e) => e.preventDefault()}>
           {/* P0-202-R2 G6b：面板独立滚动容器（限高+内部滚动+链式拦截不外溢） */}
           <div className="bg-white w-full rounded-t-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between">
@@ -304,7 +311,7 @@ export default function InventoryPage() {
       {/* P0-206-M：批量导入（R-11.2③ 期初建账不计现金 R-11.3；逐行"名称 数量 [成本价]"） */}
       {showImport && (
         // P0-202-R2 G6c：蒙层 touch 拦截（同编辑弹窗三件套）
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onTouchMove={(e) => e.preventDefault()}>
+        <div className="fixed inset-0 bg-black/50 flex items-end z-[9999]" onTouchMove={(e) => e.preventDefault()}>
           {/* P0-202-R2 G6b：面板独立滚动容器 */}
           <div className="bg-white w-full rounded-t-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between">
