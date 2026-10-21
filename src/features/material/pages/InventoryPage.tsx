@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
@@ -35,6 +35,13 @@ export default function InventoryPage() {
   const [editMin, setEditMin] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [editMode, setEditMode] = useState<'in' | 'out' | 'check'>('in')
+
+  // P0-202-R2 G6a：弹窗打开期间锁 body 滚动（编辑/批量导入任一弹窗开着即锁，全关还原）
+  useEffect(() => {
+    const open = editingId !== null || showImport
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [editingId, showImport])
 
   const items = useMemo(() => {
     return allMaterials.map((m) => {
@@ -222,8 +229,10 @@ export default function InventoryPage() {
 
       {/* 编辑弹窗 */}
       {editingId && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="bg-white w-full rounded-t-2xl p-4 space-y-3">
+        // P0-202-R2 G6c：蒙层 touch 拦截（滚动权不再落到背后列表）
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onTouchMove={(e) => e.preventDefault()}>
+          {/* P0-202-R2 G6b：面板独立滚动容器（限高+内部滚动+链式拦截不外溢） */}
+          <div className="bg-white w-full rounded-t-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">
                 {allMaterials.find((m) => m.id === editingId)?.name}
@@ -294,8 +303,10 @@ export default function InventoryPage() {
       )}
       {/* P0-206-M：批量导入（R-11.2③ 期初建账不计现金 R-11.3；逐行"名称 数量 [成本价]"） */}
       {showImport && (
-        <div className="fixed inset-0 bg-black/50 flex items-end z-50">
-          <div className="bg-white w-full rounded-t-2xl p-4 space-y-3">
+        // P0-202-R2 G6c：蒙层 touch 拦截（同编辑弹窗三件套）
+        <div className="fixed inset-0 bg-black/50 flex items-end z-50" onTouchMove={(e) => e.preventDefault()}>
+          {/* P0-202-R2 G6b：面板独立滚动容器 */}
+          <div className="bg-white w-full rounded-t-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">批量导入（期初建账）</h3>
               <button onClick={() => setShowImport(false)} className="p-1">

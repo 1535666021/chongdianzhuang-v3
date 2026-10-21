@@ -51,6 +51,9 @@ R-0.5 真实订单数据（姓名/电话/地址/金额）禁止入仓库、禁�
 - P0-202 增补裁定1（2026-10-21）：漏保成本唯一判定=needBreakerCost——在 calcFullMaterialCost
   出口内对内置矩阵行与 extraItems 用户手加行一视同仁（免配单手加漏保行 skip 不计价）；
   显示侧/完工侧不得另设 geelyExemptBreaker 类第二判定。
+- P0-202-R2 增补（2026-10-21）：extraItems 手加漏保行一律由矩阵接管，禁叠加
+  （isBreakerMaterial 行无条件 skip；需自配单的 1 支由 needBreakerCost 矩阵行独供，
+  免配单 0 支；手加行不再参与计价，杜绝双计）。
 - P0-202 增补裁定2（2026-10-21）：扣点计算唯一走 getOrderPlatformFee/calcPolicyPlatformFee，
   页面/工具函数禁手写 customerPrice×PLATFORM_FEE_RATE 乘法（吉利免扣判定不得丢失）。
 
@@ -153,3 +156,15 @@ R-9.2 完工=唯一写入完成数据入口；巡检(profitAuditFix)只修不符
 - R-11.12 老数据：现有stock存量=期初结余原样保留。
 
 补充裁定：导入=期初建账不计现金；已完工单删除/取消完工不回滚库存；1单=1台桩。
+
+## 12. 解析单身份（标签常量化，P0-202-R2）
+
+- R-12.1 解析单身份=内容哈希（orderNo 优先）：stableOrderId 以 orderNo（非空）为基准，
+  其次 phone+customerName+rawText 组合，djb2 纯字符串哈希；主路/降级路一律生成稳定 ID，
+  同文本再解析 ID 恒等，必走 importOrders update 分支（金额对齐），不新增。
+- R-12.2 标签类字段禁被任何导入路径覆盖：brandName/powerKw/packageMeters/platformName/
+  restockStatus/isBusinessTrip/installType 等以库内已存值为准；importOrders 合并语义
+  （...oldOrder 在前 + 标签字段 new||old 兜底）禁改，新解析只补空缺不改已存。
+- R-12.3 判重月窗双轨：orderNo 铁键全库扫（仍排除已完成），防 R-12.1 上线前旧 ID 老单
+  跨月重复录入；phone/name 模糊分支维持当月窗口不动，防误并两单。
+- R-12.4 历史单不动：已入库老单 ID 原样保留，身份衔接由 R-12.3 铁键兜底。

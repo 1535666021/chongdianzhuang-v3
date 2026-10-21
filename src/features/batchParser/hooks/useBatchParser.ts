@@ -17,6 +17,7 @@ import {
   type BatchDupMatch,
 } from './batchDedupe'
 import { orderExists } from '@/features/order/utils/orderGuard'
+import { stableOrderId } from '../utils/stableOrderId'
 
 type ParsedOrderWithNature = ParsedOrderItem & { nature?: string }
 
@@ -56,7 +57,7 @@ export function useBatchParser() {
     setPreviewEntries((prev) => prev.map((e, i) => (i === index && e.status === 'phone-dup' ? { ...e, confirmed: true } : e)))
   }, [])
   const [blockCount, setBlockCount] = useState(0)
-  const [isParsing, setIsParsing] = useState(false)
+  const [isParsing, useIsParsing] = useState(false)
   const existingOrders = useOrderStore((state) => state.orders)
   const importOrders = useOrderStore((state) => state.importOrders)
 
@@ -88,7 +89,8 @@ export function useBatchParser() {
       let orders: Order[] = []
       let natures: string[] = []
       try {
-        orders = parsedItemsToOrders(result.items)
+        // P0-202-R2 G3：主路 ID 常量化——同文本再解析 ID 恒等，importOrders 走 update 分支，标签字段不被刷
+        orders = parsedItemsToOrders(result.items).map((o) => ({ ...o, id: stableOrderId(o) }))
         natures = result.items.map(
           (item) => (item as ParsedOrderWithNature).nature || '安装'
         )
@@ -97,8 +99,8 @@ export function useBatchParser() {
           try {
             const single = parsedItemsToOrders([item])
             if (single.length > 0) {
-              // 降级路径逐条生成唯一id，避免同毫秒idx冲突
-              orders.push({ ...single[0], id: `parsed_${Date.now()}_${index}` })
+              // P0-202-R2 G3：降级路同改稳定 ID（§12：主/降级两路一律 stableOrderId）
+              orders.push({ ...single[0], id: stableOrderId(single[0]) })
               natures.push((item as ParsedOrderWithNature).nature || '安装')
             }
           } catch {

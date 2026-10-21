@@ -23,20 +23,22 @@ export interface BatchDupMatch {
  * 库内判重：orderNo 精确匹配优先，其次电话、姓名。
  * 业务豁免（原 isDuplicate 逻辑保留）：
  * - 已完成单不参与判重
- * - 跨月单（createdAt 非当月）不参与判重
+ * - 跨月单（createdAt 非当月）不参与判重——仅作用于 phone/name 模糊分支；
+ *   orderNo 铁键全库扫（P0-202-R2 G4：防 G3 上线前旧 ID 老单跨月重复录入）
  * - nature 不同（安装/维修/勘测/补桩）不算重复
  */
 export function matchExistingDuplicate(order: Order, existingOrders: Order[]): ExistingDupMatch | null {
   const currentMonth = new Date().toISOString().slice(0, 7)
   for (const existing of existingOrders) {
-    const createdAt = new Date(existing.createdAt)
-    const existingMonth = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString().slice(0, 7)
-    if (existing.status === '已完成' || existingMonth !== currentMonth) continue
-    if ((existing.nature || '安装') !== order.nature) continue
-    // P0-093 单号判重：orderNo 非空且精确相同即判重，不再依赖电话是否解析成功
+    if (existing.status === '已完成') continue
+    // P0-093/P0-202-R2 G4 单号判重：orderNo 非空且精确相同即判重，全库扫（不限当月）
     if (order.orderNo && existing.orderNo === order.orderNo) {
       return { matchedBy: 'orderNo', existing }
     }
+    const createdAt = new Date(existing.createdAt)
+    const existingMonth = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString().slice(0, 7)
+    if (existingMonth !== currentMonth) continue
+    if ((existing.nature || '安装') !== order.nature) continue
     if (order.phone && existing.phone === order.phone) {
       return { matchedBy: 'phone', existing }
     }
