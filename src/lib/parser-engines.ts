@@ -361,6 +361,18 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
     if (PHONE_RE.test(line)) {
       const p = extractPhone(line);
       if (p && !phoneLine) phoneLine = p;
+      // P0-212 新增，只增不改：含电话行内的行内单号口（原唯一单号口仅认整行纯数字，单号与姓名电话同行时两头不靠）
+      const phoneIdx = p ? line.indexOf(p) : -1;
+      const segRe = /(?:^|\s)(\d{10,20})(?=\s|$)/g;
+      let segM: RegExpExecArray | null;
+      while ((segM = segRe.exec(line)) !== null) {
+        const seg = segM[1];
+        if (!seg) continue;
+        const segStart = segM.index + segM[0].length - seg.length;
+        // 排除与手机号区间重叠/相等的段（11位纯数字段同时命中该正则，防误中单号位）
+        if (phoneIdx >= 0 && segStart < phoneIdx + p.length && segStart + seg.length > phoneIdx) continue;
+        if (!orderNoCandidates.includes(seg)) orderNoCandidates.push(seg);
+      }
       continue;
     }
     if (VIN_SEARCH_RE.test(line)) {
@@ -397,7 +409,11 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
     for (const word of PLATFORM_HINT_WORDS) {
       if (line.toLowerCase().includes(word.toLowerCase()) && !platformCandidates.includes(word)) platformCandidates.push(word);
     }
-    if (/(安装|维修|勘察|勘测|检测|拆桩|移机)/.test(line) && !serviceTypeCandidates.includes(line)) {
+    // P0-212 新增，只增不改：服务类型候选的备注语义过滤（括号不平衡或行超10字=备注行，不入候选；该行仍正常入 remarks）
+    const openP212 = (line.match(/[(（]/g) ?? []).length;
+    const closeP212 = (line.match(/[)）]/g) ?? []).length;
+    const p212RemarkLike = openP212 > closeP212 || line.length > 10;
+    if (!p212RemarkLike && /(安装|维修|勘察|勘测|检测|拆桩|移机)/.test(line) && !serviceTypeCandidates.includes(line)) {
       serviceTypeCandidates.push(line);
     }
     remarks.push(line);
