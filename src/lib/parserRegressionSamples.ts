@@ -14,6 +14,8 @@ export const REGRESSION_SAMPLES: RegressionSample[] = [
   { name: '均胜流式尾段(P0-141 地址止VIN前+单号/车型入位)', input: '姓名 甲 电话 13900004444 均胜长城 安徽省淮北市某区凤凰社区 L6T79BAZ3SV000000 银河M9 HW2025121316161800001 2026/12/12',
     expect: { address: '安徽省淮北市某区凤凰社区', vin: 'L6T79BAZ3SV000000', vehicleModel: '银河M9', orderNo: 'HW2025121316161800001' } },
   { name: '微信包装(P0-132)', input: '「方中发💍189 5605 1764 16:47」\n"订单来源：妍伟（送桩卷）\n颜伟\n所属品牌：吉利星愿\n套餐：20米\n购车人电话：139 0000 1111\n安装地址：安徽省合肥市包河区测试小区1栋"', expect: { customerName: '颜伟', phone: '13900001111', platformName: '妍伟' } },
+  { name: '流式行内单号+备注污染(P0-212)', input: '6930661288138735200 测试甲 13800001111 安徽省安庆市迎江区老峰镇测试路测试小区A2.2004 天猫 地下 壁挂 电表已安装\n10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员',
+    expect: { orderNo: '6930661288138735200', serviceType: '', remark: '10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员', phone: '13800001111', platformName: '天猫', meterStatus: '已安装' } },
 ]
 export function runRegressionSamples(parse: (text: string) => { items: Array<Record<string, unknown>> }): { passed: number; failed: number; failures: string[] } {
   const failures: string[] = []
