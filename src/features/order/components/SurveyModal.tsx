@@ -14,6 +14,7 @@ import StockTag from '@/shared/components/StockTag'
 import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
 import { formatCurrency } from '@/shared/utils/format'
+import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
 
 interface SurveyModalProps {
   order: Order
@@ -36,7 +37,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     serviceFee, feeLabel, fullCost, refreshCost, platformRate, save,
   } = useSurvey(order)
 
-  const [showDropdown, setShowDropdown] = useState(false)
+  const [showSheet, setShowSheet] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [surveyNote, setSurveyNote] = useState(order.surveyNote || '')
   // P0-114：实收（空=按预估），重开弹窗自动带入已保存值
@@ -160,60 +161,42 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setShowDropdown(!showDropdown)}
+                      onClick={() => setShowSheet(true)}
                       className="w-full flex items-center justify-between px-3 py-2 bg-white border rounded-lg text-sm"
                       style={{ borderRadius: '8px', borderColor: 'var(--color-border)' }}
                     >
                       <span style={{ color: 'var(--color-text-secondary)' }}>
-                        {showDropdown ? '收起列表' : '点击选择辅材'}
+                        点击选择辅材
                         <span style={{ color: 'var(--color-text-aux)', marginLeft: '4px' }}>
                           ({brandAddons.length}种可选)
                         </span>
                       </span>
-                      <span style={{ color: 'var(--color-text-aux)', fontSize: '12px' }}>
-                        {showDropdown ? '▲' : '▼'}
-                      </span>
+                      <span style={{ color: 'var(--color-text-aux)', fontSize: '12px' }}>▼</span>
                     </button>
-                    {showDropdown && (
-                      <div className="modal-dropdown">
-                        {brandAddons.length === 0 ? (
-                          <div className="modal-dropdown-empty">该品牌暂无材料</div>
-                        ) : (
-                          sortedBrandAddons.map((mat) => {
-                            const checked = form.estimatedMaterials.some((m) => m.name === mat.name)
-                            return (
-                              <label
-                                key={mat.id}
-                                className="modal-dropdown-item"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={checked}
-                                  className="w-4 h-4 rounded"
-                                  style={{ accentColor: 'var(--color-primary)' }}
-                                  onChange={() => {
-                                    const isAdding = !form.estimatedMaterials.some((em) => em.name === mat.name)
-                                    toggleAddon(mat)
-                                    if (isAdding) {
-                                      setShowDropdown(false)
-                                      const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|3x6|3x10|3x16|3X6|3X10|3X16|3×6|3×10|3×16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
-                                      if (cableMatch) {
-                                        updateForm({ cableSpec: cableMatch[0] })
-                                      }
-                                    }
-                                  }}
-                                />
-                                <span style={{ color: 'var(--color-text-primary)', minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(mat.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>
-                                  {mat.name}
-                                </span>
-                                <span style={{ color: 'var(--color-text-aux)', fontSize: '12px', flexShrink: 0 }}>¥{mat.settlementPrice}</span>
-                              </label>
-                            )
-                          })
-                        )}
-                      </div>
-                    )}
                   </div>
+                  {showSheet && (
+                    <BottomSheetSelect
+                      title="选择辅材"
+                      multiple
+                      options={sortedBrandAddons.map((mat) => ({ value: mat.name, label: mat.name, cost: mat.settlementPrice }))}
+                      values={form.estimatedMaterials.map((m) => m.name)}
+                      searchable
+                      onChange={() => {}}
+                      onToggle={(name) => {
+                        const mat = sortedBrandAddons.find((m) => m.name === name)
+                        if (!mat) return
+                        const isAdding = !form.estimatedMaterials.some((em) => em.name === mat.name)
+                        toggleAddon(mat)
+                        if (isAdding) {
+                          const cableMatch = mat.name.match(/(3\*6|3\*10|3\*16|3x6|3x10|3x16|3X6|3X10|3X16|3×6|3×10|3×16|5\*6|5\*10|5\*16|2\*4|2\*6)/)
+                          if (cableMatch) {
+                            updateForm({ cableSpec: cableMatch[0] })
+                          }
+                        }
+                      }}
+                      onClose={() => setShowSheet(false)}
+                    />
+                  )}
                   {form.estimatedMaterials.length > 0 && (
                     <div className="modal-material-list">
                       {form.estimatedMaterials.map((m) => {
