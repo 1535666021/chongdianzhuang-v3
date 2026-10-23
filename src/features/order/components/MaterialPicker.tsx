@@ -22,9 +22,11 @@ interface Props {
   onApplyWanbangTemplate?: () => void
   /** P0-113：挚达/五菱单候选列表仅显示挚达价表22项 */
   showZhidaTemplate?: boolean
+  /** P0-217：点击"成本"区请求绑定/改绑（未传=纯展示兼容） */
+  onRequestCostBind?: (materialName: string) => void
 }
 
-export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate }: Props) {
+export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, onRequestCostBind }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
 
@@ -138,7 +140,19 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
 
             <div className="flex items-center gap-2 text-xs">
               <span className="text-gray-500">客户价: {formatCurrency(m.settlementPrice)}</span>
-              <span className="text-gray-500">成本: {formatCurrency(m.costPrice)}</span>
+              {onRequestCostBind ? (
+                <button
+                  type="button"
+                  className="text-gray-500 hover:underline"
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: 'inherit', color: 'inherit' }}
+                  title="点击绑定/改绑成本"
+                  onClick={() => onRequestCostBind(m.name)}
+                >
+                  成本: {formatCurrency(m.costPrice)}
+                </button>
+              ) : (
+                <span className="text-gray-500">成本: {formatCurrency(m.costPrice)}</span>
+              )}
               <input
                 type="number"
                 value={m.quantity}
