@@ -8,7 +8,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import CostBindModal from '@/features/material/components/CostBindModal'
 import { scriptStorage } from '@/shared/storage/scriptStorage'
 import { buildScriptVarsFromCompletionForm, renderScript } from '../hooks/useScript'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useToast } from '@/shared/hooks/useToast'
 import { InfoSection, InfoItem } from '@/shared/components/InfoSection'
 import { CollapsePanel } from '@/shared/components/CollapsePanel'
@@ -17,6 +17,7 @@ import { getPlatformLabel } from '@/constants/platforms'
 import { getPowerLabel } from '@/constants/power'
 import '../../../shared/components/OrderComplete.css'
 import { formatCurrency } from '@/shared/utils/format'
+import { findCostPrice } from '@/shared/utils/orderCalc'
 
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
@@ -26,7 +27,20 @@ export default function OrderComplete() {
   const settings = useSettingsStore()
   const toast = useToast()
   const [copiedScript, setCopiedScript] = useState(false)
+  // P0-217：手动绑定/改绑入口（点击材料行成本区；既有 pendingCostBind=首个未绑定材料自动弹窗，非死挂载，保留）
+  const [manualCostBind, setManualCostBind] = useState<string | null>(null)
   const [engineerPhone, setEngineerPhone] = useState(settings.engineerPhone || '')
+
+  // P0-217：绑定完成后该行成本价即时重读（复用既有数据流：findCostPrice 唯一出口读绑定价 + updateMaterial 自动重算小计）
+  const handleCostBindComplete = useCallback(() => {
+    if (manualCostBind) {
+      const idx = form.materials.findIndex((m) => m.name === manualCostBind)
+      const cp = findCostPrice(manualCostBind)
+      if (idx >= 0 && cp !== null) updateMaterial(idx, { costPrice: cp })
+    }
+    setManualCostBind(null)
+    handleCostBound()
+  }, [manualCostBind, form.materials, updateMaterial, handleCostBound])
 
   useEffect(() => {
     if (!form.installer && settings.engineerName) {
@@ -266,6 +280,7 @@ export default function OrderComplete() {
               showWanbangTemplate={canApplyWanbangTemplate}
               onApplyWanbangTemplate={applyWanbangAddonTemplate}
               showZhidaTemplate={isZhidaWuling}
+              onRequestCostBind={(name) => setManualCostBind(name)}
             />
           </div>
 
@@ -319,11 +334,14 @@ export default function OrderComplete() {
         </div>
       </div>
 
-      {pendingCostBind && (
+      {(manualCostBind || pendingCostBind) && (
         <CostBindModal
-          materialName={pendingCostBind}
-          onClose={handleCostBindClose}
-          onBound={handleCostBound}
+          materialName={manualCostBind ?? pendingCostBind ?? ''}
+          onClose={() => {
+            setManualCostBind(null)
+            handleCostBindClose()
+          }}
+          onBound={handleCostBindComplete}
         />
       )}
     </>
