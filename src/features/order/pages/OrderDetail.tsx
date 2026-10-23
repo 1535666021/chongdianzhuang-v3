@@ -1,4 +1,4 @@
-import { getServiceFee, calcFullMaterialCost, buildFullMaterialCostInput, isBusinessTripOrder, getOrderBusinessDate, calcActualProfitByPolicy, getOrderPlatformFee } from '@/shared/utils/orderCalc'
+import { calcFullMaterialCost, buildFullMaterialCostInput, isBusinessTripOrder, getOrderBusinessDate, calcActualProfitByPolicy, getOrderPlatformFee, calcInstallFee, resolveOrderPackageMeters } from '@/shared/utils/orderCalc'
 import { POLICY_FIX_TRIP_START, POLICY_FIX_TRIP_END, PLATFORM_FEE_RATE } from '@/constants/policy'
 import { CostItemsTable } from '@/shared/components/CostItemsTable'
 import type { Order } from '@/types'
@@ -280,7 +280,7 @@ export default function OrderDetail() {
               <span className="text-sm font-medium text-gray-700">安装费</span>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-gray-700">
-                  {formatCurrency(getServiceFee(order.notes || ''))}
+                  {formatCurrency(order.serviceFee ?? calcInstallFee(resolveOrderPackageMeters(order)))}
                 </span>
                 {expandedSections.serviceFee ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
@@ -417,7 +417,7 @@ export default function OrderDetail() {
               style={{ height: '48px' }}
             >
               <FileText size={16} />
-              查看报告
+              编辑
             </button>
           </div>
         )}
