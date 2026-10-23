@@ -60,7 +60,9 @@ export default function Statistics() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
-      <h1 className="px-4 pb-2 pt-4 text-xl font-bold">数据统计</h1>
+      <div className="sticky top-0 z-10 bg-gray-50 px-4 pb-2 pt-4">
+        <h1 className="text-xl font-bold">数据统计</h1>
+      </div>
       <main className="space-y-4">
         <div className="mx-4 flex justify-center">
           <select aria-label="选择统计月份" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm">
