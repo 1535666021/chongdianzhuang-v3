@@ -210,7 +210,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                             key={m.name}
                             className="modal-material-item"
                           >
-                            <span className="modal-material-name" style={{ minWidth: 0, flexShrink: 1, fontSize: adaptiveNameFontSize(m.name), wordBreak: 'break-all', whiteSpace: 'normal' }}>
+                            <span className="modal-material-name" style={{ minWidth: '88px', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: adaptiveNameFontSize(m.name), whiteSpace: 'nowrap' }}>
                               {m.name}
                             </span>
                             <span className="modal-material-price">¥{m.unitPrice}/m</span>
