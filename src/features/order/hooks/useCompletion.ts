@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { usePackageMeters } from './usePackageMeters'
-import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost } from '@/shared/utils/orderCalc'
+import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, needBreakerCost, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
@@ -57,7 +57,7 @@ interface BreakdownCtx {
   pvcCostPrice: number
   breakerBoxPrice: number
   breakerTypeCost: number
-  geelyBreakerFree: boolean
+  breakerFreeByMatrix: boolean
   cableReceivable: number
   cableCost: number
   pvcCost: number
@@ -92,11 +92,11 @@ function buildMaterialItems(ctx: BreakdownCtx): ProfitBreakdownItem[] {
   if (f.pvcMeters > 0) items.push({ name: 'PVC', calc: fmtCost('PVC', f.pvcMeters, ctx.pvcCostPrice), amount: ctx.pvcCost })
   items.push({ name: '漏保盒', calc: `漏保盒 ${f.breakerCount}个 × ¥${ctx.breakerBoxPrice}`, amount: f.breakerCount * ctx.breakerBoxPrice })
   if (f.breakerType) {
-    items.push({ name: '漏保', calc: ctx.geelyBreakerFree ? `漏保 ${f.breakerType} 1个（厂家提供）` : `漏保 ${f.breakerType} 1个 × ¥${ctx.breakerTypeCost}`, amount: ctx.breakerTypeCost })
+    items.push({ name: '漏保', calc: ctx.breakerFreeByMatrix ? `漏保 ${f.breakerType} 1个（厂家提供）` : `漏保 ${f.breakerType} 1个 × ¥${ctx.breakerTypeCost}`, amount: ctx.breakerTypeCost })
   }
   for (const m of ctx.materials) {
     if (isFreeQuotaMaterial(m.name)) continue
-    const breakerFree = ctx.geelyBreakerFree && isBreakerMaterial(m.name)
+    const breakerFree = ctx.breakerFreeByMatrix && isBreakerMaterial(m.name)
     const unitCost = breakerFree ? 0 : resolveCostPrice(m.name)
     const amount = Math.round(unitCost * m.quantity * 100) / 100
     if (amount > 0 || breakerFree) {
@@ -256,12 +256,9 @@ export function useCompletion(orderId: string) {
     const breaker = findCostMaterial('漏保盒')
     const cableCostPrice = cable?.costPrice || 17.9
     const pvcCostPrice = pvc?.costPrice || 1
-    const breakerCostPrice: Record<string, number> = {
-      'C25': 26.8, 'C40': 26.8, 'C40A': 46.5, '': 0,
-    }
-    // P0-100：吉利品牌单漏保由厂家随车提供，安装方不承担漏保本体成本（判定单点 isWanbangGeelyOrder，禁止重写）
-    const geelyBreakerFree = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
-    const breakerTypeCost = geelyBreakerFree ? 0 : (breakerCostPrice[form.fixedAux.breakerType] || 0)
+    // P0-213：漏保免配判定归并唯一出口 needBreakerCost（矩阵：吉利厂家提供/五菱7kW免配/其余含漏保单需自购；禁重写）
+    const breakerFreeByMatrix = !needBreakerCost(order?.brandName || '', order?.powerKw || '')
+    const breakerTypeCost = breakerFreeByMatrix ? 0 : (order ? resolveBreakerUnitCost(order) : 0)
 
     // 增项应收：跳过电缆/线缆（已由固定辅材超米口径统一计算），其余按明细
     let addonReceivable = 0
@@ -323,7 +320,7 @@ export function useCompletion(orderId: string) {
     const bctx: BreakdownCtx = {
       materials: form.materials, fixedAux: form.fixedAux, packageMeters,
       cableCustomerPrice, cableCostPrice, pvcCostPrice,
-      breakerBoxPrice: breaker?.costPrice || 5, breakerTypeCost, geelyBreakerFree,
+      breakerBoxPrice: breaker?.costPrice || 5, breakerTypeCost, breakerFreeByMatrix,
       cableReceivable, cableCost, pvcCost, cableMatName: cableMat?.name,
     }
     const receivableItems = buildReceivableItems(bctx)
