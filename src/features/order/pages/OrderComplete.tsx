@@ -18,11 +18,12 @@ import { getPowerLabel } from '@/constants/power'
 import '../../../shared/components/OrderComplete.css'
 import { formatCurrency } from '@/shared/utils/format'
 import { findCostPrice } from '@/shared/utils/orderCalc'
+import { isDaomeiOrder } from '@/shared/utils/company'
 
 export default function OrderComplete() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { order, form, profit, isEditMode, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, canApplyWanbangTemplate, applyWanbangAddonTemplate, isZhidaWuling, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
+  const { order, form, profit, isEditMode, packageMeters, setPackageMeters, packageBreakdown, updateForm, addMaterial, updateMaterial, removeMaterial, updateFixedAux, canApplyWanbangTemplate, applyWanbangAddonTemplate, isZhidaWuling, canApplyJdTemplate, applyJdAddonTemplate, save, pendingCostBind, handleCostBound, handleCostBindClose } = useCompletion(id || '')
   const updateOrder = useOrderStore((s) => s.updateOrder)
   const settings = useSettingsStore()
   const toast = useToast()
@@ -30,6 +31,8 @@ export default function OrderComplete() {
   // P0-217：手动绑定/改绑入口（点击材料行成本区；既有 pendingCostBind=首个未绑定材料自动弹窗，非死挂载，保留）
   const [manualCostBind, setManualCostBind] = useState<string | null>(null)
   const [engineerPhone, setEngineerPhone] = useState(settings.engineerPhone || '')
+  // P0-220：公司维度（到美/本杨）——唯一出口 isDaomeiOrder 判定，入口自动分流
+  const companyLabel = order && isDaomeiOrder(order) ? '到美' : '本杨'
 
   // P0-217：绑定完成后该行成本价即时重读（复用既有数据流：findCostPrice 唯一出口读绑定价 + updateMaterial 自动重算小计）
   const handleCostBindComplete = useCallback(() => {
@@ -95,7 +98,7 @@ export default function OrderComplete() {
           <button onClick={() => navigate(-1)} className="order-complete__back">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="order-complete__title">{isEditMode ? '修改完工结算' : '标记完成'}</h1>
+          <h1 className="order-complete__title">{isEditMode ? '修改完工结算' : `${companyLabel}标记完成`}</h1>
         </div>
 
         <div className="order-complete__content">
@@ -280,6 +283,8 @@ export default function OrderComplete() {
               showWanbangTemplate={canApplyWanbangTemplate}
               onApplyWanbangTemplate={applyWanbangAddonTemplate}
               showZhidaTemplate={isZhidaWuling}
+              showJdTemplate={canApplyJdTemplate}
+              onApplyJdTemplate={applyJdAddonTemplate}
               onRequestCostBind={(name) => setManualCostBind(name)}
             />
           </div>
