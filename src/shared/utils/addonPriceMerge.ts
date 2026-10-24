@@ -6,6 +6,14 @@
  */
 import { useMaterialStore } from '@/stores/materialStore'
 
+// P0-220-R1：存储层注入——priceScope 归属标记的条目并入对应公司价表（按名去重，存储层优先），价表可从小长大
+export function withScopedStoreItems<T extends { name: string }>(base: T[], scope: string): T[] {
+  const store = useMaterialStore.getState().materials
+  const injected = (store || []).filter((m) => (m as { priceScope?: string }).priceScope === scope)
+  const names = new Set(injected.map((m) => m.name))
+  return [...injected, ...base.filter((b) => !names.has(b.name))] as T[]
+}
+
 export function withStoreOverride<T extends { name: string }>(base: T[]): T[] {
   const storeMats = useMaterialStore.getState().materials
   if (!storeMats.length) return base
