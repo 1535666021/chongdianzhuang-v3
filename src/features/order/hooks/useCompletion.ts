@@ -1,4 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
+import { JD_ADDON_PRICES } from '@/constants/addonPrice_jd'
+import { isDaomeiOrder } from '@/shared/utils/company'
 import { usePackageMeters } from './usePackageMeters'
 import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, needBreakerCost, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
@@ -221,9 +223,23 @@ export function useCompletion(orderId: string) {
     }))
   }, [])
 
-  const canApplyWanbangTemplate = isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
+  // P0-220：京东（到美）单判定优先，增项候选走京东价表；到美单禁用万帮/挚达模板
+  const isDaomei = isDaomeiOrder(order || {})
+  const canApplyWanbangTemplate = !isDaomei && isWanbangGeelyOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
   // P0-113：挚达/五菱单（与万帮判定互斥），增项候选走挚达价表
-  const isZhidaWuling = isZhidaWulingOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
+  const isZhidaWuling = !isDaomei && isZhidaWulingOrder(order?.brandName, order?.platformName || order?.platform, order?.rawText)
+  // P0-220：到美完成页京东增项模板（价表暂空则隐藏按钮，R2 补录后自动出现）
+  const canApplyJdTemplate = isDaomei && JD_ADDON_PRICES.length > 0
+  const applyJdAddonTemplate = useCallback(() => {
+    setForm((prev) => ({
+      ...prev,
+      materials: JD_ADDON_PRICES.map((item: import('@/constants/addonPrice_wanbang_geely').AddonPriceItem) => ({
+        id: item.id, name: item.name, spec: item.spec, quantity: 0, unit: item.unit,
+        settlementPrice: item.customerPrice, costPrice: findCostPrice(item.name) ?? 0,
+        customerSubtotal: 0, costSubtotal: 0,
+      })),
+    }))
+  }, [])
 
   const applyWanbangAddonTemplate = useCallback(() => {
     setForm((prev) => ({
@@ -427,6 +443,8 @@ export function useCompletion(orderId: string) {
     canApplyWanbangTemplate,
     isZhidaWuling,
     applyWanbangAddonTemplate,
+    canApplyJdTemplate,
+    applyJdAddonTemplate,
     save,
     pendingCostBind,
     handleCostBound,
