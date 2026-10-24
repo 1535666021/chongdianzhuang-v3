@@ -10,6 +10,7 @@ import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
 import { formatCurrency } from '@/shared/utils/format'
 import StockTag from '@/shared/components/StockTag'
+import { JD_ADDON_MATERIALS } from '@/constants/addonPrice_jd'
 
 interface Props {
   materials: MaterialInput[]
@@ -22,22 +23,27 @@ interface Props {
   onApplyWanbangTemplate?: () => void
   /** P0-113：挚达/五菱单候选列表仅显示挚达价表22项 */
   showZhidaTemplate?: boolean
+  /** P0-220：京东（到美）单候选=京东价表（含存储注入条目） */
+  showJdTemplate?: boolean
+  onApplyJdTemplate?: () => void
   /** P0-217：点击"成本"区请求绑定/改绑（未传=纯展示兼容） */
   onRequestCostBind?: (materialName: string) => void
 }
 
-export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, onRequestCostBind }: Props) {
+export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, showJdTemplate, onApplyJdTemplate, onRequestCostBind }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
 
   // P0-113：挚达/五菱单候选=挚达价表（brand键过滤，与万帮同模式）；两判定互斥（品牌词不重叠）
   // P0-128：增项候选=resolver同源（含custom_addon_新增项）；品牌过滤逻辑保留
   const allAddons = getAllAddonMaterials()
-  const catalog = showWanbangTemplate
-    ? allAddons.filter((m) => m.brand === '万帮吉利')
-    : showZhidaTemplate
-      ? allAddons.filter((m) => m.brand === '挚达/五菱')
-      : allAddons
+  const catalog = showJdTemplate
+    ? JD_ADDON_MATERIALS
+    : showWanbangTemplate
+      ? allAddons.filter((m) => m.brand === '万帮吉利')
+      : showZhidaTemplate
+        ? allAddons.filter((m) => m.brand === '挚达/五菱')
+        : allAddons
   const filtered = searchQuery
     ? catalog.filter((m) => m.name.includes(searchQuery)).slice(0, 30)
     : catalog.slice(0, 20)
@@ -77,6 +83,14 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
                 className="text-xs text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg"
               >
                 带入万帮增项表
+              </button>
+            )}
+            {showJdTemplate && onApplyJdTemplate && (
+              <button
+                onClick={onApplyJdTemplate}
+                className="text-xs text-blue-700 bg-blue-50 px-2 py-1 rounded-lg"
+              >
+                带入京东增项表
               </button>
             )}
             <button
