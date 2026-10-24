@@ -1,14 +1,18 @@
 import { useMemo, useCallback } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
+import { useUIStore } from '@/stores/uiStore'
+import { companyHit } from '@/shared/utils/company'
 import { getCompletedOrderFinancials, getOrderBusinessDate, resolveCostPrice } from '@/shared/utils/orderCalc'
 import type { MonthlyReconciliation, ReceivableOrder, OrderCostDetail } from '../types/finance'
 
 export function useFinance() {
   const { orders, updateOrder } = useOrderStore()
 
+  const currentCompany = useUIStore((st) => st.currentCompany)
+  // P0-220：公司维度过滤（全部/本杨/到美），唯一出口 companyHit
   const completedOrders = useMemo(
-    () => orders.filter(o => o.status === '已完成'),
-    [orders]
+    () => orders.filter(o => o.status === '已完成' && companyHit(o, currentCompany)),
+    [orders, currentCompany]
   )
 
   const availableMonths = useMemo(() => {
