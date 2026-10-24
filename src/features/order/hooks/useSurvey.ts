@@ -6,6 +6,8 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList } from '@/constants/materialData'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { ZHIDA_WULING_ADDON_MATERIALS, isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
+import { JD_ADDON_MATERIALS } from '@/constants/addonPrice_jd'
+import { isDaomeiOrder } from '@/shared/utils/company'
 import { getAllAddonMaterials, isCustomAddonMaterial } from '@/shared/utils/addonMaterialsResolver'
 import type { Material } from '@/types/material'
 import type { Order } from '@/types'
@@ -83,9 +85,12 @@ export function useSurvey(order: Order) {
 
   const brandAddons = useMemo<Material[]>(() => {
     const usageCount = materialUsageCount
-    const wanbangHit = isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
-    // P0-113：挚达/五菱单走挚达价表（与万帮互斥）
-    const source = wanbangHit
+    const daomeiHit = isDaomeiOrder(order)
+    const wanbangHit = !daomeiHit && isWanbangGeelyOrder(order.brandName, order.platformName || order.platform, order.rawText)
+    // P0-220：京东（到美）单走京东价表（判定优先级最高，P0-113 互斥逻辑零改动）
+    const source = daomeiHit
+      ? JD_ADDON_MATERIALS
+      : wanbangHit
       ? WANBANG_GEELY_ADDON_MATERIALS
       : isZhidaWulingOrder(order.brandName, order.platformName || order.platform, order.rawText)
         ? ZHIDA_WULING_ADDON_MATERIALS
@@ -98,7 +103,7 @@ export function useSurvey(order: Order) {
         })
     // P0-128：用户新增增项(custom_addon_)按品牌组并入候选（与订单平台/品牌同组才出现；通用分支放行未分组项）
     const zhidaHitNow = isZhidaWulingOrder(order.brandName, order.platformName || order.platform, order.rawText)
-    const customTarget = wanbangHit ? '万帮吉利' : zhidaHitNow ? '挚达/五菱' : effectiveBrand
+    const customTarget = daomeiHit ? '京东' : wanbangHit ? '万帮吉利' : zhidaHitNow ? '挚达/五菱' : effectiveBrand
     const sourceWithCustoms = [
       ...source,
       ...getAllAddonMaterials().filter((m) => isCustomAddonMaterial(m.id) && (m.brand === customTarget || (!wanbangHit && !zhidaHitNow && !m.brand))),
