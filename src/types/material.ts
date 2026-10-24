@@ -38,6 +38,8 @@ export interface Material {
   stock: number
   minStock: number
   isFixed?: boolean
+  /** P0-220-R1：价表归属标记（'jd'=京东/到美价表条目） */
+  priceScope?: 'jd'
   createdAt?: number
   updatedAt?: number
 }
