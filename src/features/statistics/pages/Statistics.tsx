@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react'
+import CompanyFilter from '@/shared/components/CompanyFilter'
+import { useUIStore } from '@/stores/uiStore'
+import { companyHit } from '@/shared/utils/company'
 import { useNavigate } from 'react-router-dom'
 import { FileText } from 'lucide-react'
 import { useOrderStore } from '@/stores/orderStore'
@@ -42,7 +45,8 @@ export default function Statistics() {
 
   const months = useMemo(() => Array.from(new Set([currentMonth, ...orders.map(getOrderMonth)])).sort((a, b) => b.localeCompare(a)), [currentMonth, orders])
   const selectedOrders = useMemo(() => orders.filter((order) => getOrderMonth(order) === selectedMonth), [orders, selectedMonth])
-  const completedOrders = useMemo(() => selectedOrders.filter((order) => order.status === '已完成'), [selectedOrders])
+  const currentCompany = useUIStore((st) => st.currentCompany)
+  const completedOrders = useMemo(() => selectedOrders.filter((order) => order.status === '已完成' && companyHit(order, currentCompany)), [selectedOrders, currentCompany])
   const stats = useMemo(() => completedOrders.reduce((total, order) => {
     const financials = getCompletedOrderFinancials(order)
     return {
@@ -62,6 +66,7 @@ export default function Statistics() {
     <div className="min-h-screen bg-gray-50 pb-24">
       <div className="sticky top-0 z-10 bg-gray-50 px-4 pb-2 pt-4">
         <h1 className="text-xl font-bold">数据统计</h1>
+      <CompanyFilter />
       </div>
       <main className="space-y-4">
         <div className="mx-4 flex justify-center">
