@@ -16,6 +16,7 @@ import SwipeActionRow from './SwipeActionRow'
 import { getAppointmentCountdown } from '@/features/appointment/repository'
 import { useAppointment } from '@/features/appointment/hooks/useAppointment'
 import { hapticVibrate } from '@/shared/utils/haptics'
+import { isDaomeiOrder } from '@/shared/utils/company'
 import OrderRawModals from './OrderRawModals'
 import RawTextModal from '@/shared/components/RawTextModal'
 import OrderCardTags from './OrderCardTags'
@@ -166,7 +167,9 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
         >
           <div className="order-card__name">
             <User size={16} className="order-card__icon" />
-            <span>{order.customerName || '未填写姓名'}</span>
+            <span>{order.customerName || '未填写姓名'}</span> {isDaomeiOrder(order) && (
+              <span style={{ marginLeft: 6, padding: '1px 5px', borderRadius: 4, background: '#2563eb', color: '#fff', fontSize: 10, lineHeight: '14px', flexShrink: 0 }}>到</span>
+            )}
           </div>
           <span
             className="order-card__status"
