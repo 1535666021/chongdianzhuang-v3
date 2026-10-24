@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, FileText, Wallet, Package } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import CompanyFilter from '@/shared/components/CompanyFilter'
 import { ReconciliationTable } from '../components/ReconciliationTable'
 import { ReceivablesManager } from '../components/ReceivablesManager'
 import { CostDetail } from '../components/CostDetail'
@@ -26,6 +27,7 @@ export default function FinancePage() {
           </button>
           <h1 className="text-lg font-bold text-gray-800">财务对账</h1>
         </div>
+        <CompanyFilter />
       </div>
       <div className="px-4 py-3">
         <div className="flex gap-2 mb-4 overflow-x-auto">
