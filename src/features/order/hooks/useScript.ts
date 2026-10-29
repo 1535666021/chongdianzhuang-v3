@@ -27,6 +27,8 @@ export function buildScriptVars(order: Order, scene: string, settings: { enginee
     phone: order.phone || '',
     address: dedupeAddress(order.address || ''),
     brand: order.brandName || '',
+    // P0-212：品牌行挂套包米数（取存值，空值不加括号；禁注入品牌默认米数）
+    brandWithMeters: (order.brandName || '') + (order.packageMeters ? `（${order.packageMeters}米）` : ''),
     installer: settings.engineerName || '谢责强',
     appointmentDate: order.appointmentDate || '',
     timeSlot: order.appointmentTime || '',
