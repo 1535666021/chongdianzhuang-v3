@@ -59,7 +59,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     scene: '安装完成',
     content: `完工总结：已完成安装
 完工时间：{{completeDate}}
-品牌：{{brand}}
+品牌：{{brandWithMeters}}
 用户信息：{{customerName}}
 联系电话：{{phone}}
 地址：{{address}}
@@ -75,7 +75,7 @@ export const DEFAULT_SCRIPT_TEMPLATES: ScriptTemplate[] = [
     brand: '通用',
     scene: '安装完成',
     content: `完工总结：已完成安装
-品牌：{{brand}}
+品牌：{{brandWithMeters}}
 完工时间：{{completionDate}}
 用户信息：{{customerName}}
 联系电话：{{phone}}
