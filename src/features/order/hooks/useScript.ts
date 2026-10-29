@@ -9,6 +9,7 @@ import {
   buildPlatformBrand,
   extractCableMeters,
   DEFAULT_PACKAGE_METERS,
+  isGeelyBrand,
 } from '@/shared/utils/orderCalc'
 import { formatCurrency, formatNumber } from '@/shared/utils/format'
 
@@ -28,7 +29,8 @@ export function buildScriptVars(order: Order, scene: string, settings: { enginee
     address: dedupeAddress(order.address || ''),
     brand: order.brandName || '',
     // P0-212：品牌行挂套包米数（取存值，空值不加括号；禁注入品牌默认米数）
-    brandWithMeters: (order.brandName || '') + (order.packageMeters ? `（${order.packageMeters}米）` : ''),
+    // P0-212-R1：括号米数仅吉利品牌生效（甲方2026-10-29口径），取存值禁注默认
+    brandWithMeters: (order.brandName || '') + (isGeelyBrand(order.brandName || '') && order.packageMeters ? `（${order.packageMeters}米）` : ''),
     installer: settings.engineerName || '谢责强',
     appointmentDate: order.appointmentDate || '',
     timeSlot: order.appointmentTime || '',
