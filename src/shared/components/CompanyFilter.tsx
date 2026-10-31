@@ -4,10 +4,11 @@ import type { CompanyKey } from '@/shared/utils/company'
 const OPTIONS: { key: CompanyKey; label: string }[] = [
   { key: 'all', label: '全部' },
   { key: 'benyang', label: '本杨' },
-  { key: 'daomei', label: '到美' },
+  { key: 'daomei', label: '到每家' },
+  { key: 'unassigned', label: '未分' },
 ]
 
-/** P0-220：统计/财务/对账顶部公司切换（uiStore 持久化） */
+/** P0-220/P0-216：统计/财务/对账顶部公司切换（uiStore 持久化） */
 export default function CompanyFilter() {
   const currentCompany = useUIStore((s) => s.currentCompany)
   const setCurrentCompany = useUIStore((s) => s.setCurrentCompany)
