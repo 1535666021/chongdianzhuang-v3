@@ -44,8 +44,14 @@ export function planBrandBackfill(orders: Order[]): BrandFixDetail[] {
 /** 执行回溯：仅回填 brandName，其他字段一律不动 */
 export function backfillBrandFromRawText(orders: Order[]): BrandFixResult {
   const details = planBrandBackfill(orders)
-  const updateOrder = useOrderStore.getState().updateOrder
-  for (const d of details) updateOrder(d.orderId, { brandName: d.newBrand })
+  // P0-217 G1d：逐单写回改批量（一次全量序列化）
+  try {
+    const allOrders = useOrderStore.getState().orders
+    const patch = new Map(details.map((d) => [d.orderId, { brandName: d.newBrand } as const]))
+    useOrderStore.getState().setOrders(allOrders.map((o) => (patch.has(o.id) ? { ...o, ...patch.get(o.id)! } : o)))
+  } catch (error) {
+    console.warn('[品牌修正] 批量写回失败', error)
+  }
   console.log('[品牌修正] 明细', details)
   return { updated: details.length, details }
 }
