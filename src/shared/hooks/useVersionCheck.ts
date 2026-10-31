@@ -6,6 +6,8 @@ const VERSION_URL = `${import.meta.env.BASE_URL}version.json`
 
 export function useVersionCheck() {
   const [hasUpdate, setHasUpdate] = useState(false)
+  // P0-217 G5c：更新信息含 notes（version.json 携带）
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; notes: string[] } | null>(null)
   const checkingRef = useRef(false)
 
   const checkVersion = useCallback(async (force = false) => {
@@ -16,10 +18,13 @@ export function useVersionCheck() {
       const url = force ? `${VERSION_URL}?t=${Date.now()}` : VERSION_URL
       const response = await fetch(url, { cache: 'no-store' })
       if (!response.ok) return false
-      const { version } = await response.json() as { version?: string }
+      const { version, notes } = await response.json() as { version?: string; notes?: string[] }
       localStorage.setItem(CHECK_DATE_KEY, today)
       const hasNewVersion = Boolean(version && version !== __APP_VERSION__)
-      if (hasNewVersion) setHasUpdate(true)
+      if (hasNewVersion) {
+        setHasUpdate(true)
+        setUpdateInfo({ version: version!, notes: Array.isArray(notes) ? notes : [] })
+      }
       navigator.serviceWorker?.getRegistration().then((registration) => registration?.update())
       return hasNewVersion
     } catch {
@@ -59,5 +64,5 @@ export function useVersionCheck() {
     window.setTimeout(reload, 1000)
   }
 
-  return { hasUpdate, handleUpdate, checkNow }
+  return { hasUpdate, updateInfo, handleUpdate, checkNow }
 }
