@@ -62,15 +62,15 @@ export function runBreakerCostBackfillFix(): BreakerCostReport {
   const { items } = planBreakerCostBackfillFix(orders)
   const backupKey = buildBreakerCostBackupKey(Date.now())
   localStorage.setItem(backupKey, JSON.stringify(items.map((it) => it.order)))
-  const updateOrder = useOrderStore.getState().updateOrder
+  // P0-217 G1d：逐单写回改批量（一次全量序列化；备份语义与幂等纯比对不变）
   let fixed = 0
-  for (const it of items) {
-    try {
-      updateOrder(it.order.id, it.updates)
-      fixed++
-    } catch (error) {
-      console.warn('[漏保回填] 单条失败已跳过', it.order.id, error)
-    }
+  try {
+    const allOrders = useOrderStore.getState().orders
+    const patch = new Map(items.map((it) => [it.order.id, it.updates as Partial<import('@/types').Order>]))
+    useOrderStore.getState().setOrders(allOrders.map((o) => (patch.has(o.id) ? { ...o, ...patch.get(o.id)! } : o)))
+    fixed = items.length
+  } catch (error) {
+    console.warn('[漏保回填] 批量写回失败', error)
   }
   return { total: items.length, fixed, backedUp: true, backupKey, runAt: Date.now() }
 }
