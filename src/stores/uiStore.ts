@@ -17,7 +17,7 @@ interface UIState {
 const COMPANY_KEY = 'cdz_current_company_v1'
 const loadCompany = (): import('@/shared/utils/company').CompanyKey => {
   const v = localStorage.getItem(COMPANY_KEY)
-  return v === 'benyang' || v === 'daomei' ? v : 'all'
+  return v === 'benyang' || v === 'daomei' || v === 'unassigned' ? v : 'all'
 }
 
 export const useUIStore = create<UIState>((set) => ({
