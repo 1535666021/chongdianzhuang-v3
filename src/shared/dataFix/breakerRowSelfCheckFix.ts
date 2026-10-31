@@ -83,16 +83,16 @@ export function runBreakerRowSelfCheck(): BreakerRowSelfCheckReport {
   }
   const backupKey = buildBackupKey(runAt)
   localStorage.setItem(backupKey, JSON.stringify(items.map((it) => it.order))) // 写前备份受影响单（P0-197-R1 同款）
-  const updateOrder = useOrderStore.getState().updateOrder
+  // P0-217 G1d：逐单写回改批量——一次全量序列化（写前备份语义与幂等纯比对不变，结果行为零变化）
   let fixed = 0
-  for (const it of items) {
-    try {
-      updateOrder(it.order.id, it.updates)
-      fixed++
-      console.log('[漏保行自检]', it.summary)
-    } catch (error) {
-      console.warn('[漏保行自检] 单条失败已跳过', it.order.id, error)
-    }
+  try {
+    const allOrders = useOrderStore.getState().orders
+    const patch = new Map(items.map((it) => [it.order.id, it.updates as Partial<Order>]))
+    useOrderStore.getState().setOrders(allOrders.map((o) => (patch.has(o.id) ? { ...o, ...patch.get(o.id)! } : o)))
+    fixed = items.length
+    items.forEach((it) => console.log('[漏保行自检]', it.summary))
+  } catch (error) {
+    console.warn('[漏保行自检] 批量写回失败', error)
   }
   console.log(`[漏保行自检] 完成：命中 ${items.length}，写入 ${fixed}，备份键 ${backupKey}`)
   return { total: items.length, fixed, backedUp: true, backupKey, runAt }
