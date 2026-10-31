@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
+import { RELEASE_NOTES } from './src/constants/releaseNotes'
 
 const appVersion = process.env.GITHUB_SHA?.slice(0, 7)
   || process.env.VITE_APP_VERSION
@@ -48,7 +49,18 @@ export default defineConfig({
           }
         ]
       }
-    })
+    }),
+    // P0-217 G5b：version.json 内联生成（含 notes，取代 public 静态版）
+    {
+      name: 'cdz-version-json',
+      generateBundle() {
+        this.emitFile({
+          type: 'asset',
+          fileName: 'version.json',
+          source: JSON.stringify({ version: appVersion, buildTime: appBuildTime, notes: RELEASE_NOTES }),
+        })
+      },
+    },
   ],
   resolve: {
     alias: {
