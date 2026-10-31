@@ -4,11 +4,11 @@ import { orderRepairRepository } from './features/order/repair/repository'
 import { purgeExpiredRecycleBin } from './features/order/utils/recycleBin'
 import { useOrderStore } from '@/stores/orderStore'
 import { ROUTES } from '@/routes/route'
-import { RefreshCw } from 'lucide-react'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { useOfflineStatus } from '@/shared/hooks/useOfflineStatus'
 import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
+import { healMissingAppointments } from '@/features/appointment/repository'
 import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
 import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
 import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
@@ -20,28 +20,55 @@ import BottomTabBar from '@/shared/components/BottomTabBar'
 // 导出全局 toast
 export { toast }
 
+// P0-217 G1c：启动修复链统一入口——逐 phase try/catch + console.time 计时，末段输出总耗时
+async function runStartupMaintenance() {
+  const t0 = performance.now()
+  const phases: [string, () => void][] = [
+    ['migrateData', () => { migrateData() }],
+    ['migratePowerKw', () => { const m = migratePowerKw(); if (m) useOrderStore.getState().setOrders(m) }],
+    ['healMissingAppointments', () => healMissingAppointments()], // P0-160 存量自愈（原 main.tsx 顶层，并入统一入口）
+    ['runBrandBackfillOnce', () => runBrandBackfillOnce()], // P0-102
+    ['runAppointmentRangeMigration', () => runAppointmentRangeMigration()], // P0-142-R3
+    ['repairGroupNoticeNames', () => { orderRepairRepository.repairGroupNoticeNames() }], // P0-123
+    ['repairMistakenBrands', () => { orderRepairRepository.repairMistakenBrands() }], // P0-136
+    ['repairWailianContacts', () => { orderRepairRepository.repairWailianContacts() }], // P0-138
+    ['purgeExpiredRecycleBin', () => purgeExpiredRecycleBin()], // P0-139-R1
+    ['repairWanlianFlowOrders', () => { orderRepairRepository.repairWanlianFlowOrders() }], // P0-140-R3
+    ['runBreakerRowSelfCheck', () => { runBreakerRowSelfCheck() }], // P0-210 G3
+  ]
+  for (const [name, fn] of phases) {
+    console.time(`[启动修复] ${name}`)
+    try { fn() } catch (error) { console.warn(`[启动修复] ${name} 失败（已跳过，不影响其他段）`, error) }
+    console.timeEnd(`[启动修复] ${name}`)
+    await new Promise((r) => setTimeout(r, 0)) // G1e：phase 间让出主线程
+  }
+  console.log(`[启动修复] 全部完成，总耗时 ${(performance.now() - t0).toFixed(1)}ms`)
+}
+
 export default function App() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { hasUpdate, handleUpdate, checkNow } = useVersionCheck()
+  const { hasUpdate, updateInfo, handleUpdate, checkNow } = useVersionCheck()
+  // P0-217 G5：更新弹窗「稍后」当日不再弹（记 dismissedVersion+日期）
+  const [updateDismissed, setUpdateDismissed] = useState(() => {
+    try {
+      const d = JSON.parse(localStorage.getItem('cdz_update_dismissed') || 'null')
+      return d?.date === new Date().toISOString().slice(0, 10)
+    } catch { return false }
+  })
+  const dismissUpdate = () => {
+    localStorage.setItem('cdz_update_dismissed', JSON.stringify({ date: new Date().toISOString().slice(0, 10) }))
+    setUpdateDismissed(true)
+  }
   const isOffline = useOfflineStatus()
   const orders = useOrderStore((s) => s.orders)
-  const setOrders = useOrderStore((s) => s.setOrders)
   const { toast: appToast, toasts, removeToast } = useToast()
 
   useEffect(() => {
-    migrateData()
-    const migratedOrders = migratePowerKw()
-    if (migratedOrders) setOrders(migratedOrders)
-    runBrandBackfillOnce() // P0-102：品牌识别一次性回溯（标记幂等）
-    runAppointmentRangeMigration() // P0-142-R3：预约区间化一次性迁移（标记幂等）
-    orderRepairRepository.repairGroupNoticeNames() // P0-123：群公告错单姓名自修复（标记幂等，仅群公告来源）
-    orderRepairRepository.repairMistakenBrands() // P0-136：桩名称品牌错单自愈（标记幂等，brand串位/空/未知）
-    orderRepairRepository.repairWailianContacts() // P0-138：外联单车主姓名优先+双联系人补录（标记幂等）
-    purgeExpiredRecycleBin() // P0-139-R1：回收站到期自动彻底删除（30天，报告console）
-    orderRepairRepository.repairWanlianFlowOrders() // P0-140-R3：万联流式错单自动更正（_flowRepaired幂等）
-    runBreakerRowSelfCheck() // P0-210 G3：已完成单漏保器行存量纠偏（纯比对幂等零写入；写前备份；只纠漏保器行）
-  }, [setOrders])
+    // P0-217 G1b：修复链整体延后到首屏渲染完成后调度（requestIdleCallback 缺省 setTimeout 兜底，禁裸用）
+    const schedule = window.requestIdleCallback?.bind(window) ?? ((cb: () => void) => setTimeout(cb, 0))
+    schedule(() => setTimeout(() => { void runStartupMaintenance() }, 0))
+  }, [])
 
   useEffect(() => {
     const known = getKnownPlatforms()
@@ -66,16 +93,20 @@ export default function App() {
       {/* 离线状态提示 */}
       <OfflineIndicator />
 
-      {/* 版本更新提示 */}
-      {hasUpdate && (
-        <button
-          type="button"
-          onClick={handleUpdate}
-          style={{ background: 'var(--color-success)', borderRadius: 'var(--radius-md)', bottom: 'calc(64px + env(safe-area-inset-bottom))', color: 'white', left: 'var(--space-md)', padding: 'var(--space-sm) var(--space-md)', position: 'fixed', right: 'var(--space-md)', zIndex: 'var(--z-modal)' }}
-        >
-          <RefreshCw size={14} />
-          <span>发现新版本，点击更新</span>
-        </button>
+      {/* P0-217 G5：更新弹窗（居中，notes 逐条列出；仅展示+两按钮，不拦截录入流程） */}
+      {hasUpdate && updateInfo && !updateDismissed && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={dismissUpdate}>
+          <div style={{ background: '#fff', borderRadius: 'var(--radius-lg)', padding: 'var(--space-lg)', maxWidth: 320, width: '86%' }} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 var(--space-sm)' }}>发现新版本</h3>
+            <ul style={{ margin: '0 0 var(--space-md)', paddingLeft: '1.2em', fontSize: 14, color: '#555' }}>
+              {updateInfo.notes.map((n, i) => <li key={i}>{n}</li>)}
+            </ul>
+            <div style={{ display: 'flex', gap: 'var(--space-sm)', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={dismissUpdate} style={{ padding: '6px 14px', border: '1px solid #ddd', borderRadius: 'var(--radius-sm)', background: '#fff' }}>稍后</button>
+              <button type="button" onClick={handleUpdate} style={{ padding: '6px 14px', border: 'none', borderRadius: 'var(--radius-sm)', background: 'var(--color-primary)', color: '#fff' }}>立即更新</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Toast 通知 */}
