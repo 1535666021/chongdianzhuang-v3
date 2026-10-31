@@ -31,6 +31,16 @@ Agent 在任务执行过程中发现的条目应遵循以下格式：
 
 ## 条目
 
+### Pages 版本号污染与归正
+- Date: 2026-11-01
+- Context: P0-217-R1 交付后甲方报"关于页版本 v87ca3c9 与推送的 dddd2a09 对不上"（线上代码实为新版，仅版本号贴旧）
+- Category: 运维部署
+- Instructions:
+  - 实证链：api.github.com 查 main HEAD → curl 线上 index.html 资源引用 → curl version.json → 对照 Actions runs 时间线
+  - 根因：历史 pages run 被 re-run 时 GITHUB_SHA 取原事件旧 sha，version.json 版本号贴旧号，部署后覆盖新版
+  - 归正：确认 main HEAD 后 re-run 该 HEAD 的 pages run（约 90 秒），勿推空提交
+  - 预防：勿 re-run 历史 run；一本书=一次提交（R6）
+
 ### Git Push 流程
 - Date: 2026-07-28
 - Context: GitHub credential helper 始终返回 500，每次提交后需用户提供 token 推送
