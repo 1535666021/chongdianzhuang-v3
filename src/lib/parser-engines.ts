@@ -130,6 +130,19 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   item.vin = pickKv(kv, KV_FIELD_KEYS.vin);
   item.serviceType = pickKv(kv, KV_FIELD_KEYS.serviceType);
   item.platformName = pickKv(kv, KV_FIELD_KEYS.platformName);
+  // P0-214：「套包」值解析（kv 原文取，禁止用截取后的 item 值）——形如 "长城-30米7KW安装权益套包"
+  const pkgRaw = kv.get('套包') || ''
+  if (pkgRaw) {
+    if (!item.packageMeters) item.packageMeters = pkgRaw.match(/(\d+(?:\.\d+)?)\s*米/)?.[1] ?? ''
+    if (!item.powerKw)       item.powerKw       = pkgRaw.match(/(\d+(?:\.\d+)?)\s*(?:KW|kw|千瓦)/)?.[1] ?? ''
+    if (!item.brandName) {
+      // KNOWN_BRANDS 最长匹配；歧义（多词同长）保持空，禁猜
+      const hits = KNOWN_BRANDS.filter((b) => pkgRaw.includes(b))
+      const max = Math.max(0, ...hits.map((b) => b.length))
+      const best = hits.filter((b) => b.length === max)
+      if (best.length === 1) item.brandName = best[0]
+    }
+  }
   if (userInfo && !item.phone) {
     const pm = userInfo.match(PHONE_RE);
     if (pm) item.phone = pm[2];
