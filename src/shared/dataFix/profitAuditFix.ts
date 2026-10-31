@@ -93,20 +93,22 @@ export function runProfitAudit(): ProfitAuditReport {
   const { items, consistent, skippedNoStored, overriddenFeeSkipped } = planProfitAudit(orders)
   const backupKey = buildProfitAuditBackupKey(Date.now())
   localStorage.setItem(backupKey, JSON.stringify(items.map((it) => it.order)))
-  const updateOrder = useOrderStore.getState().updateOrder
   const details: ProfitAuditDetail[] = []
   const report: ProfitAuditReport = {
     total: items.length, consistent, drifted: 0, skippedNoStored, overriddenFeeSkipped,
     details, backedUp: true, backupKey, runAt: Date.now(),
   }
+  // P0-217 G1d：逐单写回改批量（一次全量序列化）
+  try {
+    const allOrders = useOrderStore.getState().orders
+    const patch = new Map(items.map((it) => [it.order.id, it.updates as Partial<import('@/types').Order>]))
+    useOrderStore.getState().setOrders(allOrders.map((o) => (patch.has(o.id) ? { ...o, ...patch.get(o.id)! } : o)))
+  } catch (error) {
+    console.warn('[利润巡检] 批量写回失败', error)
+  }
   for (const it of items) {
-    try {
-      updateOrder(it.order.id, it.updates)
-      details.push({ orderId: it.order.id, customerName: it.order.customerName, summary: it.summary })
-      report.drifted++
-    } catch (error) {
-      console.warn('[利润巡检] 单条失败已跳过', it.order.id, error)
-    }
+    details.push({ orderId: it.order.id, customerName: it.order.customerName, summary: it.summary })
+    report.drifted++
   }
   localStorage.setItem(PROFIT_AUDIT_RUN_AT_KEY, String(report.runAt))
   console.log('[利润巡检] 报告', report)
