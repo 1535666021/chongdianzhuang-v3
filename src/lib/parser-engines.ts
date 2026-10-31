@@ -4,9 +4,26 @@
  * ============================================================ */
 
 import type { ParsedOrderItem } from './parser-core';
-import { APPOINTMENT_EXCLUDE_KEYS } from './parser-core';
+import { APPOINTMENT_EXCLUDE_KEYS, canSetFallback, P0195_GLUED_ORDER_RE, P0195_GLUED_PHONE_RE, P0195_GLUED_VIN_RE, P0195_GLUED_INSTALL_RE, P0195_GLUED_BRAND_RE, P0195_GLUED_PLATFORM_RE
+} from './parser-core';
 import { PILE_BRAND_KEYWORDS } from '@/constants/brands';
 import {
+/* ═══════════════════════════════════════════════════════════════
+ * P0-219 任务一 1b 分发决策树（与代码逐行对应，图码不一致判返工）
+ * 输入块 → parseBlock(block)
+ *  ① parseBlockLegacy(block)
+ *     ├─ isWanbangBlock ────────────→ parseWanbangBlock → return（万帮块守卫早退）
+ *     └─ 否则三路顺序分发：hasKeyValueLine→parseKeyValueBlock
+ *        : isStreamTableRow→parseStreamTableRow
+ *        : 默认→parseFlowBlock（流式块：compact/万联/粘连三层守卫）
+ *     └─ 通用尾：meterStatus 未申请/已安装 修正
+ *  ② applyWailianUnified(item) + applyKvNamePriority(item)   ← 平台/名字补丁
+ *  ③ isSaneFlowResult(item) → true 即 return（sane 早退）
+ *  ④ parseWanlianFlowBlock（万联流路径）
+ *  ⑤ 三级兜底：VIN 修正 / HW 前缀处理 / 地址清洗修正
+ * 旁注：KV 块行循环含 P0-218 服务时间噪声拦截（SERVICE_TIME_NOISE_RE，仅非键值行）；
+ *       全部兜底写入经 canSetFallback 守卫（core FALLBACK_GUARD_KEYS 唯一出口）。
+ * ═══════════════════════════════════════════════════════════════ */
   PHONE_RE, VIN_SEARCH_RE, POWER_RE,
   TIMESTAMP_PREFIX_RE, KEY_VALUE_RE,
   ADDRESS_HINTS, STRONG_ADDRESS_HINTS, NAME_EXCLUDE_RE,
@@ -20,12 +37,6 @@ import { isStreamTableRow, parseStreamTableRow, sanitizeStreamLikeAddress, STREA
 /* R2-B 单号保护：D/HW 开头的字母数字串是订单号，不得入 VIN */
 
 /* P0-195 新增，只增不改：粘连流/W单号新格式 锚点与词表 */
-const P0195_GLUED_ORDER_RE = /[DW]\d{12,16}(?:WL)?|W\d{12,14}/
-const P0195_GLUED_PHONE_RE = /1[3-9]\d{9}/
-const P0195_GLUED_VIN_RE = /[A-HJ-NPR-Z][A-HJ-NPR-Z0-9]{16}/i
-const P0195_GLUED_INSTALL_RE = /地下|地面壁挂|壁挂|立柱|吊装/g
-const P0195_GLUED_BRAND_RE = /广汽埃安|五菱|特斯拉|比亚迪|吉利|领克|欧拉|长安|奇瑞|零跑|哪吒|小鹏|理想|蔚来|问界|极氪|深蓝|宝骏|埃安|熊猫|缤果|海鸥|海豚|五菱宏光|宏光|MINIEV/
-const P0195_GLUED_PLATFORM_RE = /挚达|循道|一航|国网|特来电|星星充电|云快充|小蜂|万帮/
 /* P0-195 新增，只增不改：电表状态词表（电表前缀版优先，裸词兜底） */
 const P0195_METER_RE = /电表\s*已安装|电表\s*未申请|已安装|未申请/
 
@@ -70,7 +81,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
           const namePart = value.replace(phoneInInfo, '').trim();
           if (namePart) {
             const isChineseOnly = /^[一-龥]+$/.test(namePart);
-            if (!isChineseOnly || !NAME_EXCLUDE_RE.test(namePart)) {
+            if ((!isChineseOnly || !NAME_EXCLUDE_RE.test(namePart)) && canSetFallback(kv, '_userinfo_name')) { // P0-219 1a：仅当显式姓名键族全空
               kv.set('_userinfo_name', namePart);
             }
           }
@@ -78,7 +89,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
           const trimmed = value.trim();
           if (trimmed) {
             const isChineseOnly = /^[一-龥]+$/.test(trimmed);
-            if (!isChineseOnly || !NAME_EXCLUDE_RE.test(trimmed)) {
+            if ((!isChineseOnly || !NAME_EXCLUDE_RE.test(trimmed)) && canSetFallback(kv, '_userinfo_name')) { // P0-219 1a：仅当显式姓名键族全空
               kv.set('_userinfo_name', trimmed);
             }
           }
@@ -100,14 +111,16 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
     }
     // P0-218 任务3：服务时间噪声行拦截（执行至此的行均为非键值行，KV行已 continue）
     if (SERVICE_TIME_NOISE_RE.test(line)) continue;
-    if (PHONE_RE.test(line) && !kv.has('联系电话') && !kv.has('客户手机')) {
+    if (PHONE_RE.test(line)) { // P0-219 1a：电话兜底统一守卫（core 唯一出口）；守卫不通过也丢弃该行，不入 remark
+      if (canSetFallback(kv, '联系电话')) kv.set('联系电话', extractPhone(line));
+      continue;
       kv.set('联系电话', extractPhone(line));
       continue;
     }
     if (VIN_SEARCH_RE.test(line) && !kv.has('车架号')) {
       const all = line.match(VIN_SEARCH_RE) ?? [];
       const found = all.find((v) => v !== item.orderNo && !ORDER_NO_PREFIX_RE.test(v));
-      if (found) kv.set('车架号', found);
+      if (found && canSetFallback(kv, '车架号')) { kv.set('车架号', found); } // P0-219 1a：VIN 兜底统一守卫
       continue;
     }
     if (item.remark) item.remark += '\n';
@@ -621,5 +634,7 @@ function parseBlockLegacy(block: string): ParsedOrderItem {  if (isWanbangBlock(
 }
 
 export function hasAnyField(item: ParsedOrderItem): boolean {
-  return !!(item.orderNo || item.customerName || item.phone || item.address || item.brandName || item.vin);
+  // P0-219 任务三：无 phone/orderNo/vin 的块，兜底抽出的姓名/地址/品牌不算"有字段"，
+  // 整块走待补路径（_pending、原文保留、可编辑补齐）；有三键之一一律不受影响
+  return Boolean(item.orderNo || item.phone || item.vin);
 }

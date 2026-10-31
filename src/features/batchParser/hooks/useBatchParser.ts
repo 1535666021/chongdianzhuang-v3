@@ -44,6 +44,7 @@ export interface ParseOutcome {
   /** 重复跳过总数（批内重复 + 库内重复 + 库内同id跳过） */
   skipped: number
   blockCount: number
+  duplicates: number // P0-219 任务二
   /** P0-199-R1：静默隔离条数（重复单已入库但 dupQuarantine=true 不进主页） */
   quarantined: number
 }
@@ -57,6 +58,7 @@ export function useBatchParser() {
     setPreviewEntries((prev) => prev.map((e, i) => (i === index && e.status === 'phone-dup' ? { ...e, confirmed: true } : e)))
   }, [])
   const [blockCount, setBlockCount] = useState(0)
+  const [duplicates, setDuplicates] = useState(0) // P0-219 任务二
   const [isParsing, setIsParsing] = useState(false)
   const existingOrders = useOrderStore((state) => state.orders)
   const importOrders = useOrderStore((state) => state.importOrders)
@@ -116,7 +118,8 @@ export function useBatchParser() {
       if (ordersWithNature.length === 0) {
         setPreviewEntries([])
         setBlockCount(result.blockCount)
-        return { total: 0, added: 0, updated: 0, skipped: 0, blockCount: result.blockCount, quarantined: 0 }
+        setDuplicates(result.duplicates ?? 0) // P0-219 任务二
+        return { total: 0, added: 0, updated: 0, skipped: 0, blockCount: result.blockCount, quarantined: 0, duplicates: 0 } // P0-219
       }
 
       // P0-093：批内自查优先（同批重复只保留首条），首条再查库内重复，规则原样
@@ -144,6 +147,7 @@ export function useBatchParser() {
       })
       setPreviewEntries(entries)
       setBlockCount(result.blockCount)
+      setDuplicates(result.duplicates ?? 0) // P0-219 任务二：主预览路径同步
 
       // 一键入库：仅新增项直推，重复项自动跳过
       // P0-199-R1：blocked 且带 dupQuarantine 的重复单静默入库（隔离），其余 blocked 仍拦截
@@ -154,6 +158,7 @@ export function useBatchParser() {
       const quarantined = newOrders.filter((o) => o.dupQuarantine).length
       return {
         total: entries.length,
+        duplicates, // P0-219 任务二
         quarantined,
         added: res.added,
         updated: res.updated,
@@ -177,6 +182,7 @@ export function useBatchParser() {
     previewEntries,
     confirmPhoneDup,
     blockCount,
+    duplicates,
     isParsing,
     parse,
     clear,

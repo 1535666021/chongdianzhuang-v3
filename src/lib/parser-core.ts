@@ -46,6 +46,8 @@ export interface ParseTextResult {
   items: ParsedOrderItem[];
   /** 原文中疑似订单块数量（与 items.length 对不上时预览层必须显著告警） */
   blockCount: number;
+  /** P0-219 任务二：同批两两判重被拦截条数 */
+  duplicates?: number;
 }
 
 /* --------------------------------------------------------------
@@ -102,6 +104,25 @@ export const KV_FIELD_KEYS = {
   serviceType: ['服务类型', '购买套包'],
   platformName: ['运营商', '平台', '信息来源', '渠道', '来源', '工单来源'],
 } as const;
+
+export const P0195_GLUED_ORDER_RE = /[DW]\d{12,16}(?:WL)?|W\d{12,14}/; // P0-219 1c：由 parser-engines 归并（只移动不改语义）
+export const P0195_GLUED_PHONE_RE = /1[3-9]\d{9}/; // P0-219 1c：由 parser-engines 归并（只移动不改语义）
+export const P0195_GLUED_VIN_RE = /[A-HJ-NPR-Z][A-HJ-NPR-Z0-9]{16}/i; // P0-219 1c：由 parser-engines 归并（只移动不改语义）
+export const P0195_GLUED_INSTALL_RE = /地下|地面壁挂|壁挂|立柱|吊装/g; // P0-219 1c：由 parser-engines 归并（只移动不改语义）
+export const P0195_GLUED_BRAND_RE = /广汽埃安|五菱|特斯拉|比亚迪|吉利|领克|欧拉|长安|奇瑞|零跑|哪吒|小鹏|理想|蔚来|问界|极氪|深蓝|宝骏|埃安|熊猫|缤果|海鸥|海豚|五菱宏光|宏光|MINIEV/; // P0-219 1c：由 parser-engines 归并（只移动不改语义）
+export const P0195_GLUED_PLATFORM_RE = /挚达|循道|一航|国网|特来电|星星充电|云快充|小蜂|万帮/; // P0-219 1c：由 parser-engines 归并（只移动不改语义）
+
+// P0-219 任务一 1a：兜底键统一守卫（唯一出口）。口径：兜底写入仅当对应显式键族全空时生效。
+export const FALLBACK_GUARD_KEYS: Readonly<Record<string, readonly string[]>> = {
+  _userinfo_name: ['订单姓名', '客户姓名', '姓名', '客户名称', '联系人', '用户姓名', '车主姓名'],
+  联系电话: ['真实号码', '客户手机', '用户电话', '联系人电话', '车主电话', '电话'],
+  车架号: ['VIN', '车架号'],
+};
+export function canSetFallback(kv: Map<string, string>, fallbackKey: string): boolean {
+  const explicitKeys = FALLBACK_GUARD_KEYS[fallbackKey];
+  if (!explicitKeys) return true;
+  return !explicitKeys.some((k) => kv.has(k) && Boolean(kv.get(k)));
+}
 
 /** 键值块中归入备注的键 */
 export const KV_REMARK_KEYS = ['备注', '首联信息', '安装备注', '用户需求', '工单描述', '服务说明', '备注信息', '需求说明', '客户要求', '特殊要求', '安装要求', '服务备注', '工单备注', '需求备注', '客户备注', '安装说明', '服务需求', '工单信息', '补充说明', '其他说明', '备注说明', '客户描述', '需求描述', '服务描述', '工单要求', '安装需求', '特殊说明', '补充信息', '附加信息', '附加说明'];

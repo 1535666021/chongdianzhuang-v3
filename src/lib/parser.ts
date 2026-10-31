@@ -27,7 +27,17 @@ export function parseOrderTextDetailed(rawText: string): ParseTextResult {
       items.push(item);
     }
   }
-  return { items, blockCount: blocks.length };
+  // P0-219 任务二：同批两两判重（phone/orderNo/vin 任一非空且相同→保留首条，其余拦截）
+  const seen = new Set<string>();
+  const deduped: ParsedOrderItem[] = [];
+  let duplicates = 0;
+  for (const it of items) {
+    const keys = [it.phone, it.orderNo, it.vin].filter((v): v is string => Boolean(v));
+    if (keys.some((k) => seen.has(k))) { duplicates++; continue; }
+    keys.forEach((k) => seen.add(k));
+    deduped.push(it);
+  }
+  return { items: deduped, blockCount: blocks.length, duplicates };
 }
 
 export function parseOrderText(rawText: string): ParsedOrderItem[] {

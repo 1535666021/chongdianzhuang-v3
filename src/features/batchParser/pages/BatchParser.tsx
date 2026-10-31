@@ -37,7 +37,7 @@ function StatusBadge({ entry }: { entry: PreviewEntry }) {
 
 export default function BatchParser() {
   const navigate = useNavigate()
-  const { rawText, setRawText, previewEntries, confirmPhoneDup, blockCount, isParsing, parse, clear } =
+  const { rawText, setRawText, previewEntries, confirmPhoneDup, blockCount, duplicates, isParsing, parse, clear } =
     useBatchParser()
 
   /** P0-106 一键流程：点一次 = 解析+去重+自动入库+toast汇总 */
@@ -105,6 +105,9 @@ export default function BatchParser() {
               {blockCount > previewEntries.length && (
                 <span className="text-xs text-amber-500 ml-2">(识别{previewEntries.length}/{blockCount}条)</span>
               )}
+              {duplicates > 0 && (
+                <span className="text-xs text-amber-500 ml-2">已过滤 {duplicates} 条疑似重复</span>
+              )} {/* P0-219 任务二：同批判重提示，既有告警风格 */}
             </h2>
             <div className="space-y-2">
               {previewEntries.map((entry, idx) => {
