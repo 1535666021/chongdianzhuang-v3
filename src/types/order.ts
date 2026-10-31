@@ -11,6 +11,8 @@ export interface OrderSurvey {
   locationInfo?: string
 }
 export interface Order extends BaseEntity {
+  /** P0-216：公司归属显式分配（速家等双公司平台用；老数据无此字段=走平台规则零迁移） */
+  company?: 'benyang' | 'daomei'
   customerName: string
   phone: string
   address: string
