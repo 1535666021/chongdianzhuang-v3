@@ -32,7 +32,7 @@ export default function OrderComplete() {
   const [manualCostBind, setManualCostBind] = useState<string | null>(null)
   const [engineerPhone, setEngineerPhone] = useState(settings.engineerPhone || '')
   // P0-220：公司维度（到美/本杨）——唯一出口 isDaomeiOrder 判定，入口自动分流
-  const companyLabel = order && isDaomeiOrder(order) ? '到美' : '本杨'
+  const companyLabel = order && isDaomeiOrder(order) ? '到每家' : '本杨'
 
   // P0-217：绑定完成后该行成本价即时重读（复用既有数据流：findCostPrice 唯一出口读绑定价 + updateMaterial 自动重算小计）
   const handleCostBindComplete = useCallback(() => {
