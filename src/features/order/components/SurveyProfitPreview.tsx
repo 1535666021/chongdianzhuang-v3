@@ -140,7 +140,7 @@ export function SurveyProfitConclusion({
   })
 
   return (
-    <div className="survey-profit-conclusion">
+    <CollapsePanel title="预估利润明细" className="survey-profit-conclusion">
       <div className="survey-profit-conclusion__head">
         {receivable > 0 ? (
           <strong className={profit >= 0 ? 'is-positive' : 'is-negative'}>
@@ -161,6 +161,6 @@ export function SurveyProfitConclusion({
         {isBusinessTrip && <div className="survey-profit-conclusion__row"><span>出差补助</span><strong>+{formatCurrency(tripSubsidy)}</strong></div>}
         <div className="survey-profit-conclusion__row survey-profit-conclusion__total"><span>= 利润</span><strong>{formatCurrency(profit)}</strong></div>
       </div>
-    </div>
+    </CollapsePanel>
   )
 }
