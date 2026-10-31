@@ -184,16 +184,24 @@ export function runPolicyFix(): PolicyFixReport {
   const backup = items.map((it) => it.order)
   const backupKey = buildPolicyFixBackupKey(Date.now())
   localStorage.setItem(backupKey, JSON.stringify(backup))
-  const updateOrder = useOrderStore.getState().updateOrder
   const details: PolicyFixDetail[] = []
   const report: PolicyFixReport = {
     total: items.length, skippedVersion, tripMarked: 0, installFeeAdjusted: 0,
     breakerRemoved: 0, breakerAdded: 0, breakerBoxAdded: 0, breakerSkippedNoPrice: 0, rateAlignedOnly: 0,
     details, backedUp: true, backupKey, runAt: Date.now(),
   }
+  {
+    // P0-217 G1d：逐单写回改批量（一次全量序列化）
+    try {
+      const allOrders = useOrderStore.getState().orders
+      const patch = new Map(items.map((it) => [it.order.id, it.updates as Partial<import('@/types').Order>]))
+      useOrderStore.getState().setOrders(allOrders.map((o) => (patch.has(o.id) ? { ...o, ...patch.get(o.id)! } : o)))
+    } catch (error) {
+      console.warn('[策略修复] 批量写回失败', error)
+    }
+  }
   for (const it of items) {
     try {
-      updateOrder(it.order.id, it.updates)
       details.push({ orderId: it.order.id, customerName: it.order.customerName, summary: it.summary })
       if (it.category === 'trip') report.tripMarked++
       else if (it.category === 'installFee') report.installFeeAdjusted++
