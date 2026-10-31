@@ -1,6 +1,8 @@
 import { useState } from 'react'
-import { Check, Ruler, ShoppingCart, Tag, X, Zap } from 'lucide-react'
+import { Building2, Check, Ruler, ShoppingCart, Tag, X, Zap } from 'lucide-react'
 import type { Order } from '@/types'
+import { useOrderStore } from '@/stores/orderStore'
+import { resolveCompany } from '@/shared/utils/company'
 import { toast } from '@/shared/hooks/useToast'
 import { INSTALL_TYPE_COLORS } from '@/constants/order'
 import { getBrandLabel } from '@/constants/brands'
@@ -81,6 +83,8 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
         onClick={(event) => { event.stopPropagation(); onTripToggle?.(order.isBusinessTrip !== true) }}
       >{order.isBusinessTrip === true ? '出差' : '不出差'}</span>
       {installType !== '其他' && <span className="order-card__tag" style={{ backgroundColor: typeColors.bg, color: typeColors.text }}><Tag size={10} />{installType}</span>}
+      {/* P0-216：速家双公司胶囊（仅速家单渲染；未完成可点浮层分配，已完成只读） */}
+      {String(order.platformName || order.platform || '').includes('速家') && <CompanyCapsule order={order} />}
     </div>
   )
 }
@@ -194,4 +198,39 @@ function PowerTag({ order, onPowerChange, initialEditing = false, onCancel }: { 
     )
   }
   return <span className="order-card__tag order-card__tag--power"><Zap size={10} /><select aria-label="选择功率" className="bg-transparent outline-none" defaultValue="" autoFocus onClick={(event) => event.stopPropagation()} onBlur={() => { setEditing(false); onCancel?.() /* P0-201-R3：取消复位外部编辑态 */ }} onChange={(event) => { onPowerChange(event.target.value); setEditing(false) }}><option value="" disabled>选择功率</option>{POWER_OPTIONS.map((value) => <option key={value} value={value}>{getPowerLabel(value)}</option>)}</select></span>
+}
+
+/** P0-216：速家公司归属胶囊（灰=未分/雾蓝=本杨/暖橙=到每家），浮层二选一分配 */
+function CompanyCapsule({ order }: { order: Order }) {
+  const resolved = resolveCompany(order)
+  const [open, setOpen] = useState(false)
+  const updateOrder = useOrderStore((s) => s.updateOrder)
+  const frozen = order.status === '已完成'
+  const cfg = resolved === 'unassigned'
+    ? { bg: '#f3f4f6', color: '#6b7280', label: '未分' }
+    : resolved === 'benyang'
+      ? { bg: '#e8f1fb', color: '#2563eb', label: '本杨' }
+      : { bg: '#fdf3e3', color: '#b45309', label: '到每家' }
+  const pick = (v: 'benyang' | 'daomei') => {
+    updateOrder(order.id, { company: v })
+    setOpen(false)
+  }
+  return (
+    <span style={{ position: 'relative', display: 'inline-flex' }} onClick={(e) => e.stopPropagation()}>
+      <span
+        className="order-card__tag"
+        style={{ background: cfg.bg, color: cfg.color, cursor: frozen ? 'default' : 'pointer' }}
+        title={frozen ? '公司归属（已完成冻结）' : '点击分配公司'}
+        onClick={() => { if (!frozen) setOpen(!open) }}
+      >
+        <Building2 size={10} />{cfg.label}
+      </span>
+      {open && (
+        <span style={{ position: 'absolute', top: '100%', left: 0, zIndex: 20, display: 'flex', gap: 4, background: '#fff', padding: 4, borderRadius: 6, boxShadow: '0 2px 8px rgba(0,0,0,.15)' }}>
+          <button type="button" style={{ background: '#e8f1fb', color: '#2563eb', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11 }} onClick={() => pick('benyang')}>本杨</button>
+          <button type="button" style={{ background: '#fdf3e3', color: '#b45309', border: 'none', borderRadius: 4, padding: '2px 8px', fontSize: 11 }} onClick={() => pick('daomei')}>到每家</button>
+        </span>
+      )}
+    </span>
+  )
 }
