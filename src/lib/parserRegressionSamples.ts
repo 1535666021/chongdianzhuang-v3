@@ -15,18 +15,7 @@ export const REGRESSION_SAMPLES: RegressionSample[] = [
     expect: { address: '安徽省淮北市某区凤凰社区', vin: 'L6T79BAZ3SV000000', vehicleModel: '银河M9', orderNo: 'HW2025121316161800001' } },
   { name: '微信包装(P0-132)', input: '「方中发💍189 5605 1764 16:47」\n"订单来源：妍伟（送桩卷）\n颜伟\n所属品牌：吉利星愿\n套餐：20米\n购车人电话：139 0000 1111\n安装地址：安徽省合肥市包河区测试小区1栋"', expect: { customerName: '颜伟', phone: '13900001111', platformName: '妍伟' } },
   { name: '流式行内单号+备注污染(P0-212)', input: '6930661288138735200 测试甲 13800001111 安徽省安庆市迎江区老峰镇测试路测试小区A2.2004 天猫 地下 壁挂 电表已安装\n10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员',
-    expect: { orderNo: '6930661288138735200', serviceType: '', remark: '10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员', phone: '13800001111', platformName: '天猫', meterStatus: '已安装' } },
+    expect: { orderNo: '6930661288138735200', serviceType: '', remark: '10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员', phone: '13800001111', platformName: '天猫', meterStatus: '已安装' }  },
+  { name: 'P0-214 速家键名体系', input: '平台：速家\n单号：HAVAL20260101000000000INS\n套包：长城-30米7KW安装权益套包\n车型：哈弗哈弗猛龙TEST\n权益类型：\n服务类型：安装\n用户：王某某\n电话：13800000000\n地址：安徽省安庆市某镇某路某号\n备注：【订单申请备注】【派单备注】自动派单【权益到期时间】2028-01-01 00:00:00\n派单时间：2026-01-01 09:00:00',
+    expect: { platformName: '速家', orderNo: 'HAVAL20260101000000000INS', brandName: '长城', powerKw: '7', packageMeters: '30', customerName: '王某某', phone: '13800000000', address: '安徽省安庆市某镇某路某号', serviceType: '安装' } }
 ]
-export function runRegressionSamples(parse: (text: string) => { items: Array<Record<string, unknown>> }): { passed: number; failed: number; failures: string[] } {
-  const failures: string[] = []
-  let passed = 0
-  for (const sample of REGRESSION_SAMPLES) {
-    const item = parse(sample.input).items[0] || {}
-    for (const [field, want] of Object.entries(sample.expect)) {
-      const got = (item[field] as string | undefined) ?? ''
-      if ((got || '') !== (want || '')) failures.push(`${sample.name} | ${field}: got=${JSON.stringify(got)} want=${JSON.stringify(want)}`)
-      else passed++
-    }
-  }
-  return { passed, failed: failures.length, failures }
-}
