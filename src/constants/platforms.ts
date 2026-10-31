@@ -14,6 +14,7 @@ export const PLATFORM_MAP: Record<string, string> = {
   '空灵': '空灵',
   '美团': '美团',
   '苹果': '苹果',
+  '速家': '速家', // P0-214
   '其他': '其他',
 }
 
