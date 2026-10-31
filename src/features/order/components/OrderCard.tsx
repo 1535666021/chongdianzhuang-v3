@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
@@ -47,13 +47,15 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
   const appt = useAppointment(order) // P0-160：预约信息唯一读出口
   const countdown = getAppointmentCountdown(order) // P0-145：预约倒计时徽章（每次渲染按当天动态算；P0-160起由预约模块承载）
 
-  const customerPrice = order.customerPrice || 0
-  const platformRate = isGeelyBrand(order.brandName || '') ? 0 : PLATFORM_FEE_RATE // P0-204：费率唯一来源
-  const serviceFee = getOrderServiceFee(order)
-  const { total: materialCost } = calcFullMaterialCost(buildFullMaterialCostInput(order)) // P0-210 G1：与详情页同源输入同出口实时重算，两屏同数
-  // P0-177-A：展示利润唯一化——只读 orderCalc 新政策出口（存储字段驱动），删除旧费率模型现算
-  const profit = calcActualProfitByPolicy(order)
-  const platformFee = order.platformFee || 0
+  // P0-217 G3：成本计算包 useMemo（store 不可变更新，order 引用变化即重算，口径与基准逐字一致）
+  const { customerPrice, platformRate, serviceFee, materialCost, profit, platformFee } = useMemo(() => ({
+    customerPrice: order.customerPrice || 0,
+    platformRate: isGeelyBrand(order.brandName || '') ? 0 : PLATFORM_FEE_RATE, // P0-204：费率唯一来源
+    serviceFee: getOrderServiceFee(order),
+    materialCost: calcFullMaterialCost(buildFullMaterialCostInput(order)).total, // P0-210 G1：与详情页同源输入同出口实时重算，两屏同数
+    profit: calcActualProfitByPolicy(order), // P0-177-A：展示利润唯一化——只读 orderCalc 新政策出口
+    platformFee: order.platformFee || 0,
+  }), [order])
   const displayAddress = dedupeAddress(order.address || '')
   const platformDisplay = order.platformName || order.platform
   const updateOrder = useOrderStore((s) => s.updateOrder)
