@@ -48,6 +48,8 @@ function extractSubBrand(item: { brandName?: string; subBrand?: string }): void 
   }
 }
 
+// P0-218 任务3：群公告服务时间噪声行（仅非键值行拦截，只增不改，禁误杀实质订单行）
+const SERVICE_TIME_NOISE_RE = /^(?:【[^】]*服务时间[^】]*】|(?:\d{1,2}[:：]\d{2}\s*[-–—~～至到]+\s*\d{1,2}[:：]\d{2}\s*[、，,；;]?\s*)+(?:法定节假日[^；;，,。\n]*[；;，,]?\s*)?)\s*$/;
 export function parseKeyValueBlock(block: string): ParsedOrderItem {
   const item = emptyItem();
   const kv = new Map<string, string>();
@@ -96,6 +98,8 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
       kv.set(key, value);
       continue;
     }
+    // P0-218 任务3：服务时间噪声行拦截（执行至此的行均为非键值行，KV行已 continue）
+    if (SERVICE_TIME_NOISE_RE.test(line)) continue;
     if (PHONE_RE.test(line) && !kv.has('联系电话') && !kv.has('客户手机')) {
       kv.set('联系电话', extractPhone(line));
       continue;
@@ -480,6 +484,8 @@ function inferInstallType(item: ParsedOrderItem): void {
   if (item.installType) return;
   const st = (item.serviceType || '').toLowerCase();
   const rm = (item.remark || '').toLowerCase();
+  // P0-218 任务2：否定词"无需带桩/不带桩/不用带桩/不需带桩"=仅安装（只增不改新分支，既有分支零改动）
+  if (/无需[^。\n]{0,6}?带桩|不带桩|不用带桩|不需带桩/.test(st) || /无需[^。\n]{0,6}?带桩|不带桩|不用带桩|不需带桩/.test(rm)) { item.installType = '仅安装'; return; }
   if (st.includes('带桩') || rm.includes('带桩上门')) { item.installType = '带桩上门'; return; }
   if (st.includes('维修')) { item.installType = '维修'; return; }
   if (/勘察|勘测/.test(st)) { item.installType = '勘察'; return; }

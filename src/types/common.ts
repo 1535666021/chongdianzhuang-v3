@@ -9,7 +9,7 @@ export interface BaseEntity {
 
 export type Platform = '京东' | '天猫' | '淘宝' | '拼多多' | '抖音' | '其他'
 
-export type OrderStatus = '待办' | '已预约' | '已完成' | '回收站'
+export type OrderStatus = '待办' | '待补' | '已预约' | '已完成' | '回收站' // P0-218 任务4：无字段块待补态标
 
 export type InstallType = '带桩上门' | '仅安装' | '维修' | '勘察' | '检测' | '拆桩' | '移机' | '其他'
 

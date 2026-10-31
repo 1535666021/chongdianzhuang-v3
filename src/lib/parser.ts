@@ -20,6 +20,11 @@ export function parseOrderTextDetailed(rawText: string): ParseTextResult {
     if (hasAnyField(item)) {
       item.rawText = block;
       items.push(item);
+    } else if (block.trim()) {
+      // P0-218 任务4：无字段块不再静默丢弃——入待补列表（原文保留，态标待补）
+      (item as ParsedOrderItem & { _pending?: boolean })._pending = true;
+      item.rawText = block;
+      items.push(item);
     }
   }
   return { items, blockCount: blocks.length };
@@ -53,7 +58,7 @@ export function parsedItemsToOrders(items: ParsedOrderItem[]): Order[] {
     platformName: it.platformName || '',
     remark: it.remark || '',
     orderNo: it.orderNo || '',
-    status: '待办' as OrderStatus,
+    status: ((it as ParsedOrderItem & { _pending?: boolean })._pending ? '待补' : '待办') as OrderStatus,
     createdAt: now,
     updatedAt: now,
     actualProfit: 0,

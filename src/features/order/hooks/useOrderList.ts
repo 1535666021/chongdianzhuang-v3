@@ -12,7 +12,10 @@ export { extractAreaTag }
 /** 按筛选条件过滤订单（不含排序） */
 export function filterOrders(orders: Order[], filter?: OrderFilter): Order[] {
   return orders.filter((order) => {
-    if (filter?.status && order.status !== filter.status) return false
+    if (filter?.status && order.status !== filter.status) {
+      // P0-218 任务4：待补单归入待办 Tab 展示（态标区分，只增不改）
+      if (!(filter.status === '待办' && order.status === '待补')) return false
+    }
     if (filter?.platform && (order.platformName || order.platform) !== filter.platform) return false
     if (filter?.region && order.region !== filter.region) return false
     if (filter?.areaTag) {

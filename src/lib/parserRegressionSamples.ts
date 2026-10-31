@@ -17,5 +17,8 @@ export const REGRESSION_SAMPLES: RegressionSample[] = [
   { name: '流式行内单号+备注污染(P0-212)', input: '6930661288138735200 测试甲 13800001111 安徽省安庆市迎江区老峰镇测试路测试小区A2.2004 天猫 地下 壁挂 电表已安装\n10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员',
     expect: { orderNo: '6930661288138735200', serviceType: '', remark: '10.21-10.26装挚电商（不知道问测试员（要不要待桩安装时问测试员', phone: '13800001111', platformName: '天猫', meterStatus: '已安装' }  },
   { name: 'P0-214 速家键名体系', input: '平台：速家\n单号：HAVAL20260101000000000INS\n套包：长城-30米7KW安装权益套包\n车型：哈弗哈弗猛龙TEST\n权益类型：\n服务类型：安装\n用户：王某某\n电话：13800000000\n地址：安徽省安庆市某镇某路某号\n备注：【订单申请备注】【派单备注】自动派单【权益到期时间】2028-01-01 00:00:00\n派单时间：2026-01-01 09:00:00',
-    expect: { platformName: '速家', orderNo: 'HAVAL20260101000000000INS', brandName: '长城', powerKw: '7', packageMeters: '30', customerName: '王某某', phone: '13800000000', address: '安徽省安庆市某镇某路某号', serviceType: '安装' } }
+    expect: { platformName: '速家', orderNo: 'HAVAL20260101000000000INS', brandName: '长城', powerKw: '7', packageMeters: '30', customerName: '王某某', phone: '13800000000', address: '安徽省安庆市某镇某路某号', serviceType: '安装' } },
+  { name: 'P0-218 技术支持行不顶包+无需带桩=仅安装+服务时间行拦截', input: '订单姓名：测三三\n电话：13900001111\n安装地址：安徽安庆市怀宁县三桥镇社塘岭村立新组011号\n订单号：5127371391126188336\n服务单号：208919508\n购买套包：POP 11kw/21kw 万帮星星 10米 5*6 无需带桩 产品自带漏保漏保盒 专用表单\n首联：10.23电表已安装，自建房，挂壁\n技术支持-郑杰： 18055102265\n【本群服务时间】\n09:00-12:00、13:30-20:00；法定节假日正常提供服务；',
+    expect: { customerName: '测三三', phone: '13900001111', orderNo: '5127371391126188336', address: '安徽安庆市怀宁县三桥镇社塘岭村立新组011号', powerKw: '11', packageMeters: '10', platformName: '万帮', installType: '仅安装' } },
+  { name: 'P0-218 带桩上门正例（否定守卫不误杀）', input: '购买套包：挚达 7KW 带桩上门安装包 30米\n电话：13800009999', expect: { installType: '带桩上门', phone: '13800009999' } }
 ]

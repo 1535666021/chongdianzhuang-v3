@@ -83,8 +83,10 @@ export default function OrderCardTags({ order, onEditPlatform, onPowerChange, on
         onClick={(event) => { event.stopPropagation(); onTripToggle?.(order.isBusinessTrip !== true) }}
       >{order.isBusinessTrip === true ? '出差' : '不出差'}</span>
       {installType !== '其他' && <span className="order-card__tag" style={{ backgroundColor: typeColors.bg, color: typeColors.text }}><Tag size={10} />{installType}</span>}
-      {/* P0-216：速家双公司胶囊（仅速家单渲染；未完成可点浮层分配，已完成只读） */}
-      {String(order.platformName || order.platform || '').includes('速家') && <CompanyCapsule order={order} />}
+      {/* P0-218 任务4：待补态标（无字段块原文保留，可编辑补齐） */}
+      {order.status === '待补' && <span className="order-card__tag" style={{ backgroundColor: '#fef3c7', color: '#b45309' }}><Tag size={10} />待补</span>}
+      {/* P0-216→P0-218 任务5：公司胶囊放开到全量订单（交互零改动：未完成可点浮层，已完成只读） */}
+      <CompanyCapsule order={order} />
     </div>
   )
 }
