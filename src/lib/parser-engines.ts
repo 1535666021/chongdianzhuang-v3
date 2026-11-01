@@ -114,8 +114,6 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
     if (PHONE_RE.test(line)) { // P0-219 1a：电话兜底统一守卫（core 唯一出口）；守卫不通过也丢弃该行，不入 remark
       if (canSetFallback(kv, '联系电话')) kv.set('联系电话', extractPhone(line));
       continue;
-      kv.set('联系电话', extractPhone(line));
-      continue;
     }
     if (VIN_SEARCH_RE.test(line) && !kv.has('车架号')) {
       const all = line.match(VIN_SEARCH_RE) ?? [];

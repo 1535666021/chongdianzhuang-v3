@@ -23,6 +23,9 @@ import { Recycle, Plus, FileText, PackagePlus, CalendarPlus, Boxes } from 'lucid
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
+import CompanyFilter from '@/shared/components/CompanyFilter' // P0-222
+import { useUIStore } from '@/stores/uiStore' // P0-222
+import { companyHit } from '@/shared/utils/company' // P0-222
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
 import '../../../shared/components/OrderList.css'
 
@@ -104,6 +107,7 @@ export default function OrderList({ fixedStatus }: Props) {
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
   const updateOrder = useOrderStore((state) => state.updateOrder)
   const { orders } = useOrderList(filter)
+  const currentCompany = useUIStore((s) => s.currentCompany) // P0-222：公司档位（全部/本杨/到每家/未分）
   const knownPlatforms = getKnownPlatforms()
 
   const today = new Date().toISOString().slice(0, 10)
@@ -121,7 +125,11 @@ export default function OrderList({ fixedStatus }: Props) {
             onEditBrand={setEditBrandOrder}
     />
   )
-  const displayOrders = useMemo(() => orders.slice(0, showCount), [orders, showCount])
+  // P0-222：仅完成页追加 companyHit 公司过滤（唯一出口）；待办/已预约/全部 Tab 走原样零改动
+  const displayOrders = useMemo(
+    () => (fixedStatus === '已完成' ? orders.filter((o) => companyHit(o, currentCompany)) : orders).slice(0, showCount),
+    [orders, showCount, fixedStatus, currentCompany],
+  )
   const groupMode = filter.groupMode ?? 'region'
   // P0-167：已完成Tab分组键=实际完工日（与统计按天明细口径一致）；其余Tab维持原键
   const orderGroups = useMemo(() => groupOrdersByTag(displayOrders, groupMode, { doneDate: fixedStatus === '已完成' }), [displayOrders, groupMode, fixedStatus])
@@ -156,6 +164,8 @@ export default function OrderList({ fixedStatus }: Props) {
     <div className="order-list-page">
       {/* 操作按钮 */}
       <div className="order-list__toolbar">
+        {/* P0-222：完成页页头公司胶囊（统计页同款引用；其余 Tab 不渲染） */}
+        {fixedStatus === '已完成' && <CompanyFilter />}
         <div className="order-list__actions">
           <button
             onClick={() => navigate('/order/new')}
