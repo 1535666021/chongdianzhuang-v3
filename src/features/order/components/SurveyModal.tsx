@@ -285,11 +285,24 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                   </select>
                 </div>
                 <div>
+                  {/* P0-224：布线方单选（默认我方布线；选客户自布线→距离/费用锁 0） */}
+                  <label className="modal-label">布线方</label>
+                  <select
+                    value={form.wiringParty}
+                    onChange={(e) => updateForm({ wiringParty: e.target.value as any })}
+                    className="modal-select"
+                  >
+                    <option value="我方布线">我方布线</option>
+                    <option value="客户自布线">客户自布线</option>
+                  </select>
+                </div>
+                <div>
                   <label className="modal-label">电缆距离 (米)</label>
                   <input
                     type="number"
-                    value={form.cableDistance || ''}
+                    value={form.wiringParty === '客户自布线' ? 0 : form.cableDistance || ''}
                     onChange={(e) => updateForm({ cableDistance: Number(e.target.value) })}
+                    disabled={form.wiringParty === '客户自布线'}
                     className="modal-input"
                     min={0}
                     placeholder="0"
@@ -305,6 +318,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                     min={0}
                     placeholder="¥0.00"
                     readOnly
+                    disabled={form.wiringParty === '客户自布线'}
                   />
                 </div>
               </div>
