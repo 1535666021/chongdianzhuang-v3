@@ -120,7 +120,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     }
     lines.push(`物业需要施工方案图：${form.needBlueprint}`)
     lines.push(`勘测结果：${form.surveyResult}`)
-    lines.push(`（电缆上有准确的米标刻度）`)
+    // P0-224：客户自布线时电缆客户自备，米标刻度话术不适用，跳过该行
+    if (form.wiringParty !== '客户自布线') lines.push(`（电缆上有准确的米标刻度）`)
     lines.push(`勘测备注：${form.locationInfo || ''}`)
     lines.push(`以上勘测情况请您回复"确认"，谢谢`)
     return lines.join('\n')
