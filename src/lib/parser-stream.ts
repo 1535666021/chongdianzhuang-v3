@@ -5,7 +5,6 @@
  * ============================================================ */
 
 import type { ParsedOrderItem } from './parser-core';
-import { APPOINTMENT_EXCLUDE_KEYS } from './parser-core';
 import {
   PHONE_RE, VIN_SEARCH_RE, VIN_FULL_RE, TIME_TOKEN_RE,
   NAME_EXCLUDE_RE, emptyItem, extractPhone, extractBrandName, fillFallbacks,
@@ -183,11 +182,7 @@ export function parseStreamTableRow(block: string): ParsedOrderItem {
     if (pkgOnly) { if (!item.packageMeters) item.packageMeters = pkgOnly[1]; continue; }
     if (STREAM_DATETIME_TOKEN_RE.test(token)) {
       const d = token.match(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}/);
-      // P0-141：预约排除键清单（流式块同口径）
-      if (d && !item.appointmentDate) {
-        const line = block.split('\n').find((l: string) => l.includes(d[0])) || ''
-        if (!APPOINTMENT_EXCLUDE_KEYS.some((k) => line.includes(k))) item.appointmentDate = d[0].replace(/\//g, '-')
-      }
+      // P0-229 R1：流式引擎不再写 appointmentDate（导入路径一律不写，走人工预约/约装日历）
       continue;
     }
     if (TIME_TOKEN_RE.test(token)) continue; // 裸时间token：日期已取其日期部分，不污染备注

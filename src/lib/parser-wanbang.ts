@@ -77,8 +77,7 @@ function parseFooter(block: string): { platformName: string; appointmentDate: st
     const m = line.match(/(\d{1,2})\.(\d{1,2})(?:-(\d{1,2})\.(\d{1,2}))?号?/);
     if (!m) continue;
     if (line.includes('万帮')) platformName = '万帮';
-    const year = new Date().getFullYear();
-    appointmentDate = `${year}-${m[1].padStart(2, '0')}-${m[2].padStart(2, '0')}`;
+    // P0-229 R1：档期日期不再写 appointmentDate（导入路径一律不写，走人工预约/约装日历）
     break;
   }
   if (!platformName && /万帮/.test(block)) platformName = '万帮';
@@ -118,7 +117,7 @@ export function parseWanbangBlock(block: string): ParsedOrderItem {
   if (delivery.includes('带桩上门')) item.installType = '带桩上门';
 
   item.platformName = footer.platformName;
-  item.appointmentDate = footer.appointmentDate;
+  // P0-229 R1：footer 预约日期写入已停用（footer.appointmentDate 恒空）
   item.region = parseWanbangRegion(item.address);
 
   const descRaw = kv.get('工单描述') || '';
@@ -126,7 +125,7 @@ export function parseWanbangBlock(block: string): ParsedOrderItem {
 
   fillFallbacks(item, block);
   if (!item.platformName) item.platformName = footer.platformName || '万帮';
-  if (!item.appointmentDate) item.appointmentDate = footer.appointmentDate;
+  // P0-229 R1：footer 预约日期兜底再填已停用
   if (!item.region) item.region = parseWanbangRegion(item.address);
   if (!item.brandName) item.brandName = resolveWanbangBrand(kv, desc);
   return item;

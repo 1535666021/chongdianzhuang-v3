@@ -269,16 +269,8 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
     const imM = item.remark.match(P0195_GLUED_INSTALL_RE);
     if (imM) item.installMode = imM[imM.length - 1];
   }
-  // P0-141：预约日期排除键清单（按行跳排除键）
-  if (!item.appointmentDate) {
-    const dates = blockText.match(/\d{4}[-/]\d{1,2}[-/]\d{1,2}/g) || []
-    for (const d of dates) {
-      const line = blockText.split('\n').find((l) => l.includes(d)) || ''
-      if (APPOINTMENT_EXCLUDE_KEYS.some((k) => line.includes(k))) continue
-      item.appointmentDate = d.replace(/\//g, '-')
-      break
-    }
-  }
+  // P0-229 R1：全文日期扫描写 appointmentDate 已停用——导入路径一律不写预约日期，改走人工预约（约装日历）。
+  // 被跳过的日期行原文仍可见于 remark（非 KV 行已在 parser-engines 落入 remark）；P0-141 排除键语义随之退役。
   if (item.powerKw) {
     const m = item.powerKw.match(/(\d+(?:\.\d+)?)/);
     if (m) item.powerKw = m[1];
