@@ -166,7 +166,7 @@ export function useCompletion(orderId: string) {
   const [packageMeters, setPackageMeters] = useState(() => resolveOrderPackageMeters(order ?? {}))
 
   const [form, setForm] = useState<CompletionFormData>({
-    completeDate: new Date().toISOString().slice(0, 10),
+    completeDate: todayLocal(), // P0-228：本地时区预填（不落库但经 useScript 进话术默认值，同偏差一并修）
     // P0-179：预填=已存值 || 当前日期（删 appointmentDate 兜底——预约在12月但10月干活
     // 会把预填固化成12月错值；todayLocal 为本地时区口径，禁 UTC toISOString 跨日偏差）
     actualInstallDate: order?.actualInstallDate || todayLocal(),

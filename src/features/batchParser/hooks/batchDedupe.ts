@@ -4,6 +4,7 @@
  * 批内自查：orderNo→电话→姓名 三级键，同批重复只保留首条
  * ============================================================ */
 
+import { todayLocal } from '@/constants/availableWindow' // P0-228
 import type { Order } from '@/types'
 
 export type DupMatchedBy = 'orderNo' | 'phone' | 'name'
@@ -28,7 +29,7 @@ export interface BatchDupMatch {
  * - nature 不同（安装/维修/勘测/补桩）不算重复
  */
 export function matchExistingDuplicate(order: Order, existingOrders: Order[]): ExistingDupMatch | null {
-  const currentMonth = new Date().toISOString().slice(0, 7)
+  const currentMonth = todayLocal().slice(0, 7) // P0-228：本地当前月（北京每月1号0-8点跨月偏差修复）
   for (const existing of existingOrders) {
     if (existing.status === '已完成') continue
     // P0-093/P0-202-R2 G4 单号判重：orderNo 非空且精确相同即判重，全库扫（不限当月）
@@ -36,7 +37,7 @@ export function matchExistingDuplicate(order: Order, existingOrders: Order[]): E
       return { matchedBy: 'orderNo', existing }
     }
     const createdAt = new Date(existing.createdAt)
-    const existingMonth = Number.isNaN(createdAt.getTime()) ? '' : createdAt.toISOString().slice(0, 7)
+    const existingMonth = Number.isNaN(createdAt.getTime()) ? '' : `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}` // P0-228：createdAt 本地月回读，与 currentMonth 同口径
     if (existingMonth !== currentMonth) continue
     if ((existing.nature || '安装') !== order.nature) continue
     if (order.phone && existing.phone === order.phone) {

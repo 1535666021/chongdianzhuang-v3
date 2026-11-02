@@ -3,6 +3,7 @@ import type { Order, OrderFilter } from '@/types'
 import { LocalStorageAdapter } from '@/shared/storage'
 import { initMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { generateSeedOrders } from '@/features/order/seed/seedOrders'
+import { todayLocal } from '@/constants/availableWindow' // P0-228：完成日期本地时区口径
 
 /** 金额字段清单：补全更新时只动这些字段，其他字段一律不覆盖 */
 const MONEY_KEYS = ['materialCost', 'laborCost', 'platformFee', 'actualProfit', 'customerPrice'] as const
@@ -68,7 +69,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       ...o,
       ...updates,
       status: '已完成' as const,
-      completeDate: new Date().toISOString().slice(0, 10),
+      completeDate: todayLocal(), // P0-228：本地时区落库，消灭 UTC 跨日偏差（北京16:00前完成被记前一天）
       updatedAt: Date.now(),
     } : o)
     storage.set('list', newOrders)

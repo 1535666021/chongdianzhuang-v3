@@ -4,6 +4,7 @@ import type { InstallType, Order, OrderFilter } from '@/types'
 import { extractAreaTag, extractTimeTag } from '@/shared/utils/groupTags'
 import { appointmentSortTs, isRangeAppointment, readAppointment } from '@/features/appointment/repository'
 import { resolveDoneDate } from '@/shared/utils/orderCalc'
+import { todayLocal } from '@/constants/availableWindow' // P0-228
 
 export type TagMode = 'region' | 'time'
 
@@ -69,7 +70,7 @@ export function sortOrders(orders: Order[], filter?: OrderFilter): Order[] {
   const sortBy = filter?.sortBy || 'createdAt'
   const sortOrder = filter?.sortOrder || 'desc'
   const direction = sortOrder === 'asc' ? 1 : -1
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayLocal() // P0-228：本地时区（预约排序今日置顶判定，比较逻辑不动）
 
   return [...orders].sort((a, b) => {
     if (sortBy === 'appointmentDate') {

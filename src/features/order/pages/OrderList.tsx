@@ -27,6 +27,7 @@ import CompanyFilter from '@/shared/components/CompanyFilter' // P0-222
 import { useUIStore } from '@/stores/uiStore' // P0-222
 import { companyHit } from '@/shared/utils/company' // P0-222
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
+import { todayLocal } from '@/constants/availableWindow' // P0-228
 import '../../../shared/components/OrderList.css'
 
 // P0-144：滚动记忆——三个Tab各自独立（模块级映射，SPA会话内有效）
@@ -110,7 +111,7 @@ export default function OrderList({ fixedStatus }: Props) {
   const currentCompany = useUIStore((s) => s.currentCompany) // P0-222：公司档位（全部/本杨/到每家/未分）
   const knownPlatforms = getKnownPlatforms()
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayLocal() // P0-228：本地时区今日判定（isToday 比较逻辑不动）
 
   const renderOrderCard = (order: Order) => (
     <OrderCard
