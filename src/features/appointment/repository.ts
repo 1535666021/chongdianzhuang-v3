@@ -13,6 +13,7 @@
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
 import { todayLocal } from '@/constants/availableWindow'
+import { resolveDoneDate } from '@/shared/utils/orderCalc' // P0-230-R2：回填口径取完工日
 import type { AppointmentInfo, AppointmentWriteInput, AppointmentWriteResult, CountdownBadge } from './types'
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -131,6 +132,20 @@ export function purgeLegacyAppointmentDates(): number {
   })
   if (count > 0) console.log(`[P0-229-R2] 存量预约日期清洗：${count} 单（清字段+备注留痕，走人工预约）`)
   return count
+}
+
+/** 存量归位回填（P0-230-R2，App.tsx 启动修复链挂载，幂等一次）：已完成 + 完工日期 ≥ 2026-11-03 且
+ * company 未填的存量单 → company='daomei'（到每家）。历史旧单不迁（书规）。 */
+export function backfillCompanyByDoneDate(): number {
+  const store = useOrderStore.getState()
+  const doneOrders = store.orders.filter(
+    (o) => o.company !== 'benyang' && o.company !== 'daomei'
+      && o.status === '已完成'
+      && resolveDoneDate(o) >= '2026-11-03'
+  )
+  doneOrders.forEach((o) => store.updateOrder(o.id, { company: 'daomei' }))
+  if (doneOrders.length > 0) console.log(`[P0-230] 存量归位回填：${doneOrders.length} 单 company→daomei（完工日期≥2026-11-03）`)
+  return doneOrders.length
 }
 
 /** 排序主键（P0-157-158 迁入）：预约排序值=止日时间戳，空值回退 createdAt 兜底 */
