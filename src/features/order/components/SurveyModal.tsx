@@ -93,20 +93,24 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     // P0-161：未填即未选——数量为空(0)的非电缆行不进报告明细、不计费；电缆行按布线距离口径保留
     // P0-224：客户自布线时电缆行不进明细（不打 ¥0 行），预计增项合计=其余辅材之和
     const billedMaterials = form.estimatedMaterials.filter((m) => (form.wiringParty !== '客户自布线' && isCableMat(m.name)) || m.quantity > 0)
-    if (billedMaterials.length > 0) {
+    // P0-224-R1 B-1：行级零费收口——电缆行小计 ¥0 跳过；非电缆行 unitPrice*quantity ≤ 0 跳过，只打小计 > 0 的行
+    const detailLines = billedMaterials.flatMap((m) => {
+      const mat = addonMaterialsData.find((a) => a.name === m.name)
+      const short = mat ? mat.name : m.name
+      // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
+      const isCable = isCableMat(m.name), distance = form.cableDistance || 0
+      const over = isCable && mat ? calcOverFee(distance, orderPackageMeters, mat.settlementPrice) : null
+      const subtotal = over ? over.overFee : m.unitPrice * m.quantity
+      if (subtotal <= 0) return []
+      return [over
+        ? `${short} ${distance}米（超${over.overMeters}米）× ¥${m.unitPrice} = ${formatCurrency(subtotal)}`
+        : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ${formatCurrency(subtotal)}`]
+    })
+    // P0-224-R1 B-2：块级收口——过滤+跳零后有效行=0 时，"预计增项辅材明细"块与"预计增项合计"行整块不打
+    if (detailLines.length > 0) {
       lines.push('')
       lines.push(`预计增项辅材明细：`)
-      for (const m of billedMaterials) {
-        const mat = addonMaterialsData.find((a) => a.name === m.name)
-        const short = mat ? mat.name : m.name
-        // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
-        const isCable = isCableMat(m.name), distance = form.cableDistance || 0
-        const over = isCable && mat ? calcOverFee(distance, orderPackageMeters, mat.settlementPrice) : null
-        const subtotal = over ? over.overFee : m.unitPrice * m.quantity
-        lines.push(over
-          ? `${short} ${distance}米（超${over.overMeters}米）× ¥${m.unitPrice} = ${formatCurrency(subtotal)}`
-          : `${short} ${m.quantity}${m.unit} × ¥${m.unitPrice} = ${formatCurrency(subtotal)}`)
-      }
+      lines.push(...detailLines)
       lines.push('')
       // P0-114：话术含费用处按实收口径——实收有值时合计=实收并标注预估
       const ar = actualReceive.trim()
