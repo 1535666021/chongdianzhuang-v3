@@ -60,10 +60,16 @@ function extractSubBrand(item: { brandName?: string; subBrand?: string }): void 
 }
 
 // P0-218 任务3：群公告服务时间噪声行（仅非键值行拦截，只增不改，禁误杀实质订单行）
-const SERVICE_TIME_NOISE_RE = /^(?:【[^】]*服务时间[^】]*】|(?:\d{1,2}[:：]\d{2}\s*[-–—~～至到]+\s*\d{1,2}[:：]\d{2}\s*[、，,；;]?\s*)+(?:法定节假日[^；;，,。\n]*[；;，,]?\s*)?)\s*$/;
+// P0-227 R5：行首允许 [·•*\-] 装饰、"群服务时间[:：]"键前缀，其余结构不动；只拦纯噪声行
+const SERVICE_TIME_NOISE_RE = /^(?:[·•\*\-]\s*)?(?:【[^】]*服务时间[^】】*】|群服务时间\s*[:：][^\n]*|(?:\d{1,2}[:：]\d{2}\s*[-–—~～至到]+\s*\d{1,2}[:：]\d{2}\s*[、，,；;]?\s*)+(?:法定节假日[^；;，,。\n]*[；;，,]?\s*)?)\s*$/;
+// P0-227 R3：销售单号/权益到期时间整行原文留痕（集中常量，禁散落）；默认销售单号不进 orderNo
+const RETAIN_KEYS = new Set(['销售单号', '权益到期时间']);
+// P0-227 R2：奇瑞姓名三联行（尊敬的／[钱某／]）提取后不得残留 remark
+const CHERY_NAME_TRIO_RE = /^(?:尊敬[的的]*|[【\[][^】\]]{1,6}|[】\]])\s*$/;
 export function parseKeyValueBlock(block: string): ParsedOrderItem {
   const item = emptyItem();
   const kv = new Map<string, string>();
+  const retainedLines: string[] = []; // P0-227 R3：RETAIN_KEYS 命中行的整行原文收集
   const lines = block.split('\n');
   let userInfo = '';
   for (const rawLine of lines) {
@@ -106,11 +112,14 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
       }
       if (key === '客户姓名' && NAME_EXCLUDE_RE.test(value)) continue;
       if ((key === '联系人' || key === '购车人' || key === '购车人/电话' || key === '联系人/电话') && NAME_EXCLUDE_RE.test(value)) continue;
+      if (RETAIN_KEYS.has(key)) retainedLines.push(line); // P0-227 R3：整行原文留痕
       kv.set(key, value);
       continue;
     }
     // P0-218 任务3：服务时间噪声行拦截（执行至此的行均为非键值行，KV行已 continue）
     if (SERVICE_TIME_NOISE_RE.test(line)) continue;
+    if (/^400[\d-]{5,}/.test(line)) continue; // P0-227 R7：纯热线行丢弃（只增）
+    if (CHERY_NAME_TRIO_RE.test(line)) continue; // P0-227 R2：姓名三联行剔除，不残留 remark
     if (PHONE_RE.test(line)) { // P0-219 1a：电话兜底统一守卫（core 唯一出口）；守卫不通过也丢弃该行，不入 remark
       if (canSetFallback(kv, '联系电话')) kv.set('联系电话', extractPhone(line));
       continue;
@@ -166,6 +175,10 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   if (rawRemark) {
     if (item.remark) item.remark = rawRemark + '\n' + item.remark;
     else item.remark = rawRemark;
+  }
+  for (const rl of retainedLines) { // P0-227 R3：留痕行并入 remark（首联值在前、两键原文在后）
+    if (item.remark) item.remark += '\n';
+    item.remark += rl;
   }
   if (item.remark) item.remark = item.remark.trim();
   fillFallbacks(item, block);

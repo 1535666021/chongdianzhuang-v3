@@ -86,7 +86,7 @@ export const BRAND_WORDS = [...BRAND_NAMES].sort((a, b) => b.length - a.length);
 export const PLATFORM_HINT_WORDS = [...PLATFORM_NAMES].filter((name) => name !== '其他').sort((a, b) => b.length - a.length);
 
 /** 姓名排除词 */
-export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申请|到货|加急|预约|京东|苏宁|挚达|维修|服务|套包|套餐|预排|上门|检测|拆桩|充电桩|联系|订单号|外联单|编号|地址|电话|备注|车架|用户|省市|小区|街道|工单|日期|订单来源|所属品牌|来源渠道)/;
+export const NAME_EXCLUDE_RE = /(地下|地面|壁挂|立柱|电表|安装|申请|到货|加急|预约|京东|苏宁|挚达|维修|服务|套包|套餐|预排|上门|检测|拆桩|充电桩|联系|订单号|外联单|编号|地址|电话|备注|车架|用户|省市|小区|街道|工单|日期|订单来源|所属品牌|来源渠道|尊敬|敬爱的|亲爱的|首联)/;
 
 /** 键值块字段映射 */
 /** P0-141：预约日期提取排除键清单（权益到期/客服在线等非预约语义键，集中常量禁散落） */
@@ -223,6 +223,11 @@ export function stripWordFromText(text: string, word: string): string {
 
 export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
   if (!item.phone) item.phone = extractPhone(blockText);
+  // P0-227 R2：奇瑞专属姓名（"尊敬的/[钱某/]"三联行），一切姓名兜底之前先取
+  if (!item.customerName) {
+    const cheryM = blockText.match(/尊敬[的的]*\s*[【\[]\s*([\u4e00-\u9fa5]{2,4})\s*[】\]]/s);
+    if (cheryM) item.customerName = cheryM[1];
+  }
   // P0-096：姓名候选/兜底统一排除品牌词与平台词（引用既有常量），禁止冒充姓名
   const isForbiddenName = (w: string) => NAME_EXCLUDE_RE.test(w) || BRAND_WORDS.some((b) => w.includes(b) || b.includes(w)) || PLATFORM_HINT_WORDS.some((p) => w.includes(p) || p.includes(w));
   if (!item.customerName) {
@@ -258,6 +263,11 @@ export function fillFallbacks(item: ParsedOrderItem, blockText: string): void {
   if (!item.brandName) {
     const m = blockText.match(/桩产品名称[:：]\s*([^\s:：]+)/);
     if (m) item.brandName = extractBrandName(m[1]) || m[1].split('-')[0].trim();
+  }
+  // P0-227 R4：安装方式回填（仅当为空，R2-C 同款回填位；g 正则全匹配，末位命中使"壁挂"优先于"地下"）
+  if (!item.installMode) {
+    const imM = item.remark.match(P0195_GLUED_INSTALL_RE);
+    if (imM) item.installMode = imM[imM.length - 1];
   }
   // P0-141：预约日期排除键清单（按行跳排除键）
   if (!item.appointmentDate) {
@@ -314,7 +324,8 @@ export function isSpeakerLine(line: string): boolean {
 }
 
 export function isBlockMarker(line: string): boolean {
-  return line === '【订单信息】' || line === '公告' || line === '群公告' || /^【.*(订单|公告).*】$/.test(line);
+  return line === '【订单信息】' || line === '公告' || line === '群公告' || /^【.*(订单|公告).*】$/.test(line)
+    || /^【[^】]*(套包内容|安装流程|注意事项|温馨提示|服务热线|客服热线|服务时间|权益说明|权益详情)[^】]*】$/.test(line); // P0-227 R6
 }
 
 export const SEPARATOR_LINE_RE = /^[-—–=＊*·•~#\s]{3,}$/;
