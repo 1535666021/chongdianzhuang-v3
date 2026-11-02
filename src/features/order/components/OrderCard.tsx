@@ -287,6 +287,11 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
           <span>查看原始记录</span>
         </button>
 
+        {/* P0-229-R1：导入时间小字（甲方口径：导入时间只在卡片小字可见，本地时区 MM-DD） */}
+        {order.createdAt ? (
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>导入 {new Date(order.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</div>
+        ) : null}
+
         {/* 底部按钮区 */}
         {isScheduled ? (
           <div className="order-card__actions">

@@ -8,7 +8,7 @@ import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { useOfflineStatus } from '@/shared/hooks/useOfflineStatus'
 import { OfflineIndicator } from '@/shared/components/OfflineIndicator'
 import { useToast, ToastContainer, toast } from '@/shared/hooks/useToast'
-import { healMissingAppointments } from '@/features/appointment/repository'
+import { healMissingAppointments, purgeLegacyAppointmentDates } from '@/features/appointment/repository'
 import { addKnownPlatform, getKnownPlatforms } from '@/shared/storage/platformStorage'
 import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
 import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
@@ -26,6 +26,7 @@ async function runStartupMaintenance() {
   const phases: [string, () => void][] = [
     ['migrateData', () => { migrateData() }],
     ['migratePowerKw', () => { const m = migratePowerKw(); if (m) useOrderStore.getState().setOrders(m) }],
+    ['purgeLegacyAppointmentDates', () => { purgeLegacyAppointmentDates() }], // P0-229-R1 存量清洗：旧解析器遗留非空 appointmentDate 一律清空（须在 P0-160 自愈之前，先清日期再降级）
     ['healMissingAppointments', () => healMissingAppointments()], // P0-160 存量自愈（原 main.tsx 顶层，并入统一入口）
     ['runBrandBackfillOnce', () => runBrandBackfillOnce()], // P0-102
     ['runAppointmentRangeMigration', () => runAppointmentRangeMigration()], // P0-142-R3

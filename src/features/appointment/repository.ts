@@ -111,6 +111,16 @@ export function healMissingAppointments(): number {
   return broken.length
 }
 
+/** 存量清洗（P0-229-R1，App.tsx 启动修复链挂载，幂等）：旧解析器遗留的非空 appointmentDate 一律清空，
+ * 预约信息一律以人工预约（约装日历）为准。零非空零写入。 */
+export function purgeLegacyAppointmentDates(): number {
+  const store = useOrderStore.getState()
+  const legacy = store.orders.filter((o) => (o.appointmentDate ?? '').trim() !== '')
+  legacy.forEach((o) => store.updateOrder(o.id, { appointmentDate: '' }))
+  if (legacy.length > 0) console.log(`[P0-229-R1] 存量预约日期清洗：${legacy.length} 单非空 appointmentDate → 清空（走人工预约）`)
+  return legacy.length
+}
+
 /** 排序主键（P0-157-158 迁入）：预约排序值=止日时间戳，空值回退 createdAt 兜底 */
 export function appointmentSortTs(order: Order): number {
   const ts = Date.parse(readAppointment(order).to || '')
