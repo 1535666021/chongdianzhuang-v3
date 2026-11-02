@@ -3,6 +3,14 @@
 > 给下一任施工队窗口。动手前先读 .monkeycode/RULES.md（裁定全集，冲突以它为准），再读本手册。
 > 硬信息：仓库 github.com/1535666021/chongdianzhuang-v3；线上 GitHub Pages；React18 + TS strict + Vite5 + Zustand + ReactRouter + PWA。
 
+## 0. 踩坑录（既往重大教训，开工前必读）
+
+教训一·打错文件：把勘测弹窗 src/features/order/components/SurveyModal.tsx 的活干到了
+SurveyForm.tsx（后者只被独立勘测页 OrderSurvey.tsx 使用，弹窗不走它），改了等于白改。
+根因=从界面文案倒推文件，没从渲染入口顺藤摸瓜。防法=改组件前先找渲染入口（谁 import 它、路由指到谁）。
+教训二·漏行：读报告文本只读了 86-120 行，漏掉 124 行"米标刻度"行，交付缺行。
+根因=区间跳读。防法=函数从头读到尾。
+
 ## 1. 拉码（勿 git clone）
 - codeload 拉 tar：curl -L -o main.tar.gz https://codeload.github.com/1535666021/chongdianzhuang-v3/tar.gz/refs/heads/main
 - git clone/pull 在 /mnt 常报 File exists，勿用
