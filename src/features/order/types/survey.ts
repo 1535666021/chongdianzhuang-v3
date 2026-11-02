@@ -13,6 +13,7 @@ export interface SurveyFormData {
   // 🔌 线缆信息
   powerSource: '国网取电' | '物业配电' | '自家电表' | '其他'
   cableSpec: string
+  wiringParty: '我方布线' | '客户自布线' // P0-224：布线方
   cableDistance: number
   estimatedCableCost: number
 

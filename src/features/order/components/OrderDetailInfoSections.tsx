@@ -33,6 +33,7 @@ function SurveyDetail({ survey }: { survey: NonNullable<Order['survey']> }) {
       <h2 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2"><ClipboardList size={16} />勘察记录</h2>
       <div className="space-y-2 text-sm">
         {survey.powerSource && <div>取电方式: {survey.powerSource}</div>}
+        {survey.wiringParty === '客户自布线' && <div>布线方式: 客户自布线</div>}
         {survey.cableSpec && <div>线缆规格: {survey.cableSpec}</div>}
         {survey.cableDistance !== undefined && survey.cableDistance > 0 && <div>电缆距离: {survey.cableDistance}米</div>}
         {survey.estimatedCableCost !== undefined && survey.estimatedCableCost > 0 && <div>预估线缆费: {formatCurrency(survey.estimatedCableCost)}</div>}

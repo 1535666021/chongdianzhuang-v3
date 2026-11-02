@@ -51,12 +51,25 @@ export function SurveyForm({
             </select>
           </div>
           <div>
+            {/* P0-224：布线方单选（默认我方布线） */}
+            <label className="block text-sm text-secondary mb-1">布线方</label>
+            <select
+              className="input w-full"
+              value={form.wiringParty}
+              onChange={(e) => onUpdate({ wiringParty: e.target.value as any })}
+            >
+              <option value="我方布线">我方布线</option>
+              <option value="客户自布线">客户自布线</option>
+            </select>
+          </div>
+          <div>
             <label className="block text-sm text-secondary mb-1">电缆距离(米)</label>
             <input
               type="number"
               className="input w-full"
-              value={form.cableDistance || ''}
+              value={form.wiringParty === '客户自布线' ? 0 : form.cableDistance || ''}
               onChange={(e) => onUpdate({ cableDistance: Number(e.target.value) })}
+              disabled={form.wiringParty === '客户自布线'}
               min={0}
             />
           </div>
@@ -65,8 +78,9 @@ export function SurveyForm({
             <input
               type="number"
               className="input w-full"
-              value={form.estimatedCableCost || ''}
+              value={form.wiringParty === '客户自布线' ? 0 : form.estimatedCableCost || ''}
               onChange={(e) => onUpdate({ estimatedCableCost: Number(e.target.value) })}
+              disabled={form.wiringParty === '客户自布线'}
               min={0}
             />
           </div>

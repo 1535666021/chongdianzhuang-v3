@@ -84,9 +84,15 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     lines.push(`勘测工程师及电话：${engineerName || ''} / ${engineerPhone || ''}`)
     lines.push(`用电方式：${form.powerSource}`)
     lines.push(`电表状态：${form.meterStatus}`)
-    lines.push(`布线距离：${form.cableDistance || 0} 米`)
+    // P0-224：客户自布线不打"布线距离"行，改打布线方式行
+    if (form.wiringParty === '客户自布线') {
+      lines.push('布线方式：客户自布线（线缆客户自备自敷）')
+    } else {
+      lines.push(`布线距离：${form.cableDistance || 0} 米`)
+    }
     // P0-161：未填即未选——数量为空(0)的非电缆行不进报告明细、不计费；电缆行按布线距离口径保留
-    const billedMaterials = form.estimatedMaterials.filter((m) => isCableMat(m.name) || m.quantity > 0)
+    // P0-224：客户自布线时电缆行不进明细（不打 ¥0 行），预计增项合计=其余辅材之和
+    const billedMaterials = form.estimatedMaterials.filter((m) => (form.wiringParty !== '客户自布线' && isCableMat(m.name)) || m.quantity > 0)
     if (billedMaterials.length > 0) {
       lines.push('')
       lines.push(`预计增项辅材明细：`)

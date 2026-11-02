@@ -38,6 +38,7 @@ export function useSurvey(order: Order) {
   const [form, setForm] = useState<SurveyFormData>({
     estimatedMaterials: order.survey?.estimatedMaterials || [],
     powerSource: order.survey?.powerSource || '国网取电',
+    wiringParty: order.survey?.wiringParty || '我方布线', // P0-224
     cableSpec: order.survey?.cableSpec || '',
     cableDistance: order.survey?.cableDistance || 0,
     estimatedCableCost: order.survey?.estimatedCableCost || 0,
@@ -166,6 +167,17 @@ export function useSurvey(order: Order) {
   const updateForm = useCallback((updates: Partial<SurveyFormData>) => {
     setForm((prev) => {
       let next = { ...prev, ...updates }
+      if (updates.wiringParty === '客户自布线') {
+        // P0-224：客户自布线——距离/费用锁 0、电缆行数量归零（复用现有电缆行 quantity 联动写法）
+        next = {
+          ...next,
+          cableDistance: 0,
+          estimatedCableCost: 0,
+          estimatedMaterials: prev.estimatedMaterials.map((m) =>
+            isCableMat(m.name) ? { ...m, quantity: 0 } : m
+          ),
+        }
+      }
       if (updates.cableDistance !== undefined) {
         const cableItem = prev.estimatedMaterials.find((m) => isCableMat(m.name))
         if (cableItem) {
@@ -206,7 +218,8 @@ export function useSurvey(order: Order) {
 
   const save = useCallback(() => {
     // P0-161：未填即未选——数量为空(0)的非电缆行保存时剔除，不进订单materials、不计费；电缆行数量=布线距离联动，保留既有语义
-    const materials = form.estimatedMaterials.filter((m) => isCableMat(m.name) || m.quantity > 0)
+    // P0-224：自布线时电缆行也剔除（与报告 billedMaterials 口径一致）
+    const materials = form.estimatedMaterials.filter((m) => (form.wiringParty !== '客户自布线' && isCableMat(m.name)) || m.quantity > 0)
     updateOrder(order.id, { survey: { ...form, estimatedMaterials: materials } } as any)
     return true
   }, [order.id, form, updateOrder])

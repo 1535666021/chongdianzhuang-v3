@@ -5,6 +5,8 @@ export interface OrderSurvey {
   estimatedMaterials?: OrderMaterialItem[]
   powerSource?: '国网取电' | '物业配电' | '自家电表' | '其他'
   cableSpec?: string; cableDistance?: number; estimatedCableCost?: number
+  /** P0-224：布线方（存量无此字段=我方布线，展示与计费零迁移） */
+  wiringParty?: '我方布线' | '客户自布线'
   installMethod?: '壁挂安装' | '立柱安装' | '吊装' | '其他'
   meterStatus?: '已安装' | '未安装'; needBlueprint?: '是' | '否'
   surveyResult?: '勘测完成' | '符合安装' | '不符合安装' | '需整改' | '待定'

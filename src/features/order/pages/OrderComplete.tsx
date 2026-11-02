@@ -253,7 +253,7 @@ export default function OrderComplete() {
                 </div>
                 <div>
                   <span className="order-complete__survey-label">电缆距离</span>
-                  <p className="order-complete__survey-value">{order.survey.cableDistance || 0}米</p>
+                  <p className="order-complete__survey-value">{order.survey.wiringParty === '客户自布线' ? '客户自布线' : `${order.survey.cableDistance || 0}米`}</p>
                 </div>
                 <div>
                   <span className="order-complete__survey-label">安装方式</span>
