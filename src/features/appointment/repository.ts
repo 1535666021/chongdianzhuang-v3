@@ -134,18 +134,31 @@ export function purgeLegacyAppointmentDates(): number {
   return count
 }
 
-/** 存量归位回填（P0-230-R2，App.tsx 启动修复链挂载，幂等一次）：已完成 + 完工日期 ≥ 2026-11-03 且
- * company 未填的存量单 → company='daomei'（到每家）。历史旧单不迁（书规）。 */
+/** 存量归位回填（P0-230 复验打回重做，App.tsx 启动修复链挂载于 purgeLegacyAppointmentDates 之后，幂等一次）：
+ * 平台含京东 + 无显式 company + 已完成 的存量单按完工日三段回填——
+ * 完工日 2026-10-01~2026-11-02 → daomei；< 2026-10-01 → benyang；≥ 2026-11-03 一律不动（新单挂未分公司等用户选）。 */
 export function backfillCompanyByDoneDate(): number {
   const store = useOrderStore.getState()
   const doneOrders = store.orders.filter(
     (o) => o.company !== 'benyang' && o.company !== 'daomei'
+      && /京东/.test(o.platformName || o.platform || '')
       && o.status === '已完成'
-      && resolveDoneDate(o) >= '2026-11-03'
   )
-  doneOrders.forEach((o) => store.updateOrder(o.id, { company: 'daomei' }))
-  if (doneOrders.length > 0) console.log(`[P0-230] 存量归位回填：${doneOrders.length} 单 company→daomei（完工日期≥2026-11-03）`)
-  return doneOrders.length
+  let daomei = 0
+  let benyang = 0
+  doneOrders.forEach((o) => {
+    const d = resolveDoneDate(o)
+    if (d >= '2026-10-01' && d <= '2026-11-02') {
+      store.updateOrder(o.id, { company: 'daomei' })
+      daomei++
+    } else if (d < '2026-10-01') {
+      store.updateOrder(o.id, { company: 'benyang' })
+      benyang++
+    }
+    // ≥ 2026-11-03：一律不动
+  })
+  if (daomei > 0 || benyang > 0) console.log(`[P0-230] 存量归位回填：daomei ${daomei} 单（10/1-11/2），benyang ${benyang} 单（<10/1）`)
+  return daomei + benyang
 }
 
 /** 排序主键（P0-157-158 迁入）：预约排序值=止日时间戳，空值回退 createdAt 兜底 */
