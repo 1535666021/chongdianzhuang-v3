@@ -71,6 +71,15 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    // P0-223：SW 后台发现新版 HTML 推 NEW_VERSION → 触发既有版本检查（弹窗走 useVersionCheck 原机制）
+    const onSwMessage = (e: MessageEvent) => {
+      if ((e.data as { type?: string } | undefined)?.type === 'NEW_VERSION') checkNow()
+    }
+    navigator.serviceWorker?.addEventListener('message', onSwMessage)
+    return () => navigator.serviceWorker?.removeEventListener('message', onSwMessage)
+  }, [checkNow])
+
+  useEffect(() => {
     const known = getKnownPlatforms()
     orders
       .filter((order) => order.status === '已完成')
