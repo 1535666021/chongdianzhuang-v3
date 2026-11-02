@@ -111,14 +111,26 @@ export function healMissingAppointments(): number {
   return broken.length
 }
 
-/** 存量清洗（P0-229-R1，App.tsx 启动修复链挂载，幂等）：旧解析器遗留的非空 appointmentDate 一律清空，
- * 预约信息一律以人工预约（约装日历）为准。零非空零写入。 */
+/** 存量清洗（P0-229-R2，App.tsx 启动修复链挂载，幂等）：旧解析器遗留的预约字段一律清空并备注留痕，
+ * 预约信息一律以人工预约（约装日历）为准。三步：①rawText 非空才处理；②清空前把原 appointmentDate
+ * 写进备注首行"原识别日期：<原值>"（保留原文不换格式）；③清三字段 appointmentDate/appointmentTime/
+ * appointmentState（若存在即清——appointmentState 不在 Order 类型上则跳过）。 */
 export function purgeLegacyAppointmentDates(): number {
   const store = useOrderStore.getState()
   const legacy = store.orders.filter((o) => (o.appointmentDate ?? '').trim() !== '')
-  legacy.forEach((o) => store.updateOrder(o.id, { appointmentDate: '' }))
-  if (legacy.length > 0) console.log(`[P0-229-R1] 存量预约日期清洗：${legacy.length} 单非空 appointmentDate → 清空（走人工预约）`)
-  return legacy.length
+  let count = 0
+  legacy.forEach((o) => {
+    if (!(o.rawText ?? '').trim()) return // 第一步：rawText 空的跳过
+    const note = o.notes ?? ''
+    if (note.includes('原识别日期：')) return // 幂等：已留痕的不再处理
+    const tracedNote = `原识别日期：${o.appointmentDate}${note ? '\n' + note : ''}` // 第二步：原值写备注首行，原文不换格式
+    const cleared: Record<string, unknown> = { appointmentDate: '', appointmentTime: '', notes: tracedNote } // 第三步：清三字段
+    if ('appointmentState' in o) cleared.appointmentState = ''
+    store.updateOrder(o.id, cleared as Parameters<typeof store.updateOrder>[1])
+    count++
+  })
+  if (count > 0) console.log(`[P0-229-R2] 存量预约日期清洗：${count} 单（清字段+备注留痕，走人工预约）`)
+  return count
 }
 
 /** 排序主键（P0-157-158 迁入）：预约排序值=止日时间戳，空值回退 createdAt 兜底 */
