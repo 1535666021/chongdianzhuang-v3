@@ -40,7 +40,7 @@
 - 展示位口径备忘：卡片上部日期位=appointmentDate 体系（useAppointment/readAppointment 唯一出口，P0-160）；完工小字=actualInstallDate——两源不同，设计/复验勿混
 
 ## 五、工作流速查
-发令流程：甲方需求→复述理解→点头→任务书入 specs/<日期-编号>/task.md→施工队自读→交付 push+delivery.md→甲方对监理喊"核验"→监理转派核验窗→核验窗五步法+verify.sh 复验→结论报监理→监理报甲方；通过即销号（核验窗自刷新交接书）或打回（return-R*.md 同目录）；窗口间一切经 specs/ 文书，会话零寒暄
+发令流程：甲方需求→复述理解→点头→任务书入 specs/<日期-编号>/task.md→施工队自读→交付 push+delivery.md→甲方对监理喊"核验"→监理签发《核验任务书》verify-task.md 落该单目录（指明基线/新HEAD/查验清单，首单范例=specs/261103-P0-236/verify-task.md）并转派核验窗→核验窗五步法+verify.sh 复验→结论报监理→监理报甲方；通过即销号（核验窗自刷新交接书）或打回（return-R*.md 同目录）；窗口间一切经 specs/ 文书，会话零寒暄
 三读铁律：施工队开工先 MEMORY.md→RULES.md→PLAYBOOK.md；监理出书前引用行号须与 HEAD 逐字核对
 
 ## 六、复验实操坑速查
