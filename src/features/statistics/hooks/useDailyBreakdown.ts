@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { Order } from '@/types'
-import { resolveDoneDate } from '@/shared/utils/orderCalc'
+import { calcActualProfitByPolicy, resolveDoneDate } from '@/shared/utils/orderCalc' // P0-236-R1：日结利润合计改实时口径
 
 export interface DayGroup {
   key: string // resolveDoneDate 或 '未填日期'
   label: string // '10/12'
   orders: Order[]
-  total: number // Σ actualProfit（读既有字段，展示层聚合不算重复计算）
+  total: number // P0-236-R1：Σ calcActualProfitByPolicy 实时口径（P0-235 体检自述口径作废）
   customerPriceTotal: number // P0-185：Σ customerPrice（客户付费=增项，禁混安装费）
   paidCount: number // P0-185：payment.paid=true 单数
   unpaidCount: number // P0-185：未收单数
@@ -27,7 +27,7 @@ export function groupDaily(completedOrders: Order[]): DayGroup[] {
       key,
       label: key === '未填日期' ? key : key.slice(5).replace('-', '/'),
       orders,
-      total: orders.reduce((sum, o) => sum + (o.actualProfit || 0), 0),
+      total: orders.reduce((sum, o) => sum + calcActualProfitByPolicy(o), 0),
       customerPriceTotal: Math.round(orders.reduce((sum, o) => sum + (o.customerPrice || 0), 0) * 100) / 100,
       paidCount: orders.filter((o) => o.payment?.paid).length,
       unpaidCount: orders.filter((o) => !o.payment?.paid).length,
