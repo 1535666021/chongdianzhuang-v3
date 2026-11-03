@@ -19,6 +19,7 @@
 - parser.ts 入口禁改；每改解析必在 parserRegressionSamples.ts 追加脱敏样例（name/input/expect），旧样例禁删禁改期望
 - 新自愈逻辑注册 App.tsx runStartupMaintenance phase（try/catch+console.time），禁首屏前同步执行
 - 交付快照写 delivery.md 落 specs 同目录，验证项逐条对应任务书，虚报一处全单退件
+- **举证清单（2026-11-03 甲方裁定，核验移交第三窗后强制）**：delivery.md 末尾必附"自查实证清单"——每条验收一项一行证据（文件:行/命令/输出摘要）；核验窗按此抽查 1/3，举证造假一次，此后该队所有单全量重跑
 
 ## 4. 推送
 - 一本书=一次提交（勘误/返工另算），提交信息含书号
