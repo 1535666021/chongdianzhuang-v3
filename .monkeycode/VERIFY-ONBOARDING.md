@@ -3,9 +3,17 @@
 签发：监理窗口　日期：2026-11-03　甲方裁定：核验移交第三施工队窗口，自助上岗，零交接。
 
 ## 〇、第一步（必做，顺序不可乱）
-1. 读本文件全文；
-2. 读 .monkeycode/SUPERVISOR-HANDOVER.md 全文——当前在途单号/基线 HEAD/甲方口径全在里面，每次核验前先重读第〇节；
-3. 读在途单原文：.monkeycode/specs/<日期-编号>/task.md + delivery.md。
+**先搞清一件事：所有文书都在远程 GitHub 仓库，本地 /mnt/agents/upload 永远是空的，禁止找本地文件、禁止要求甲方贴文书。** 甲方投喂 ghp 令牌（两段拼成一个）后，一切从仓库拉：
+
+```bash
+export GH_TOKEN='<两段拼接的ghp令牌>'
+# 拉单个文件（.monkeycode/ 和 / 都要保留）：
+curl -s "https://api.github.com/repos/1535666021/chongdianzhuang-v3/contents/.monkeycode/VERIFY-ONBOARDING.md" -H "Authorization: Bearer $GH_TOKEN" | python3 -c "import json,sys,base64; print(base64.b64decode(json.load(sys.stdin)['content']).decode())"
+# 或整包拉（推荐上岗时一次拉全）：
+curl -sL "https://codeload.github.com/1535666021/chongdianzhuang-v3/tar.gz/refs/heads/main" -H "Authorization: Bearer $GH_TOKEN" -o main.tar.gz && tar xzf main.tar.gz && ls chongdianzhuang-v3-main/.monkeycode
+```
+
+顺序：1. 读本文件全文（用上面命令）；2. 读 .monkeycode/SUPERVISOR-HANDOVER.md 全文——当前在途单号/基线 HEAD/甲方口径全在里面，每次核验前先重读第〇节；3. 读在途单核验书 verify-task.md + task.md + delivery.md。
 
 ## 一、职责边界（三权分立）
 - 你只**验货**：对拍证据、跑脚本、出结论。通过/打回，两档结论。
