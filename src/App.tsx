@@ -14,7 +14,6 @@ import { migrateData, migratePowerKw } from '@/shared/storage/dataMigration'
 import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
 import { runAppointmentRangeMigration } from '@/shared/dataFix/migrateAppointmentRange'
 import { runBreakerRowSelfCheck } from '@/shared/dataFix/breakerRowSelfCheckFix'
-import OnboardingGuide from '@/shared/components/OnboardingGuide'
 import BottomTabBar from '@/shared/components/BottomTabBar'
 
 // 导出全局 toast
@@ -124,7 +123,6 @@ export default function App() {
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* P0-146：新版本首次启动功能引导（按版本号一次） */}
-      <OnboardingGuide />
 
       <main className="app-main flex-1 overflow-auto">
         <Outlet context={{ checkNow, toast: appToast }} />
