@@ -3,18 +3,19 @@
 签发：监理窗口　日期：2026-11-03　用途：监理窗口换班交接的唯一底牌（甲方裁定 2026-11-03）
 **新监理窗口上岗第一步：通读本文件全文，再查 .monkeycode/specs/ 在途目录原文，然后才许接甲方对话。本文件增量刷新——只重写变动节（〇/一/四节为主），无裁定变更不重写未变节（2026-11-03 甲方裁定，省 token）。**
 
-## 〇、当前时刻状态（2026-11-03 P0-232 签发刷新，接任监理核对此节与 HEAD 是否一致）
-- 基线 HEAD：5a882bf（文书顶，P0-232任务书）；代码 HEAD=f31de3f（P0-231 销号，P0-232 未开工）
-- 在途：**P0-232**——删除首页新手引导弹窗含代码（specs/261103-P0-232/task.md）
+## 〇、当前时刻状态（2026-11-03 P0-232 销号+P0-233 签发刷新，接任监理核对此节与 HEAD 是否一致）
+- 基线 HEAD：15d2acd（文书顶，P0-233任务书）；代码 HEAD=1a2857f（P0-232 销号，P0-233 未开工）
+- 在途：**P0-233**——更新弹窗接通 RELEASE_NOTES+我的页历史入口（specs/261103-P0-233/task.md）
 - 挂起：**无**（2026-11-03 甲方裁定原 4 项挂起全部放弃、不再提醒，详见第三节）
-- 最近动态：甲方批删除新手引导弹窗（连代码），P0-232 任务书签发（5a882bf）；教材三件套蒸馏 v2 入库（MEMORY ff566dc/RULES a674925/PLAYBOOK b631932，体量 21.4KB→10.4KB，废止条标【已废止】）；P0-231 交付 f31de3f 复验全过销号——diff 仅 OrderCard.tsx 单文件、三场景独立抽算过、回归基线 19 条未动；书内验收 4"上部同源"系监理笔误自报（上部日期位实证走 appointmentDate 体系 readAppointment，非 actualInstallDate，不影响需求正确性）
+- 最近动态：P0-232 复验全过销号（diff 2删1改纯净、grep 零残留、回归未动）；P0-233 签发——更新弹窗+历史入口+补登漏条；早前 P0-232 任务书签发（5a882bf）；教材三件套蒸馏 v2 入库（MEMORY ff566dc/RULES a674925/PLAYBOOK b631932，体量 21.4KB→10.4KB，废止条标【已废止】）；P0-231 交付 f31de3f 复验全过销号——diff 仅 OrderCard.tsx 单文件、三场景独立抽算过、回归基线 19 条未动；书内验收 4"上部同源"系监理笔误自报（上部日期位实证走 appointmentDate 体系 readAppointment，非 actualInstallDate，不影响需求正确性）
 
 ## 一、在途任务
-- **P0-232**：删 OnboardingGuide.tsx+css+App.tsx 挂点（2 删 1 改，验收 grep 零残留+diff 纯净）。甲方口令"核验"时监理按 delivery.md+双版本 diff 复验。；新令流程：甲方需求→监理复述→点头→任务书入 specs/<日期-编号>/task.md。
+- **P0-233**：新建 ReleaseNotesDialog 接通 RELEASE_NOTES（已读条数 localStorage 机制）+App.tsx 挂点+MinePage 更新记录入口+补登 P0-231/232 两条。甲方口令"核验"时监理按 delivery.md+双版本 diff 复验。；新令流程：甲方需求→监理复述→点头→任务书入 specs/<日期-编号>/task.md。
 
 ## 二、已销号（2026-11-02/03，勿重开）
 - P0-226（RULES R-0.7/R-0.8）｜P0-227 奇瑞公告解析（R1 补做）｜P0-228 todayLocal 全链｜P0-229 全销号（停写三处+清洗钩子+导入小字）
 - **P0-230（2026-11-03 销号）**：去京东自动归位+存量归位回填。首交 9f91eb6 打回（回填口径三处错），重做 0bc15da 全过。company.ts R1（isDaomeiOrder 只认显式 company 字段；resolveCompany 京东→unassigned）+ backfillCompanyByDoneDate 三段口径回填（平台含京东+无显式 company+已完成；resolveDoneDate 回退链）+ 挂点 purge 后
+- **P0-232（2026-11-03 销号）**：删新手引导弹窗含代码——OnboardingGuide.tsx/css 整删+App.tsx 两行删；1a2857f 复验 diff 2 删 1 改纯净、grep 零残留、回归 19 条未动
 - **P0-231（2026-11-03 销号）**：已完成卡片小字区追加完工时间（`完工 MM/DD · 导入 MM/DD`）。只认 actualInstallDate 严格口径（空不显示、非已完成态渲染零变化、样式同导入小字）；f31de3f 交付 diff 仅 OrderCard.tsx，复验三场景抽算+回归基线对拍全过
 
 ## 三、挂起项
