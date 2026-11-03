@@ -15,6 +15,7 @@ import { runBrandBackfillOnce } from '@/shared/dataFix/backfillBrand'
 import { runAppointmentRangeMigration } from '@/shared/dataFix/migrateAppointmentRange'
 import { runBreakerRowSelfCheck } from '@/shared/dataFix/breakerRowSelfCheckFix'
 import BottomTabBar from '@/shared/components/BottomTabBar'
+import ReleaseNotesDialog from '@/shared/components/ReleaseNotesDialog' // P0-233：更新弹窗
 
 // 导出全局 toast
 export { toast }
@@ -122,7 +123,8 @@ export default function App() {
       {/* Toast 通知 */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
-      {/* P0-146：新版本首次启动功能引导（按版本号一次） */}
+      {/* P0-233：更新弹窗（已读条数比对，增量提示） */}
+      <ReleaseNotesDialog />
 
       <main className="app-main flex-1 overflow-auto">
         <Outlet context={{ checkNow, toast: appToast }} />
