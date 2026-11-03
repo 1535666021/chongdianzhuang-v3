@@ -13,7 +13,7 @@ curl -s "https://api.github.com/repos/1535666021/chongdianzhuang-v3/contents/.mo
 curl -sL "https://codeload.github.com/1535666021/chongdianzhuang-v3/tar.gz/refs/heads/main" -H "Authorization: Bearer $GH_TOKEN" -o main.tar.gz && tar xzf main.tar.gz && ls chongdianzhuang-v3-main/.monkeycode
 ```
 
-顺序：1. 读本文件全文（用上面命令）；2. 读 .monkeycode/SUPERVISOR-HANDOVER.md 全文——当前在途单号/基线 HEAD/甲方口径全在里面，每次核验前先重读第〇节；3. 读在途单核验书 verify-task.md + task.md + delivery.md。
+顺序：1. 读本文件全文（用上面命令）；2. 读 .monkeycode/SUPERVISOR-HANDOVER.md 全文——当前在途单号/基线 HEAD/甲方口径全在里面，每次核验前先重读第〇节；3. 读在途单核验书 verify-task.md + task.md（delivery.md 若不存在=施工队未交付，按 verify-task 状态栏**待命**；待命=不轮询仓库、不主动查 commits、零动作，收到监理转派才开工）。
 
 ## 一、职责边界（三权分立）
 - 你只**验货**：对拍证据、跑脚本、出结论。通过/打回，两档结论。
@@ -39,6 +39,9 @@ curl -sL "https://codeload.github.com/1535666021/chongdianzhuang-v3/tar.gz/refs/
 - 实证纪律：施工队声明逐字核过才算数（口误前科两次）；你的结论同样受监理抽查，错验记你账；
 - 省 token：能一轮跑完不分多轮；报告按固定格式，禁过程流水账；
 - 与施工队结论冲突：不吵架，列双方证据报监理仲裁。
+
+## 三点五、待命纪律
+待命期间零动作：不轮询仓库、不查 commits、不向甲方/监理发消息；唯一例外=监理转派落新 verify-task.md 或补填新 HEAD。
 
 ## 四、环境坑
 - /tmp 跨会话易失：verify.sh 用 mktemp 自建目录，单轮内跑完；
