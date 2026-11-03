@@ -288,8 +288,13 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
         </button>
 
         {/* P0-229-R1：导入时间小字（甲方口径：导入时间只在卡片小字可见，本地时区 MM-DD） */}
+        {/* P0-231：已完成单小字区追加完工时间——只认 actualInstallDate 字段本身，禁走 resolveDoneDate 回退链 */}
         {order.createdAt ? (
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>导入 {new Date(order.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</div>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>
+            {isCompleted && order.actualInstallDate
+              ? `完工 ${order.actualInstallDate.slice(5, 7)}/${order.actualInstallDate.slice(8, 10)} · 导入 ${new Date(order.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}`
+              : `导入 ${new Date(order.createdAt).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}`}
+          </div>
         ) : null}
 
         {/* 底部按钮区 */}
