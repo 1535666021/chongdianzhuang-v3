@@ -324,7 +324,7 @@ export default function OrderDetail() {
             >
               <span className="text-sm font-medium text-green-800">实际利润</span>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-semibold text-green-700">{formatCurrency(order.actualProfit || 0)}</span>
+                <span className="text-sm font-semibold text-green-700">{formatCurrency(calcActualProfitByPolicy(order))}</span> {/* P0-236：实时重算口径，弃读存值快照 */}
                 {expandedSections.profit ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </div>
             </button>
@@ -340,7 +340,7 @@ export default function OrderDetail() {
                   )}
                   <div className="flex justify-between"><span>材料成本</span><span>-{formatCurrency(order.materialCost || 0)}</span></div>
                   <div className="flex justify-between"><span>工资</span><span>-{formatCurrency(order.laborCost || 0)}</span></div>
-                  <div className="flex justify-between font-semibold border-t border-green-200 mt-1 pt-1"><span>= 实际利润</span><span>{formatCurrency(order.actualProfit || 0)}</span></div>
+                  <div className="flex justify-between font-semibold border-t border-green-200 mt-1 pt-1"><span>= 实际利润</span><span>{formatCurrency(calcActualProfitByPolicy(order))}</span> {/* P0-236：统一实时口径 */}</div>
                 </div>
               </div>
             )}

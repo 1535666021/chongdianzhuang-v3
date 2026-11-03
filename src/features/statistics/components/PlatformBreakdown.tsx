@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import type { Order } from '@/types'
 import { getPlatformLabel } from '@/constants/platforms'
 import { formatCurrency } from '@/shared/utils/format'
+import { calcActualProfitByPolicy } from '@/shared/utils/orderCalc' // P0-236
 
 interface PlatformStats {
   platform: string
@@ -26,7 +27,7 @@ export default function PlatformBreakdown({ orders }: Props) {
       s.materialCost += o.materialCost || 0
       s.laborCost += o.laborCost || 0
       s.platformFee += o.platformFee || 0
-      s.actualProfit += o.actualProfit || 0
+      s.actualProfit += calcActualProfitByPolicy(o) // P0-236：平台汇总改实时口径
       map.set(platform, s)
     })
     return Array.from(map.values()).filter((s) => s.orderCount > 0)

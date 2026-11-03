@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { Order } from '@/types'
 import { useDailyBreakdown } from '../hooks/useDailyBreakdown'
 import { formatCurrency } from '@/shared/utils/format'
+import { calcActualProfitByPolicy } from '@/shared/utils/orderCalc' // P0-236
 
 /** P0-153-R1：盈亏着色（正绿/负红/零灰）与金额格式 */
 const profitColor = (v: number) => (v > 0 ? 'text-green-600' : v < 0 ? 'text-red-500' : 'text-gray-400')
@@ -49,7 +50,7 @@ export function DailyBreakdownSection({ orders }: { orders: Order[] }) {
                             ? <span className="ml-1 rounded bg-green-500 px-1 text-[10px] text-white">已收</span>
                             : <span className="ml-1 rounded bg-gray-300 px-1 text-[10px] text-white">未收</span>}
                         </span>
-                        <span className={`font-medium ${profitColor(o.actualProfit || 0)}`}>{fmt(o.actualProfit || 0)}</span>
+                        <span className={`font-medium ${profitColor(o.actualProfit || 0)}`}>{fmt(calcActualProfitByPolicy(o))}</span>
                       </li>
                     ))}
                   </ul>
@@ -73,8 +74,8 @@ export function ProfitBoardSection({ orders }: { orders: Order[] }) {
   const rows = useMemo(
     () =>
       orders
-        .filter((o) => (filter === 'all' ? true : filter === 'win' ? (o.actualProfit || 0) > 0 : (o.actualProfit || 0) < 0))
-        .sort((a, b) => Math.abs(b.actualProfit || 0) - Math.abs(a.actualProfit || 0)),
+        .filter((o) => (filter === 'all' ? true : filter === 'win' ? calcActualProfitByPolicy(o) > 0 : calcActualProfitByPolicy(o) < 0))
+        .sort((a, b) => Math.abs(calcActualProfitByPolicy(b)) - Math.abs(calcActualProfitByPolicy(a))),
     [orders, filter],
   )
   return (
@@ -103,7 +104,7 @@ export function ProfitBoardSection({ orders }: { orders: Order[] }) {
               </span>
               <span className="flex items-center gap-2">
                 <span className="text-xs text-gray-400">{o.actualInstallDate || '未填日期'}</span>
-                <span className={`font-medium ${profitColor(o.actualProfit || 0)}`}>{fmt(o.actualProfit || 0)}</span>
+                <span className={`font-medium ${profitColor(o.actualProfit || 0)}`}>{fmt(calcActualProfitByPolicy(o))}</span>
               </span>
             </li>
           ))}
