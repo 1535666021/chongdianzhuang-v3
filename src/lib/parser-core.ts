@@ -73,6 +73,8 @@ export const TIME_TOKEN_RE = /^\d{1,2}:\d{2}(:\d{2})?$/;
 export const TIMESTAMP_PREFIX_RE = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}[ T]\d{1,2}:\d{2}(:\d{2})?\s*/;
 /** 键值行 */
 export const KEY_VALUE_RE = /^([\u4e00-\u9fa5A-Za-z]{2,10})[:：]\s*(.*)$/;
+/** P0-237：行首项目符号（·•∙‣⁃▪▫・●○）清洗——群公告行首带符号时键值口失配的唯一清洗出口 */
+export const KV_BULLET_PREFIX_RE = /^[\u00B7\u2022\u2219\u2023\u2043\u25AA\u25AB\u30FB\u25CF\u25CB\uFF65\*\-]\s*/;
 
 /** 地址片段特征词 */
 export const ADDRESS_HINTS = /(省|市|区|县|镇|乡|村|路|街|巷|道|小区|花园|苑|栋|幢|座|单元|室|号|车位|车库)/;

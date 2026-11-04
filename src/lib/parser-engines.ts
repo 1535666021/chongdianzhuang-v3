@@ -24,7 +24,7 @@ import {
  * 旁注：KV 块行循环含 P0-218 服务时间噪声拦截（SERVICE_TIME_NOISE_RE，仅非键值行）；
  *       全部兜底写入经 canSetFallback 守卫（core FALLBACK_GUARD_KEYS 唯一出口）。
  * ═══════════════════════════════════════════════════════════════ */
-  PHONE_RE, VIN_SEARCH_RE, POWER_RE,
+  PHONE_RE, VIN_SEARCH_RE, POWER_RE, KV_BULLET_PREFIX_RE,
   TIMESTAMP_PREFIX_RE, KEY_VALUE_RE,
   ADDRESS_HINTS, STRONG_ADDRESS_HINTS, NAME_EXCLUDE_RE,
   BRAND_WORDS, PLATFORM_HINT_WORDS,
@@ -73,7 +73,8 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   const lines = block.split('\n');
   let userInfo = '';
   for (const rawLine of lines) {
-    const line = rawLine.replace(TIMESTAMP_PREFIX_RE, '').trim();
+    // P0-237：行首项目符号清洗（·•∙等），清洗后入键值口/热线/电话兜底全链判定
+    const line = rawLine.replace(TIMESTAMP_PREFIX_RE, '').trim().replace(KV_BULLET_PREFIX_RE, '');
     if (!line) continue;
     const m = line.match(KEY_VALUE_RE);
     if (m) {
@@ -121,7 +122,8 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
     if (/^400[\d-]{5,}/.test(line)) continue; // P0-227 R7：纯热线行丢弃（只增）
     if (CHERY_NAME_TRIO_RE.test(line)) continue; // P0-227 R2：姓名三联行剔除，不残留 remark
     if (PHONE_RE.test(line)) { // P0-219 1a：电话兜底统一守卫（core 唯一出口）；守卫不通过也丢弃该行，不入 remark
-      if (canSetFallback(kv, '联系电话')) kv.set('联系电话', extractPhone(line));
+      // P0-237：网点/项目经理/售后/客服类号码禁入客户电话位；且防自重入——首个兜底电话胜出，禁后写覆盖
+      if (canSetFallback(kv, '联系电话') && !kv.has('联系电话') && !/网点电话|项目经理|售后|客服/.test(line)) kv.set('联系电话', extractPhone(line));
       continue;
     }
     if (VIN_SEARCH_RE.test(line) && !kv.has('车架号')) {
