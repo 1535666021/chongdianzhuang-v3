@@ -40,4 +40,6 @@ export interface OrderCostDetail {
   platformDeduction: number
   platformRate: number
   actualProfit: number
+  tripSubsidy?: number
+  laborCost?: number
 }

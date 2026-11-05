@@ -133,7 +133,7 @@ export function CostDetail() {
                 </>)}
 
                 <div className="border border-green-200 rounded-lg p-3 bg-green-50">
-                  <DetailRow label="实际利润" value={fmt(item.actualProfit)} color={item.actualProfit >= 0 ? 'text-green-600' : 'text-red-500'} formula={`${fmt(item.customerPrice)} + ${fmt(item.serviceFee)} - ${fmt(item.materialCost)} - ${fmt(item.platformDeduction)} = ${fmt(item.actualProfit)}`} />
+                  <DetailRow label="实际利润" value={fmt(item.actualProfit)} color={item.actualProfit >= 0 ? 'text-green-600' : 'text-red-500'} formula={`${fmt(item.customerPrice)} + ${fmt(item.serviceFee)}${item.tripSubsidy ? ` + ${fmt(item.tripSubsidy)}(补助)` : ''} - ${fmt(item.materialCost)}${item.laborCost ? ` - ${fmt(item.laborCost)}(工资)` : ''} - ${fmt(item.platformDeduction)} = ${fmt(item.actualProfit)}`} />
                 </div>
               </div>
             )}

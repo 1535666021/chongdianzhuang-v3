@@ -129,8 +129,8 @@ export function getCompletedOrderFinancials(order: OrderFinancialSource) {
   const customerPrice = order.customerPrice || 0
   const materialCost = order.materialCost || 0
   const geely = isGeelyBrand(order.brandName || '')
-  // P0-184①：出差=不扣点——出差单（人工开关或窗口启发式）platformFee归0，存值原样保留于order
-  const platformFee = geely || isBusinessTripOrder(order) ? 0 : order.platformFee || 0
+  // P0-239：出差=胶囊开关唯一判定——OrderFinancialSource 无胶囊字段=非出差，platformFee 存值原样取用（原窗口启发式已废）
+  const platformFee = geely ? 0 : order.platformFee || 0
   const serviceFee = geely
     ? order.serviceFee ?? calcInstallFee(resolveOrderPackageMeters(order))
     : getOrderServiceFee(order)
@@ -242,6 +242,8 @@ export function calcFullMaterialCost(input: FullMaterialCostInput): FullMaterial
       breakerName = fb?.name || ''
     }
     if (breakerName) meterCost(breakerName, 1)
+    // P0-239（P0-238 待裁#1）：兜底命名落空=漏保成本静默 0，入 unmatched 橙警（静默 0 禁止）
+    else unmatched.push('漏保器（未绑定成本名）')
   }
   // 增项 Σ数量×成本价
   // P0-202-R2（§1.6 P0-202-R2 增补）：extraItems 手加漏保行一律由矩阵接管，禁叠加——
@@ -403,12 +405,10 @@ export function absPlatformFee(order: { platformFee?: number }): number {
 }
 
 /** 出差判定（R3双规则 + R7人工开关优先） */
-export function isBusinessTripOrder(order: { isBusinessTrip?: boolean; completeDate?: string; platformFee?: number }): boolean {
-  // R7：人工显式开关优先于启发式（OrderForm写入；修正器窗口/启发式照旧）
-  if (typeof order.isBusinessTrip === 'boolean') return order.isBusinessTrip
-  const date = getOrderBusinessDate(order as Parameters<typeof getOrderBusinessDate>[0])
-  if (date >= POLICY_FIX_TRIP_START && date <= POLICY_FIX_TRIP_END) return true
-  return absPlatformFee(order) === 0
+export function isBusinessTripOrder(order: { isBusinessTrip?: boolean }): boolean {
+  // P0-239 甲方裁定（最高优先）：出不出差唯一判断=订单胶囊字段——true 才出差，false/undefined 一律不出差；
+  // 原日期窗（POLICY_FIX_TRIP_START/END）与扣点启发式（absPlatformFee===0）两条兜底全废
+  return order.isBusinessTrip === true
 }
 
 /** 出差补助：30/台，普通单0 */
@@ -492,8 +492,9 @@ export function calcReconciliationProfit(order: {
   isBusinessTrip?: boolean
 }): number {
   const serviceFee = order.serviceFee ?? getServiceFee(order.notes || '')
-  const subsidy = order.tripSubsidy || 0
-  if (isBusinessTripOrder(order)) return round2(serviceFee + subsidy)
+  // P0-239：补助实时判定——唯一真相=胶囊字段，出口零存值兜底（原 order.tripSubsidy 存值直吃废止）
+  const subsidy = calcTripSubsidy(order.isBusinessTrip === true)
+  if (order.isBusinessTrip === true) return round2(serviceFee + subsidy)
   // P0-187：不出差单只算安装费维度——安装费−扣点；补助恒为0故不带入，customerPrice（客户增项现金）不进对账
   return round2(serviceFee - absPlatformFee(order))
 }
@@ -511,7 +512,10 @@ export function calcActualProfitByPolicy(order: {
   serviceFee?: number
   tripSubsidy?: number
   notes?: string
+  isBusinessTrip?: boolean
 }): number {
   const serviceFee = order.serviceFee ?? getServiceFee(order.notes || '')
-  return round2((order.customerPrice || 0) - absPlatformFee(order) + serviceFee + (order.tripSubsidy || 0) - (order.materialCost || 0) - (order.laborCost || 0))
+  // P0-239：补助实时判定——唯一真相=胶囊字段（true 才 30），order.tripSubsidy 存值参数保留签名（写入侧留痕）但出口不再消费
+  const subsidy = calcTripSubsidy(order.isBusinessTrip === true)
+  return round2((order.customerPrice || 0) - absPlatformFee(order) + serviceFee + subsidy - (order.materialCost || 0) - (order.laborCost || 0))
 }

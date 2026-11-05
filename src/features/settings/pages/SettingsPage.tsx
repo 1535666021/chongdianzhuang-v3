@@ -42,6 +42,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import TripFeeZeroTool from '../components/TripFeeZeroTool'
 import BreakerCostBackfillTool from '../components/BreakerCostBackfillTool'
 import ProfitAuditTool from '../components/ProfitAuditTool'
+import GhostTripFixTool from '../components/GhostTripFixTool'
 type SettingSection =
   | 'haptics'
   | 'dupcheck'
@@ -60,7 +61,7 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'tripfix' | 'breakercost' | 'quarantine'
+  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine'
   | null
 export default function SettingsPage() {
   // P0-199-R1：隔离箱角标=箱内条数
@@ -90,6 +91,7 @@ export default function SettingsPage() {
     { id: 'tripfix' as const, label: '出差扣点归0', icon: Wrench, desc: '存量出差单platformFee修正（一次性）' },
     { id: 'breakercost' as const, label: '漏保成本回填', icon: ShieldCheck, desc: 'P0-197-R1 漏保矩阵语义反转后存量材料成本纠正（幂等）' },
     { id: 'profitAudit' as const, label: '利润一致性巡检', icon: ShieldCheck, desc: 'actualProfit重算核对回写（一次性）' },
+    { id: 'ghostTrip' as const, label: '幽灵补助纠正', icon: ShieldCheck, desc: '未点出差胶囊但补助>0 的存量单归0并重算（一次性·P0-239）' },
     { id: 'haptics' as const, label: '触感反馈', icon: Vibrate, desc: '复制/删除/预约成功轻震' },
     { id: 'reset' as const, label: '恢复出厂设置', icon: RotateCcw, desc: '清空所有本地数据' },
     { id: 'about' as const, label: '关于', icon: Info, desc: `${APP_NAME} v${APP_VERSION}` },
@@ -147,6 +149,8 @@ export default function SettingsPage() {
         return <BreakerCostBackfillTool />
       case 'profitAudit':
         return <ProfitAuditTool />
+      case 'ghostTrip':
+        return <GhostTripFixTool />
       case 'reset':
         return <RestoreFactory />
       case 'about':

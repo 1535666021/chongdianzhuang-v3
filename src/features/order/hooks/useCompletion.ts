@@ -323,7 +323,8 @@ export function useCompletion(orderId: string) {
 
     // P0-177-R2：写入端走新政策出口（含出差补助分支），与展示端 orderCalc 同源
     const laborCost = form.laborCost || 0
-    const tripSubsidy = order ? (order.tripSubsidy ?? calcTripSubsidy(isBusinessTripOrder(order))) : 0
+    // P0-239：补助实时同口径——唯一真相=胶囊字段，不再存值优先（幽灵补助 30 根因②修复）
+    const tripSubsidy = order ? calcTripSubsidy(order.isBusinessTrip === true) : 0
     const profitAfterLabor = calcActualProfitByPolicy({
       customerPrice: customerReceivable,
       materialCost,

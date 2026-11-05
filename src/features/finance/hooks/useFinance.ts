@@ -99,6 +99,9 @@ export function useFinance() {
           platformDeduction: financials.platformFee,
           platformRate: financials.customerPrice > 0 ? Math.abs(financials.platformFee) / financials.customerPrice : 0, // P0-177-C：费率abs归一
           actualProfit: financials.actualProfit,
+          // P0-239（P0-238 待裁#2）：公式行展示闭合——补助/工资透传（数值口径本就对）
+          tripSubsidy: o.tripSubsidy,
+          laborCost: o.laborCost,
         }
       })
   }, [completedOrders])
