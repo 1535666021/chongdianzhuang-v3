@@ -3,7 +3,9 @@ import { PLATFORM_FEE_RATE } from '@/constants/policy'
 import { useOrderStore } from '@/stores/orderStore'
 import { isGeelyBrand, calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable, calcFullMaterialCost, calcOrderServiceFee, isBreakerBoxRow, isBreakerMaterial } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
-import { addonMaterialsData, brandList } from '@/constants/materialData'
+import { addonMaterialsData, brandList as hardcodedBrandList } from '@/constants/materialData'
+import { isHardcodedVehicleBrand } from '@/constants/brands'
+import { getCustomBrands } from '@/shared/storage/customBrandStorage'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { ZHIDA_WULING_ADDON_MATERIALS, isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
 import { JD_ADDON_MATERIALS } from '@/constants/addonPrice_jd'
@@ -51,6 +53,9 @@ export function useSurvey(order: Order) {
 
   const effectiveBrand = order.brandName || selectedBrand
 
+  // P0-240：下拉品牌=硬编码20个+自定义品牌库（运行时合并）
+  const brandList = useMemo(() => [...new Set([...hardcodedBrandList, ...getCustomBrands()])], [])
+
   const materialUsageCount = useSettingsStore((s) => s.materialUsageCount)
   const platformRate = isGeelyBrand(order.brandName || '') ? 0 : PLATFORM_FEE_RATE // P0-204：费率唯一来源
   // P0-188-R1：收入侧同源口径（calcOrderServiceFee：勘测50/勘察50/维修60/常规套餐分档，与完工核算同表同值）
@@ -95,13 +100,18 @@ export function useSurvey(order: Order) {
       ? WANBANG_GEELY_ADDON_MATERIALS
       : isZhidaWulingOrder(order.brandName, order.platformName || order.platform, order.rawText)
         ? ZHIDA_WULING_ADDON_MATERIALS
-        : addonMaterialsData.filter((m) => {
-          if (!effectiveBrand) return false
-          const b = m.brand || ''
-          // P0-113-R1：旧brand过滤分支排除挚达价表项——平台未命中挚达门槛时不得混入（验收④⑤⑥）
-          if (b === '挚达/五菱') return false
-          return b.includes(effectiveBrand) || effectiveBrand.includes(b)
-        })
+        : (() => {
+          const filtered = addonMaterialsData.filter((m) => {
+            if (!effectiveBrand) return false
+            const b = m.brand || ''
+            // P0-113-R1：旧brand过滤分支排除挚达价表项——平台未命中挚达门槛时不得混入（验收④⑤⑥）
+            if (b === '挚达/五菱') return false
+            return b.includes(effectiveBrand) || effectiveBrand.includes(b)
+          })
+          // P0-240：自定义品牌（不在硬编码名单）无专属价表 → 辅材兜底=全部增项材料全量（可搜索可全选）
+          if (filtered.length === 0 && effectiveBrand && !isHardcodedVehicleBrand(effectiveBrand)) return addonMaterialsData
+          return filtered
+        })()
     // P0-128：用户新增增项(custom_addon_)按品牌组并入候选（与订单平台/品牌同组才出现；通用分支放行未分组项）
     const zhidaHitNow = isZhidaWulingOrder(order.brandName, order.platformName || order.platform, order.rawText)
     const customTarget = daomeiHit ? '京东' : wanbangHit ? '万帮吉利' : zhidaHitNow ? '挚达/五菱' : effectiveBrand

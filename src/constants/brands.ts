@@ -1,3 +1,5 @@
+import { getCustomBrands } from '../shared/storage/customBrandStorage'
+
 export interface BrandConfig {
   packageMeters?: number
   breakerType?: string
@@ -19,6 +21,17 @@ export const BRAND_MAP: Record<string, string> = {
 }
 
 export const BRAND_NAMES = Object.keys(BRAND_MAP)
+
+/** P0-240：订单车辆品牌大名单=硬编码39个+自定义品牌库（运行时合并，禁改 BRAND_MAP 本体；任务书“44”系笔误，实测39键） */
+export function getAllVehicleBrands(): string[] {
+  return [...new Set([...BRAND_NAMES, ...getCustomBrands()])]
+}
+
+/** P0-240：是否硬编码大名单内品牌（不在名单内=自定义品牌口径，用于辅材兜底判定） */
+export function isHardcodedVehicleBrand(brand: string | undefined): boolean {
+  const value = brand?.trim() || ''
+  return !!value && !!BRAND_MAP[value]
+}
 
 export function getBrandLabel(brand: string | undefined): string {
   const value = brand?.trim() || ''

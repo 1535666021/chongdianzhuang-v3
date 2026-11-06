@@ -15,6 +15,8 @@ import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
 import { formatCurrency } from '@/shared/utils/format'
 import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
+import { addCustomBrand } from '@/shared/storage/customBrandStorage'
+import { isHardcodedVehicleBrand } from '@/constants/brands'
 
 interface SurveyModalProps {
   order: Order
@@ -26,6 +28,8 @@ const CABLE_SPECS = ['3*6', '3*10', '3*16', '4*6', '4*10', '5*6', '5*10', '5*16'
 const INSTALL_OPTIONS = ['壁挂安装', '立柱安装', '吊装', '其他'] as const
 const METER_STATUS_OPTIONS = ['已安装', '未安装'] as const
 const BLUEPRINT_OPTIONS = ['是', '否'] as const
+// P0-240：下拉「手动输入品牌」哨兵值（真实品牌名不可能等于它）
+const CUSTOM_BRAND_OPTION = '__custom__'
 const RESULT_OPTIONS = ['勘测完成', '符合安装', '不符合安装', '需整改', '待定'] as const
 
 export default function SurveyModal({ order, onClose }: SurveyModalProps) {
@@ -40,6 +44,9 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const [showSheet, setShowSheet] = useState(false)
   const [showReport, setShowReport] = useState(false)
   const [surveyNote, setSurveyNote] = useState(order.surveyNote || '')
+  // P0-240：手动输入品牌模式
+  const [customInputMode, setCustomInputMode] = useState(false)
+  const [customBrandInput, setCustomBrandInput] = useState('')
   // P0-114：实收（空=按预估），重开弹窗自动带入已保存值
   const [actualReceive, setActualReceive] = useState(order.surveyActualReceive != null ? String(order.surveyActualReceive) : '')
   const toast = useToast()
@@ -65,6 +72,19 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   // P0-114：客户应收口径——实收空=预估费用（既有公式不动），有值=实收；同屏同源单一变量
   const finalFee = resolveSurveyFinalFee(actualReceive, totalEstimatedCost)
 
+  // P0-240：手动输入品牌确认——去空格/禁空/重名视为选中现有；新名写库全系统复用
+  const handleCustomBrandConfirm = () => {
+    const name = customBrandInput.trim()
+    if (!name) {
+      toast.toast.error('品牌名不能为空')
+      return
+    }
+    if (!isHardcodedVehicleBrand(name) && !brandList.includes(name)) addCustomBrand(name)
+    setSelectedBrand(name) // 重名（硬编码或库内）直接视为选中现有
+    setCustomInputMode(false)
+    setCustomBrandInput('')
+  }
+
   const handleSave = () => {
     const err = validateSurveyActualReceive(actualReceive)
     if (err) {
@@ -73,7 +93,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     }
     save()
     const t = actualReceive.trim()
-    updateOrder(order.id, { surveyNote, surveyActualReceive: t === '' ? undefined : Number(t) })
+    // P0-240：订单无品牌时把本次所选品牌写回订单（只补空缺，不覆盖存量）
+    updateOrder(order.id, { surveyNote, surveyActualReceive: t === '' ? undefined : Number(t), ...(!order.brandName && selectedBrand ? { brandName: selectedBrand } : {}) })
     onClose()
   }
 
@@ -157,16 +178,35 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
             <div className="modal-section">
               <h3 className="modal-section__title">📦 预估材料</h3>
               {needsBrandSelect ? (
+                customInputMode ? (
+                  <div className="flex gap-2">
+                    <input
+                      autoFocus
+                      value={customBrandInput}
+                      onChange={(e) => setCustomBrandInput(e.target.value)}
+                      placeholder="输入品牌名，如：智己"
+                      className="modal-select flex-1"
+                    />
+                    <button type="button" onClick={handleCustomBrandConfirm} className="px-3 py-2 rounded-lg text-sm text-white shrink-0" style={{ background: 'var(--color-primary)' }}>确认</button>
+                    <button type="button" onClick={() => { setCustomInputMode(false); setCustomBrandInput('') }} className="px-3 py-2 rounded-lg text-sm bg-gray-100 shrink-0">取消</button>
+                  </div>
+                ) : (
                 <select
                   value={selectedBrand || ''}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  onChange={(e) => {
+                    // P0-240：选「手动输入品牌」进手输模式；其余照常选中
+                    if (e.target.value === CUSTOM_BRAND_OPTION) setCustomInputMode(true)
+                    else setSelectedBrand(e.target.value)
+                  }}
                   className="modal-select"
                 >
                   <option value="">请选择车辆品牌</option>
                   {brandList.map((b) => (
                     <option key={b} value={b}>{b}</option>
                   ))}
+                  <option value={CUSTOM_BRAND_OPTION}>➕ 手动输入品牌</option>
                 </select>
+                )
               ) : (
                 <>
                   <div className="relative">
