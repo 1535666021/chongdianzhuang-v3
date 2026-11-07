@@ -5,6 +5,7 @@
  */
 import { costMaterials } from '@/constants/costMaterialData'
 import { useMaterialStore } from '@/stores/materialStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import type { Material } from '@/types'
 
 /** 新增成本材料id前缀：标记用户新增项，防误吞材料池其他材料 */
@@ -17,5 +18,12 @@ export function isCustomCostMaterial(id: string): boolean {
 export function getAllCostMaterials(): Material[] {
   const stored = useMaterialStore.getState().materials
   const customs = stored.filter((s) => isCustomCostMaterial(s.id))
-  return [...costMaterials, ...customs]
+  // P0-241件1：价格唯一读侧——应用 settingsStore 覆盖层（cdz 价覆盖，全局生效）。
+  // 此前覆盖层写入后无消费点（死存储），本单接通；findCostPrice/calcFullMaterialCost 唯一来源被动生效。
+  const overrides = (useSettingsStore.getState() as { costPriceOverrides?: Record<string, number> }).costPriceOverrides || {}
+  const apply = (m: Material): Material => {
+    const v = overrides[m.id]
+    return v === undefined || v === null ? m : { ...m, costPrice: v }
+  }
+  return [...costMaterials, ...customs].map(apply)
 }

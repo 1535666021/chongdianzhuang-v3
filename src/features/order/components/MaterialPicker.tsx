@@ -5,6 +5,10 @@ import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
 import { isFreeQuotaMaterial } from '@/constants/package'
 import { DEFAULT_PACKAGE_METERS } from '@/shared/utils/orderCalc'
 import { Plus, Trash2, Search } from 'lucide-react'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { getCostMapping } from '@/shared/storage/costMappingStorage'
+import AddMaterialsSheet from './AddMaterialsSheet'
+import { useToast } from '@/shared/hooks/useToast'
 import { useMaterialStore } from '@/stores/materialStore'
 import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import type { MaterialInput, FixedAuxInput } from '../types/completion'
@@ -28,11 +32,36 @@ interface Props {
   onApplyJdTemplate?: () => void
   /** P0-217：点击"成本"区请求绑定/改绑（未传=纯展示兼容） */
   onRequestCostBind?: (materialName: string) => void
+  /** P0-241件2：添加材料弹窗批量进单（useCompletion.addMaterials） */
+  onBatchAdd?: (list: { name: string; unit: string; quantity: number; costPrice: number }[]) => void
+  /** P0-241件1：改价成功后通知父级刷新该行显示价 */
+  onPriceChanged?: () => void
 }
 
-export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, showJdTemplate, onApplyJdTemplate, onRequestCostBind }: Props) {
+export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, showJdTemplate, onApplyJdTemplate, onRequestCostBind, onBatchAdd, onPriceChanged }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
+  // P0-241件1：行内改价态 {index, value}；件2：添加材料弹窗
+  const [priceEdit, setPriceEdit] = useState<{ index: number; value: string } | null>(null)
+  const [showAddSheet, setShowAddSheet] = useState(false)
+  const toast = useToast()
+  const setCostPrice = useSettingsStore((st) => st.setCostPrice)
+  // P0-241件1：行内改价——目标=映射目标条目，无映射=同名条目；确认轻提示"以后所有单都按新价"
+  const costEntryOf = (name: string) => {
+    const target = getCostMapping(name) || name
+    return allCostMaterials.find((m) => m.name === target) || null
+  }
+  const applyPriceEdit = (index: number, raw: string) => {
+    const m = materials[index]
+    const entry = costEntryOf(m.name)
+    if (!entry) { toast.toast.error('未绑定成本条目，请先点成本区绑定'); return }
+    const v = Number(raw)
+    if (!Number.isFinite(v) || v < 0) { toast.toast.error('价格必须≥0'); return }
+    setCostPrice(entry.id, v) // 价格唯一写入源=成本表（cdz 覆盖层），findCostPrice 唯一来源不动
+    toast.toast.success('已改成本表，以后所有单都按新价')
+    onUpdate(index, { costPrice: v })
+    setPriceEdit(null)
+  }
 
   // P0-113：挚达/五菱单候选=挚达价表（brand键过滤，与万帮同模式）；两判定互斥（品牌词不重叠）
   // P0-128：增项候选=resolver同源（含custom_addon_新增项）；品牌过滤逻辑保留
@@ -93,12 +122,12 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
                 带入京东增项表
               </button>
             )}
-            <button
-              onClick={onAdd}
-              className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg"
-            >
-              <Plus size={14} /> 添加
-            </button>
+              <button
+                onClick={() => (onBatchAdd ? setShowAddSheet(true) : onAdd())}
+                className="flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-lg"
+              >
+                <Plus size={14} /> 添加材料{onBatchAdd ? '（全量·批量）' : ''}
+              </button>
           </div>
         </div>
 
@@ -154,6 +183,30 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
 
             <div className="flex items-center gap-2 text-xs">
               <span className="text-gray-500">客户价: {formatCurrency(m.settlementPrice)}</span>
+              <span className="flex items-center gap-1 shrink-0">
+                {priceEdit?.index === index ? (
+                  <>
+                    <input
+                      autoFocus
+                      type="number"
+                      value={priceEdit.value}
+                      onChange={(e) => setPriceEdit({ index, value: e.target.value })}
+                      className="w-14 text-right border border-blue-300 rounded px-1 py-0.5 text-xs"
+                    />
+                    <button type="button" className="text-[10px] text-white bg-blue-600 rounded px-1 py-0.5" onClick={() => applyPriceEdit(index, priceEdit.value)}>存</button>
+                    <button type="button" className="text-[10px] text-gray-400" onClick={() => setPriceEdit(null)}>×</button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="text-blue-600 underline text-[10px]"
+                    title="点价改（写成本表，全局生效）"
+                    onClick={() => setPriceEdit({ index, value: String(m.costPrice ?? 0) })}
+                  >
+                    改价
+                  </button>
+                )}
+              </span>
               {onRequestCostBind ? (
                 <button
                   type="button"
@@ -214,9 +267,12 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
             <span className="text-[10px] text-gray-400">成本¥{pvc?.costPrice || 1}/米</span>
           </div>
           <div>
-            <label className="text-xs text-gray-500">漏保盒</label>
-            <div className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 bg-gray-50 text-gray-700">
-              1个
+            <label className="text-xs text-gray-500 flex items-center gap-1">漏保盒
+              <button type="button" title="删除=本单没用（重算后账上0；新单默认照常）" onClick={() => onUpdateFixedAux({ breakerCount: 0 })} className="text-gray-300 hover:text-red-500"><Trash2 size={10} /></button>
+            </label>
+            <div className="w-full text-sm border border-gray-200 rounded px-2 py-1.5 bg-white flex items-center gap-1">
+              <input type="number" min={0} value={fixedAux.breakerCount} onChange={(e) => onUpdateFixedAux({ breakerCount: Math.max(0, parseInt(e.target.value) || 0) })} className="w-16 text-right border border-gray-200 rounded px-1 py-0.5 text-xs" />
+              <span className="text-gray-700">个</span>
             </div>
             <span className="text-[10px] text-gray-400">成本¥{breaker?.costPrice || 5}/个</span>
           </div>
@@ -227,7 +283,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
               onChange={(e) => onUpdateFixedAux({ breakerType: e.target.value as 'C25' | 'C40' | 'C40A' | '' })}
               className="w-full text-sm border border-gray-200 rounded px-2 py-1.5"
             >
-              <option value="">无</option>
+              <option value="">无（本单没用）</option>
               <option value="C25">C25 (¥{getBreakerCost('C25')})</option>
               <option value="C40">C40 (¥{getBreakerCost('C40')})</option>
               <option value="C40A">C40A (¥{getBreakerCost('C40A')})</option>
@@ -244,6 +300,12 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
           </div>
         </div>
       </div>
+      {showAddSheet && onBatchAdd && (
+        <AddMaterialsSheet
+          onClose={() => setShowAddSheet(false)}
+          onConfirm={(list) => { onBatchAdd?.(list); setShowAddSheet(false) }}
+        />
+      )}
     </div>
   )
 }

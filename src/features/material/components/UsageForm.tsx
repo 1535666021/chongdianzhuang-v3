@@ -3,6 +3,9 @@ import { X } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
 import type { MaterialUsageRecord } from '@/types'
 import { formatCurrency } from '@/shared/utils/format'
+import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
+import { useSettingsStore } from '@/stores/settingsStore'
+import { useToast } from '@/shared/hooks/useToast'
 
 interface Props {
   record?: MaterialUsageRecord
@@ -48,6 +51,22 @@ export function UsageForm({ record, onClose }: Props) {
     setCostPrice(mat.costPrice || 0)
     setShowDropdown(false)
     setSearchQuery('')
+  }
+
+  // P0-241件4：入库改价联动——成本表条目当前价（出口口径，R-10.1 库存日志按当时价不动）
+  const toast = useToast()
+  const setCostPriceAction = useSettingsStore((s) => s.setCostPrice)
+  const costEntry = useMemo(() => getAllCostMaterials().find((m) => m.name === name.trim()) || null, [name])
+  const costSyncHint = useMemo(() => {
+    if (!costEntry || !name.trim()) return ''
+    const cur = costEntry.costPrice ?? 0
+    if (Math.abs((costPrice || 0) - cur) < 0.005) return ''
+    return `成本表当前 ${formatCurrency(cur)}，与本次入库价 ${formatCurrency(costPrice || 0)} 不一致`
+  }, [costEntry, costPrice, name])
+  const syncCostPrice = () => {
+    if (!costEntry) return
+    setCostPriceAction(costEntry.id, costPrice || 0)
+    toast.toast.success('已同步成本表，以后所有单都按新价')
   }
 
   const handleSubmit = () => {
@@ -145,6 +164,13 @@ export function UsageForm({ record, onClose }: Props) {
               className="w-full border border-gray-200 rounded px-2 py-1.5 text-sm"
             />
           </div>
+          {/* P0-241件4：非阻断提示，不点也能正常提交 */}
+          {costSyncHint && (
+            <div className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-200 rounded px-2 py-1.5 text-xs">
+              <span className="text-amber-700">{costSyncHint}</span>
+              <button type="button" onClick={syncCostPrice} className="text-amber-800 underline shrink-0">同步到成本表</button>
+            </div>
+          )}
 
           <div>
             <label className="text-xs text-gray-500">日期</label>

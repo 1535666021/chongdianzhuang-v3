@@ -22,6 +22,7 @@ import {
   Wrench,
   ShieldCheck,
   Inbox,
+  Link2,
   Tag,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION, APP_BUILD_TIME } from '@/constants/common'
@@ -44,6 +45,7 @@ import TripFeeZeroTool from '../components/TripFeeZeroTool'
 import BreakerCostBackfillTool from '../components/BreakerCostBackfillTool'
 import ProfitAuditTool from '../components/ProfitAuditTool'
 import GhostTripFixTool from '../components/GhostTripFixTool'
+import BindReconcilePanel from '../components/BindReconcilePanel'
 import BrandManager from '../components/BrandManager'
 type SettingSection =
   | 'haptics'
@@ -63,7 +65,7 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands'
+  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile'
   | null
 export default function SettingsPage() {
   // P0-199-R1：隔离箱角标=箱内条数
@@ -86,6 +88,7 @@ export default function SettingsPage() {
     { id: 'presets' as const, label: '表单预设', icon: ClipboardList, desc: '勘测/完工默认值' },
     { id: 'brand' as const, label: '品牌话术', icon: MessageSquare, desc: '各品牌专用话术模板' },
     { id: 'customBrands' as const, label: '品牌管理', icon: Tag, desc: '手动添加的品牌：查看与删除' },
+    { id: 'bindReconcile' as const, label: '绑定对账', icon: Link2, desc: '未绑定增项一次清账' },
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
     { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
@@ -136,6 +139,8 @@ export default function SettingsPage() {
         return <BrandTemplates />
       case 'customBrands':
         return <BrandManager />
+      case 'bindReconcile':
+        return <BindReconcilePanel />
       case 'watermark':
         return <WatermarkTemplate />
       case 'lingpao':

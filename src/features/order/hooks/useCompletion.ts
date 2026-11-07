@@ -186,6 +186,23 @@ export function useCompletion(orderId: string) {
     setForm((prev) => ({ ...prev, ...updates }))
   }, [])
 
+  // P0-241件2：添加材料弹窗——成本表条目一次全进单（行结构同 addMaterial 既有口径）
+  const addMaterials = useCallback((list: { name: string; unit: string; quantity: number; costPrice: number }[]) => {
+    if (!list.length) return
+    setForm((prev) => ({
+      ...prev,
+      materials: [
+        ...prev.materials,
+        ...list.map((it) => ({
+          id: Math.random().toString(36).slice(2),
+          name: it.name, spec: '', quantity: it.quantity, unit: it.unit,
+          settlementPrice: 0, costPrice: it.costPrice,
+          customerSubtotal: 0, costSubtotal: it.costPrice * it.quantity,
+        })),
+      ],
+    }))
+  }, [])
+
   const addMaterial = useCallback(() => {
     setForm((prev) => ({
       ...prev,
@@ -438,6 +455,7 @@ export function useCompletion(orderId: string) {
     packageBreakdown,
     updateForm,
     addMaterial,
+    addMaterials,
     updateMaterial,
     removeMaterial,
     updateFixedAux,
