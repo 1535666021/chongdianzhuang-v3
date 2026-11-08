@@ -32,3 +32,10 @@
 
 ## 与 P0-239/P0-240 禁混令
 基线 d6a4f46 已含 P0-240 交付笔 9b346c87；本单独立一笔提交，与 P0-239（早已交付）/P0-240 各自独立。
+
+## 增补件5 追加交付（监理整改令 ee022d6 响应 · 2026-11-08）
+- 载荷：src/features/material/pages/InventoryPage.tsx 单文件（allMaterials→costMaterials 共 8 处 + 注释 2 行）
+- 施工：库存管理列表数据源锁定 useMaterial.costMaterials（mergeCostMaterials=materialStore 覆盖制底表 cost_* + custom_cost_）——增项表材料（售价体系 custom_addon_）不进库存主数据；存量库存记录数据零改动（R-1）
+- 实证：runner ALL-PASS 4/4——数据源 20 项非空 / 全部 cdz_cost_* 口径 / 零 custom_addon_ 混入；npm run build 前置+[BUILD CHECK]+vite built+后置全过（tsc 0 错）
+- 边界说明：useMaterial.allMaterials（成本+增项 584 项）不再被库存页消费，但保持导出不动——UsageForm 领用/入库登记等其它消费点维持既有口径（任务书"存量不动"）
+- 增补件2（行内改价必须已绑定）：监理标注"需甲方确认后再发"——遵令未动，待甲方点头

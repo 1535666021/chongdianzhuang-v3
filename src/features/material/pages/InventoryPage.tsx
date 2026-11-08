@@ -11,7 +11,9 @@ type FilterType = 'all' | '紧张' | '缺货'
 
 export default function InventoryPage() {
   const navigate = useNavigate()
-  const { allMaterials } = useMaterial()
+  // P0-241件5：库存管理列表数据源锁定成本表（cdz_cost_*，useMaterial.costMaterials=底表 cost_ + custom_cost_）
+  // ——增项表材料（售价体系 custom_addon_）不进库存主数据；存量库存记录数据不动（R-1）
+  const { costMaterials } = useMaterial()
   const inventory = useInventoryStore((s) => s.inventory)
   const setMinStock = useInventoryStore((s) => s.setMinStock)
 
@@ -51,7 +53,7 @@ export default function InventoryPage() {
   }, [editingId, showImport])
 
   const items = useMemo(() => {
-    return allMaterials.map((m) => {
+    return costMaterials.map((m) => {
       const inv = inventory[m.id]
       const current = inv?.currentStock ?? 0
       const min = inv?.minStock ?? (m.isFixed ? 20 : 5)
@@ -70,14 +72,14 @@ export default function InventoryPage() {
       if (filter === 'all') return true
       return item.status === filter
     })
-  }, [allMaterials, inventory, filter])
+  }, [costMaterials, inventory, filter])
 
   const handleSubmit = () => {
     if (!editingId) return
     const qty = parseFloat(editQty)
     if (isNaN(qty) || qty < 0) return
 
-    const material = allMaterials.find((m) => m.id === editingId)
+    const material = costMaterials.find((m) => m.id === editingId)
     if (!material) return
 
     // P0-206-M：一切变动走 adjustStock 唯一出口（R-11.11）；盘点=设值换算为增量
@@ -103,7 +105,7 @@ export default function InventoryPage() {
   }
 
   const statusCounts = useMemo(() => {
-    const all = allMaterials.map((m) => {
+    const all = costMaterials.map((m) => {
       const inv = inventory[m.id]
       const current = inv?.currentStock ?? 0
       const min = inv?.minStock ?? (m.isFixed ? 20 : 5)
@@ -114,7 +116,7 @@ export default function InventoryPage() {
       紧张: all.filter((s) => s === '紧张').length,
       缺货: all.filter((s) => s === '缺货').length,
     }
-  }, [allMaterials, inventory])
+  }, [costMaterials, inventory])
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -242,7 +244,7 @@ export default function InventoryPage() {
           <div className="bg-white w-full rounded-t-2xl p-4 space-y-3 max-h-[80vh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold">
-                {allMaterials.find((m) => m.id === editingId)?.name}
+                {costMaterials.find((m) => m.id === editingId)?.name}
               </h3>
               <button onClick={() => setEditingId(null)} className="p-1">
                 <ArrowLeft size={20} className="rotate-90" />
@@ -267,7 +269,7 @@ export default function InventoryPage() {
 
             <div className="space-y-2">
               <label className="text-sm text-gray-600">
-                {editMode === 'check' ? '实际库存' : '数量'} ({allMaterials.find((m) => m.id === editingId)?.unit})
+                {editMode === 'check' ? '实际库存' : '数量'} ({costMaterials.find((m) => m.id === editingId)?.unit})
               </label>
               <input
                 type="number"
