@@ -20,3 +20,10 @@
 
 ## runner 汇总
 18 项场景断言（T1 链提取 4 / T2 胶囊计数+定序 2 / T3 点选匹配 6 / T4 分组 4 / R extractAreaTag 2）+ 回归 20/20 = FAILS=0
+
+
+## R1 整改实证（核验窗 return-R1 FAIL-1=二字县名提取失败）
+
+- 根因：AREA_TAG_DISTRICT_RE 前缀量词 {2,6} 收紧时误伤——「曹县/寿县」等二字县名仅剩 1 字前缀匹配不上，干净地址 district=null
+- 修：前缀 {2,6}→{1,6}（groupTags.ts 单行），extractAreaTag 旧口径同步受益
+- 实证：runner 新增 2 断言（曹县干净地址链=山东省/菏泽市/曹县；淮南寿县干净地址 district=寿县）全过，合计 22 断言+回归 20/20 FAILS=0；tsc 0+build 前后检查过；远端 diff 核对=仅该一行（打回笔未触 groupTags.ts）
