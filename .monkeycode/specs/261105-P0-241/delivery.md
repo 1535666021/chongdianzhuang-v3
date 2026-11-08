@@ -39,3 +39,9 @@
 - 实证：runner ALL-PASS 4/4——数据源 20 项非空 / 全部 cdz_cost_* 口径 / 零 custom_addon_ 混入；npm run build 前置+[BUILD CHECK]+vite built+后置全过（tsc 0 错）
 - 边界说明：useMaterial.allMaterials（成本+增项 584 项）不再被库存页消费，但保持导出不动——UsageForm 领用/入库登记等其它消费点维持既有口径（任务书"存量不动"）
 - 增补件2（行内改价必须已绑定）：监理标注"需甲方确认后再发"——遵令未动，待甲方点头
+
+## return-R2 整改追加（2026-11-08，禁混前笔·单开一笔）
+- FAIL-1 库存列表掉存量条目 → 存量附加区：items=成本表条目 ∪ 有库存记录的存量条目（custom_addon_* 照常显示照常计数）；存量数据零改动；条目名/unit/category 反查 useMaterial.addonMaterials（inventoryStore 记录无名字段，反查只读）
+- FAIL-2 入库选择器未锁定 → materialOptions=costMaterials ∪ 存量附加区（有库存记录的存量条目仍可选）；新入库零增项表材料
+- 实证：runner ALL-PASS 4/4（FAIL-1 存量计数 7/FAIL-1b 名反查/FAIL-2a 无存量零增项/FAIL-2b 存量可选）；build 前置+[BUILD CHECK]+built+后置全过（tsc 0 错）
+- 载荷（本笔）：InventoryPage.tsx + UsageForm.tsx + delivery.md

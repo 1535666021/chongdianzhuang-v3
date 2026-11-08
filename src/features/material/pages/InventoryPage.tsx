@@ -13,7 +13,12 @@ export default function InventoryPage() {
   const navigate = useNavigate()
   // P0-241件5：库存管理列表数据源锁定成本表（cdz_cost_*，useMaterial.costMaterials=底表 cost_ + custom_cost_）
   // ——增项表材料（售价体系 custom_addon_）不进库存主数据；存量库存记录数据不动（R-1）
-  const { costMaterials } = useMaterial()
+  // P0-241件5+R2：库存列表数据源=成本表（costMaterials）+存量附加区（addonMaterials 反查名）
+  const { costMaterials, addonMaterials } = useMaterial()
+  const stockNamePool = addonMaterials
+  const stockNameOf = (id: string) => stockNamePool.find((m) => m.id === id)?.name ?? id
+  const stockUnitOf = (id: string) => stockNamePool.find((m) => m.id === id)?.unit ?? '个'
+  const stockCategoryOf = (id: string) => stockNamePool.find((m) => m.id === id)?.category ?? '存量'
   const inventory = useInventoryStore((s) => s.inventory)
   const setMinStock = useInventoryStore((s) => s.setMinStock)
 
@@ -53,7 +58,7 @@ export default function InventoryPage() {
   }, [editingId, showImport])
 
   const items = useMemo(() => {
-    return costMaterials.map((m) => {
+    const baseItems = costMaterials.map((m) => {
       const inv = inventory[m.id]
       const current = inv?.currentStock ?? 0
       const min = inv?.minStock ?? (m.isFixed ? 20 : 5)
@@ -68,7 +73,27 @@ export default function InventoryPage() {
         status,
         statusColor: getStatusColor(status),
       }
-    }).filter((item) => {
+    })
+    // P0-241-R2 FAIL-1 存量附加区：有库存记录但不在成本表的存量条目照常显示照常计数（存量数据禁动；名称反查 addonMaterials）
+    const baseIds = new Set(costMaterials.map((m) => m.id))
+    const stockOnlyItems = Object.entries(inventory)
+      .filter(([id]) => !baseIds.has(id))
+      .map(([id, inv]) => {
+        const current = inv.currentStock ?? 0
+        const min = inv.minStock ?? 5
+        const status = getStockStatus(current, min)
+        return {
+          materialId: id,
+          name: stockNameOf(id),
+          category: stockCategoryOf(id),
+          unit: stockUnitOf(id),
+          currentStock: current,
+          minStock: min,
+          status,
+          statusColor: getStatusColor(status),
+        }
+      })
+    return [...baseItems, ...stockOnlyItems].filter((item) => {
       if (filter === 'all') return true
       return item.status === filter
     })

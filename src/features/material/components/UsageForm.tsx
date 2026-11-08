@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { X } from 'lucide-react'
 import { useMaterial } from '../hooks/useMaterial'
+import { useInventoryStore } from '@/stores/inventoryStore'
 import type { MaterialUsageRecord } from '@/types'
 import { formatCurrency } from '@/shared/utils/format'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
@@ -13,7 +14,9 @@ interface Props {
 }
 
 export function UsageForm({ record, onClose }: Props) {
-  const { allMaterials, addUsageRecord, updateUsageRecord } = useMaterial()
+  // P0-241-R2 FAIL-2：入库/领用选择源锁定成本表（costMaterials）——新入库禁选增项表材料；存量附加区=有库存记录的存量条目仍可选
+  const { costMaterials, addonMaterials, addUsageRecord, updateUsageRecord } = useMaterial()
+  const inventory = useInventoryStore((st) => st.inventory)
 
   const isEdit = !!record
 
@@ -34,12 +37,22 @@ export function UsageForm({ record, onClose }: Props) {
 
   const materialOptions = useMemo(() => {
     const seen = new Set<string>()
-    return allMaterials.filter((m) => {
+    const base = costMaterials.filter((m) => {
       if (seen.has(m.name)) return false
       seen.add(m.name)
       return true
     })
-  }, [allMaterials])
+    // 存量附加区：有库存记录但不在成本表的存量条目仍可选（存量数据禁动；名称反查 addonMaterials）
+    const baseIds = new Set(costMaterials.map((m) => m.id))
+    const stockOnly = Object.entries(inventory)
+      .filter(([id]) => !baseIds.has(id))
+      .map(([id]) => {
+        const found = addonMaterials.find((m) => m.id === id)
+        return { id, name: found?.name ?? id, unit: found?.unit ?? '个', costPrice: 0, category: found?.category ?? '存量' }
+      })
+      .filter((m) => { if (seen.has(m.name)) return false; seen.add(m.name); return true })
+    return [...base, ...stockOnly]
+  }, [costMaterials, addonMaterials, inventory])
 
   const filteredMaterials = searchQuery
     ? materialOptions.filter((m) => m.name.includes(searchQuery)).slice(0, 20)
