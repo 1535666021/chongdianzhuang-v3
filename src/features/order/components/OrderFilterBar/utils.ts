@@ -1,5 +1,5 @@
 import type { GroupMode, Order } from '@/types'
-import { extractAreaTag, extractTimeTag } from '@/shared/utils/groupTags'
+import { extractAreaTag, extractAreaChain, extractTimeTag } from '@/shared/utils/groupTags'
 import { resolveDoneDate } from '@/shared/utils/orderCalc'
 
 export { extractAreaTag }
@@ -32,10 +32,28 @@ export function getGroupLabel(order: Order, groupMode: GroupMode, opts?: { doneD
   return extractAreaTag(order.address)
 }
 
-export function groupOrdersByTag(orders: Order[], groupMode: GroupMode, opts?: { doneDate?: boolean }): { label: string; orders: Order[] }[] {
+/**
+ * P0-242：分组标题与点选层级匹配——
+ * 点选某级胶囊→该级订单按下一级分组（点省按市/点市按区县/点区县按乡镇）；
+ * 未点选→按最细可用级分组（乡镇>区县>市>省）；解析不出归「其他」
+ */
+function areaGroupLabel(order: Order, selectedTag?: string | null): string {
+  const chain = extractAreaChain(order.address)
+  if (!chain) return '其他'
+  const tag = selectedTag
+  if (tag) {
+    if (chain.province === tag) return chain.city || chain.district || chain.township || tag
+    if (chain.city === tag) return chain.district || chain.township || tag
+    if (chain.district === tag) return chain.township || tag
+    if (chain.township === tag) return tag
+  }
+  return chain.township || chain.district || chain.city || chain.province || '其他'
+}
+
+export function groupOrdersByTag(orders: Order[], groupMode: GroupMode, opts?: { doneDate?: boolean; selectedTag?: string | null }): { label: string; orders: Order[] }[] {
   const groups = new Map<string, Order[]>()
   orders.forEach((order) => {
-    const label = getGroupLabel(order, groupMode, opts)
+    const label = groupMode === 'region' ? areaGroupLabel(order, opts?.selectedTag) : getGroupLabel(order, groupMode, opts)
     groups.set(label, [...(groups.get(label) || []), order])
   })
   return [...groups.entries()]

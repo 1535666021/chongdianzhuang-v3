@@ -133,7 +133,7 @@ export default function OrderList({ fixedStatus }: Props) {
   )
   const groupMode = filter.groupMode ?? 'region'
   // P0-167：已完成Tab分组键=实际完工日（与统计按天明细口径一致）；其余Tab维持原键
-  const orderGroups = useMemo(() => groupOrdersByTag(displayOrders, groupMode, { doneDate: fixedStatus === '已完成' }), [displayOrders, groupMode, fixedStatus])
+  const orderGroups = useMemo(() => groupOrdersByTag(displayOrders, groupMode, { doneDate: fixedStatus === '已完成', selectedTag: filter.areaTag ?? null }), [displayOrders, groupMode, fixedStatus, filter.areaTag])
   // P0-146：虚拟滚动——超100条启用窗口化渲染（批量模式下禁用，保多选稳定）
   const flatRows = useMemo<VirtualFlatRow[]>(() => orderGroups.flatMap((g) => [
     { key: `h:${g.label}`, type: 'header' as const, label: g.label },

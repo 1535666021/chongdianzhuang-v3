@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useOrderStore } from '@/stores/orderStore'
 import type { InstallType, Order, OrderFilter } from '@/types'
-import { extractAreaTag, extractTimeTag } from '@/shared/utils/groupTags'
+import { extractAreaTag, extractTimeTag, extractAreaChain, matchAreaChain } from '@/shared/utils/groupTags'
 import { appointmentSortTs, isRangeAppointment, readAppointment } from '@/features/appointment/repository'
 import { resolveDoneDate } from '@/shared/utils/orderCalc'
 import { todayLocal } from '@/constants/availableWindow' // P0-228
@@ -22,7 +22,8 @@ export function filterOrders(orders: Order[], filter?: OrderFilter): Order[] {
     if (filter?.areaTag) {
       const tag = filter.areaTag
       // P0-095：标签同时兼容 区域字段 / 地址片区 / 时间月份 三种来源
-      const matches = order.region === tag || extractAreaTag(order.address) === tag || extractTimeTag(order) === tag
+      // P0-242：点选=该级及其下级全域（链上任一级命中）；region 字段/时间月份兼容保留
+      const matches = order.region === tag || matchAreaChain(extractAreaChain(order.address), tag) || extractTimeTag(order) === tag
       if (!matches) return false
     }
     if (filter?.installType && order.installType !== filter.installType) return false
@@ -99,10 +100,34 @@ export function sortOrders(orders: Order[], filter?: OrderFilter): Order[] {
 
 /** 标签云计数：time 模式取月份标签，region 模式从 address 提取片区 */
 export function extractRegionTags(orders: Order[], mode: TagMode): { label: string; count: number }[] {
+  // P0-242：region 模式改胶囊层级化——一单计入省/市/区县/乡镇各级（层级累计），
+  // 层级定序→同级单数降序→「其他」永远末位；time 模式维持原口径
+  if (mode === 'region') {
+    const counts = new Map<string, { count: number; level: number }>()
+    orders.forEach((order) => {
+      const chain = extractAreaChain(order.address)
+      if (!chain) {
+        const cur = counts.get('其他') || { count: 0, level: 4 }
+        counts.set('其他', { count: cur.count + 1, level: 4 })
+        return
+      }
+      const levels: Array<[string | null, number]> = [
+        [chain.province, 0], [chain.city, 1], [chain.district, 2], [chain.township, 3],
+      ]
+      levels.forEach(([name, level]) => {
+        if (!name) return
+        const cur = counts.get(name) || { count: 0, level }
+        counts.set(name, { count: cur.count + 1, level: Math.min(cur.level, level) })
+      })
+    })
+    return [...counts.entries()]
+      .map(([label, v]) => ({ label, count: v.count, level: v.level }))
+      .sort((a, b) => a.level - b.level || b.count - a.count || a.label.localeCompare(b.label, 'zh-CN'))
+      .map(({ label, count }) => ({ label, count }))
+  }
   const counts = new Map<string, number>()
   orders.forEach((order) => {
-    const label = mode === 'time' ? extractTimeTag(order) : extractAreaTag(order.address)
-    counts.set(label, (counts.get(label) || 0) + 1)
+    counts.set(extractTimeTag(order), (counts.get(extractTimeTag(order)) || 0) + 1)
   })
   return [...counts.entries()]
     .map(([label, count]) => ({ label, count }))
