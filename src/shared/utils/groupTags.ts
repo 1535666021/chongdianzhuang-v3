@@ -17,7 +17,7 @@ const AREA_TAG_STREET_RE = /([^\s省市区县]{2,8}?(?:镇|街道|乡))/
  * 防"安徽省-马鞍山市-花山区"产出"-花山区"；"马鞍山市"类地级市不会命中。
  * 后行断言排除"区小区/区社区"粘连场景。
  */
-const AREA_TAG_DISTRICT_RE = /([^省市区县\s0-9A-Za-z\-]{2,6}?(?:区|县))(?!小区|社区)/
+const AREA_TAG_DISTRICT_RE = /([^省市区县\s0-9A-Za-z\-]{1,6}?(?:区|县))(?!小区|社区)/
 
 /** 防御性剥除标签首尾非汉字字符（如连字符前缀） */
 function stripNonHanEdges(text: string): string {
