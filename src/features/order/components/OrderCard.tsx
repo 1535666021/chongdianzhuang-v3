@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { Order } from '@/types'
 import { useOrderStore } from '@/stores/orderStore'
@@ -249,6 +249,9 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
           </div>
         )}
 
+        {/* P0-243：手写跟单备注——已保存内容同位显示（空不渲染该行），入口在操作区 */}
+        <CardNoteRow order={order} />
+
         {/* P0-178-R1：已完成单日期行就地改"实际安装日期"（甲方指令：仅已完成单可改；已预约/待办等分支原样不动） */}
         {isCompleted ? (
           <CardDoneDateRow order={order} />
@@ -286,6 +289,19 @@ export default function OrderCard({ order, onClick, isToday = false, onSurvey, o
           <FileText size={14} />
           <span>查看原始记录</span>
         </button>
+
+        {/* P0-243：跟单备注入口——仅无内容时显示（有内容时备注行本身可点进编辑）；icon钮不占备注行位 */}
+        {!order.cardNote && (
+          <button
+            type="button"
+            className="order-card__rawview"
+            title="添加跟单备注"
+            onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('cardnote-edit', { detail: order.id })) }}
+          >
+            <StickyNote size={14} />
+            <span>跟单备注</span>
+          </button>
+        )}
 
         {/* P0-229-R1：导入时间小字（甲方口径：导入时间只在卡片小字可见，本地时区 MM-DD） */}
         {/* P0-231：已完成单小字区追加完工时间——只认 actualInstallDate 字段本身，禁走 resolveDoneDate 回退链 */}
@@ -457,6 +473,72 @@ function CardDoneDateRow({ order }: { order: Order }) {
         <button type="button" aria-label="确认安装日期" title="确认" className="order-card__tag-btn" onClick={commit}><Check size={12} /></button>
         <button type="button" aria-label="取消安装日期编辑" title="取消" className="order-card__tag-btn" onClick={cancel}><X size={12} /></button>
       </div>
+    </div>
+  )
+}
+
+
+// P0-243：手写跟单备注就地编辑——三态可写（待办/待补/已预约/已完成全状态）：
+// 显示态=备注行点击进编辑（空不渲染该行，入口在操作区）；编辑态=行内input+✓/✗；
+// ✓/Enter/失焦保存（trim、maxLength 50、写 cardNote 新字段）；✗/Esc 取消；
+// stopPropagation 防卡片跳转；写通道=orderStore.updateOrder 唯一通道；
+// 与订单备注 remark 平级隔离（不回写/不动 rawText）；与原始记录查看入口互不冲突。
+function CardNoteRow({ order }: { order: Order }) {
+  const updateOrder = useOrderStore((s) => s.updateOrder)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const note = order.cardNote || ''
+
+  // 无内容时操作区入口经自定义事件唤起编辑（跨组件最简联动，不引全局状态）
+  useEffect(() => {
+    if (note) return
+    const onEdit = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === order.id) { setDraft(''); setEditing(true) }
+    }
+    window.addEventListener('cardnote-edit', onEdit)
+    return () => window.removeEventListener('cardnote-edit', onEdit)
+  }, [note, order.id])
+
+  const commit = () => {
+    const value = draft.trim().slice(0, 50)
+    if (value !== note) {
+      updateOrder(order.id, { cardNote: value })
+      toast.success(value ? '跟单备注已保存' : '跟单备注已清空')
+    }
+    setEditing(false)
+  }
+  const cancel = () => setEditing(false)
+
+  if (!editing) {
+    if (!note) return null // 验收5：无内容零渲染不占位
+    return (
+      <div
+        className="order-card__remark"
+        title="点击修改跟单备注"
+        onClick={(event) => { event.stopPropagation(); setDraft(note); setEditing(true) }}
+      >
+        <StickyNote size={14} className="order-card__icon order-card__icon--top" />
+        <span className="order-card__remark-text--clamp">{note}</span>
+      </div>
+    )
+  }
+  return (
+    <div className="order-card__remark" onClick={(event) => event.stopPropagation()}>
+      <StickyNote size={14} className="order-card__icon order-card__icon--top" />
+      <input
+        autoFocus
+        aria-label="修改跟单备注"
+        maxLength={50}
+        placeholder="跟单备注（50字内）"
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onKeyDown={(event) => { if (event.key === 'Enter') commit(); if (event.key === 'Escape') cancel() }}
+        onBlur={commit}
+        className="order-card__tag-input"
+        style={{ flex: 1 }}
+      />
+      <button type="button" aria-label="确认跟单备注" title="确认" className="order-card__tag-btn" onClick={commit}><Check size={12} /></button>
+      <button type="button" aria-label="取消跟单备注编辑" title="取消" className="order-card__tag-btn" onClick={cancel}><X size={12} /></button>
     </div>
   )
 }
