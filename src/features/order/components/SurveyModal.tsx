@@ -5,7 +5,7 @@ import { adaptiveNameFontSize } from '../../order/utils/surveyUtils'
 import { addonMaterialsData } from '@/constants/materialData'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useOrderStore } from '@/stores/orderStore'
-import { X } from 'lucide-react'
+import { Check, Edit3, Trash2, X } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { useToast } from '@/shared/hooks/useToast'
 import { calcOverFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
@@ -15,6 +15,8 @@ import { SurveyReportModal } from './SurveyReportModal'
 import '../../../shared/components/Modal.css'
 import { formatCurrency } from '@/shared/utils/format'
 import { BottomSheetSelect } from '@/shared/components/BottomSheetSelect'
+import { addBrandAddonMaterial, setBrandAddonPrice, hideBrandAddonMaterial } from '@/shared/storage/brandAddonOverrides'
+import type { Material } from '@/types/material'
 import { addCustomBrand } from '@/shared/storage/customBrandStorage'
 import { isHardcodedVehicleBrand } from '@/constants/brands'
 
@@ -38,6 +40,9 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     selectedBrand, setSelectedBrand,
     updateForm, toggleAddon, removeAddon, updateQuantity, totalEstimatedCost,
     calcCableCost,
+    addonCatalog,
+    refreshBrandOverrides,
+    effectiveBrand,
     serviceFee, feeLabel, fullCost, refreshCost, platformRate, save,
   } = useSurvey(order)
 
@@ -55,6 +60,53 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   const engineerPhone = useSettingsStore((s) => s.engineerPhone)
   const sortedBrandAddons = useMemo(
     () => sortMaterialsByFrequency(brandAddons, getMaterialFrequency()), [brandAddons])
+
+  // P0-244：品牌辅材覆盖层管理（增/改价/删）——操作后 bump ovVersion 联动全链重算
+  const [showAddForm, setShowAddForm] = useState(false)
+  const [addName, setAddName] = useState('')
+  const [addUnit, setAddUnit] = useState('个')
+  const [addPrice, setAddPrice] = useState('')
+  const [priceEditName, setPriceEditName] = useState<string | null>(null)
+  const [priceDraft, setPriceDraft] = useState('')
+  const [showManage, setShowManage] = useState(false)
+
+  const commitAdd = () => {
+    const name = addName.trim()
+    const price = Number(addPrice)
+    if (!name || !addUnit.trim() || !Number.isFinite(price) || price <= 0) {
+      toast.toast.error('名称/单位/结算价必填，价为正数')
+      return
+    }
+    if (addonCatalog.some((m) => m.name === name)) {
+      toast.toast.error(`「${name}」已存在（基础表或本品牌新增），请改价或换名`)
+      return
+    }
+    addBrandAddonMaterial(effectiveBrand || '通用', {
+      id: `custom_addon_${Date.now()}`,
+      name,
+      unit: addUnit.trim(),
+      settlementPrice: price,
+      brand: effectiveBrand || '通用',
+    } as Material)
+    refreshBrandOverrides()
+    setShowAddForm(false); setAddName(''); setAddUnit('个'); setAddPrice('')
+    toast.toast.success(`辅材「${name}」已加入${effectiveBrand || '通用'}清单`)
+  }
+
+  const commitPrice = (name: string) => {
+    const price = Number(priceDraft)
+    if (!Number.isFinite(price) || price <= 0) { toast.toast.error('价为正数'); return }
+    setBrandAddonPrice(effectiveBrand || '通用', name, price)
+    refreshBrandOverrides()
+    setPriceEditName(null)
+    toast.toast.success(`「${name}」结算价已更新`)
+  }
+
+  const commitHide = (name: string) => {
+    hideBrandAddonMaterial(effectiveBrand || '通用', name)
+    refreshBrandOverrides()
+    toast.toast.success(`「${name}」已删除（本品牌不再显示）`)
+  }
   const needsBrandSelect = !order.brandName && !selectedBrand
 
   useEffect(() => {
@@ -63,7 +115,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
   }, [])
 
   const isCableMat = (name: string) => {
-    const mat = addonMaterialsData.find((a) => a.name === name)
+    // P0-244：按名查表走唯一合并点（含新增项/改价）
+    const mat = addonCatalog.find((a) => a.name === name)
     return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
   }
 
@@ -116,7 +169,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     const billedMaterials = form.estimatedMaterials.filter((m) => (form.wiringParty !== '客户自布线' && isCableMat(m.name)) || m.quantity > 0)
     // P0-224-R1 B-1：行级零费收口——电缆行小计 ¥0 跳过；非电缆行 unitPrice*quantity ≤ 0 跳过，只打小计 > 0 的行
     const detailLines = billedMaterials.flatMap((m) => {
-      const mat = addonMaterialsData.find((a) => a.name === m.name)
+      const mat = addonCatalog.find((a) => a.name === m.name)
       const short = mat ? mat.name : m.name
       // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
       const isCable = isCableMat(m.name), distance = form.cableDistance || 0
@@ -209,6 +262,52 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                 )
               ) : (
                 <>
+                  {/* P0-244：品牌辅材覆盖层管理入口（加在选项钮上方） */}
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <button type="button" className="modal-select" style={{ flex: 1 }}
+                      onClick={() => { setShowAddForm((v) => !v); setShowManage(false) }}>
+                      ➕ 添加辅材
+                    </button>
+                    <button type="button" className="modal-select" style={{ flex: 1 }}
+                      onClick={() => { setShowManage((v) => !v); setShowAddForm(false) }}>
+                      管理辅材改价/删除（{brandAddons.length}）
+                    </button>
+                  </div>
+                  {showAddForm && (
+                    <div className="modal-form" style={{ marginBottom: '8px' }}>
+                      <input className="modal-input" placeholder="辅材名称（必填，与现有查重）" value={addName} onChange={(e) => setAddName(e.target.value)} />
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                        <input className="modal-input" style={{ width: '80px' }} placeholder="单位" value={addUnit} onChange={(e) => setAddUnit(e.target.value)} />
+                        <input className="modal-input" style={{ flex: 1 }} placeholder="结算价（正数）" inputMode="decimal" value={addPrice} onChange={(e) => setAddPrice(e.target.value)} />
+                      </div>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                        <button type="button" className="modal-confirm" style={{ flex: 1 }} onClick={commitAdd}>保存</button>
+                        <button type="button" className="modal-cancel" onClick={() => setShowAddForm(false)}>取消</button>
+                      </div>
+                    </div>
+                  )}
+                  {showManage && (
+                    <div style={{ marginBottom: '8px', maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--color-border)', borderRadius: '8px', padding: '6px' }}>
+                      {brandAddons.map((m) => (
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 2px', fontSize: '13px' }}>
+                          <span style={{ flex: 1 }}>{m.name}（{m.unit}）</span>
+                          {priceEditName === m.name ? (
+                            <>
+                              <input className="modal-input" style={{ width: '72px' }} inputMode="decimal" value={priceDraft} onChange={(e) => setPriceDraft(e.target.value)} />
+                              <button type="button" className="order-card__tag-btn" onClick={() => commitPrice(m.name)}><Check size={12} /></button>
+                              <button type="button" className="order-card__tag-btn" onClick={() => setPriceEditName(null)}><X size={12} /></button>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{ color: 'var(--color-text-aux)' }}>{m.settlementPrice}元</span>
+                              <button type="button" className="order-card__tag-btn" title="改价" onClick={() => { setPriceEditName(m.name); setPriceDraft(String(m.settlementPrice)) }}><Edit3 size={12} /></button>
+                              <button type="button" className="order-card__tag-btn" title="删除（本品牌不再显示）" onClick={() => commitHide(m.name)}><Trash2 size={12} /></button>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="relative">
                     <button
                       type="button"
