@@ -20,3 +20,16 @@
 
 ## 备注
 三态走查（显示/编辑/保存 toast）为 UI 层，真机走查归核验窗复验项；数据层隔离已由 runner 全实证。
+
+
+## R1 整改实证（核验窗 return-R1 四 FAIL 同修）
+
+| FAIL | 整改 | 实证 |
+|---|---|---|
+| FAIL-1 图标 | StickyNote→PenLine（显示行/占位行）+Edit3（编辑行） | grep：PenLine×4、Edit3×2（L500/509/518/525） |
+| FAIL-2 空态占位 | 空态改淡色占位行（opacity 0.55，点击进编辑），删操作区 icon 钮 | grep：opacity×1；cardnote-edit 残留=0（事件机制全清） |
+| FAIL-3 展开收起 | 显示行点击=展开/收起（showFull 照备注块交互），行尾小编辑钮（Edit3）进编辑 | grep：showFull×5；行尾钮 aria-label="编辑跟单备注" |
+| FAIL-4 回收站 | 挂点 `{order.status !== '回收站' && <CardNoteRow/>}` 守卫 | grep：回收站守卫×1 |
+| 附加 | 清空存 `cardNote: value \|\| undefined`（不留 '' 假值） | runner：清空后 cardNote===undefined PASS |
+
+复跑：runner 3 断言 FAILS=0（写入/隔离/清空存 undefined）；tsc 0+vite build+[BUILD CHECK] 前后全过。
