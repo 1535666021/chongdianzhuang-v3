@@ -6,6 +6,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList as hardcodedBrandList } from '@/constants/materialData'
 import { isHardcodedVehicleBrand } from '@/constants/brands'
 import { getCustomBrands } from '@/shared/storage/customBrandStorage'
+import { getBrandAddonsWithOverrides } from '@/shared/storage/brandAddonOverrides'
 import { WANBANG_GEELY_ADDON_MATERIALS, isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
 import { ZHIDA_WULING_ADDON_MATERIALS, isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
 import { JD_ADDON_MATERIALS } from '@/constants/addonPrice_jd'
@@ -63,9 +64,15 @@ export function useSurvey(order: Order) {
   const notesText = order.notes || ''
   const feeLabel = /维修/.test(notesText) ? '维修费' : /勘察/.test(notesText) ? '勘察费' : /勘测/.test(notesText) ? '勘测费' : '安装费（米数分档）'
 
+  // P0-244：先声明版本号（下方 memo 引用）
+  const [ovVersion, setOvVersion] = useState(0)
+  const refreshBrandOverrides = useCallback(() => setOvVersion((v) => v + 1), [])
+  // P0-244 唯一合并点：全集 catalog=基础表⊕覆盖层（isCableMat/查表/brandAddons 同源）
+  const mergedAddonCatalog = useMemo(() => getBrandAddonsWithOverrides(effectiveBrand, addonMaterialsData), [effectiveBrand, ovVersion])
+
   // P0-103：万帮"线缆 X*Ymm²"行与电缆同口径（按布线距离超米计费），勘测/完工全链路同源
   const isCableMat = (name: string) => {
-    const mat = addonMaterialsData.find((a) => a.name === name)
+    const mat = mergedAddonCatalog.find((a) => a.name === name)
     return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
   }
 
@@ -79,10 +86,10 @@ export function useSurvey(order: Order) {
     powerKw: order.powerKw,
     cableMeters: form.cableDistance || 0,
     extraItems: (form.estimatedMaterials || []).filter((m) => !isCableMat(m.name) && !isBreakerBoxRow(m.name) && !isBreakerMaterial(m.name)).map((m) => ({ name: m.name, quantity: m.quantity })),
-  }), [effectiveBrand, order.powerKw, form.cableDistance, form.estimatedMaterials, costVersion])
+  }), [effectiveBrand, order.powerKw, form.cableDistance, form.estimatedMaterials, costVersion, ovVersion])
 
   const calcCableCost = (name: string, distance: number) => {
-    const mat = addonMaterialsData.find((a) => a.name === name)
+    const mat = mergedAddonCatalog.find((a) => a.name === name)
     const unitPrice = mat?.settlementPrice ?? findWanbangMeteredCable(name)?.customerPrice
     if (!unitPrice) return 0
     const { overFee } = calcOverFee(distance, resolveOrderPackageMeters(order), unitPrice)
@@ -119,13 +126,15 @@ export function useSurvey(order: Order) {
       ...source,
       ...getAllAddonMaterials().filter((m) => isCustomAddonMaterial(m.id) && (m.brand === customTarget || (!wanbangHit && !zhidaHitNow && !m.brand))),
     ]
-    return [...sourceWithCustoms].sort((a, b) => {
+    // P0-244：出口唯一合并点（删/改价/增），弹窗选项源同源
+    const mergedSource = getBrandAddonsWithOverrides(effectiveBrand, sourceWithCustoms)
+    return [...mergedSource].sort((a, b) => {
       const countA = usageCount[a.name] || 0
       const countB = usageCount[b.name] || 0
       if (countB !== countA) return countB - countA
       return a.name.localeCompare(b.name)
     })
-  }, [effectiveBrand, materialUsageCount, order.brandName, order.platformName, order.platform, order.rawText])
+  }, [effectiveBrand, materialUsageCount, order.brandName, order.platformName, order.platform, order.rawText, ovVersion])
 
   const totalEstimatedCost = useMemo(() => {
     const items = form.estimatedMaterials.map((m) => ({
@@ -137,7 +146,7 @@ export function useSurvey(order: Order) {
     const cableItem = form.estimatedMaterials.find((m) => isCableMat(m.name))
     const cableCost = cableItem ? calcCableCost(cableItem.name, form.cableDistance || 0) : 0
     return calcSurveyTotal(items, cableCost)
-  }, [form.estimatedMaterials, form.cableDistance, order])
+  }, [form.estimatedMaterials, form.cableDistance, order, ovVersion])
 
   const toggleAddon = useCallback((mat: Material) => {
     setForm((prev) => {
@@ -247,6 +256,8 @@ export function useSurvey(order: Order) {
     updateQuantity,
     totalEstimatedCost,
     calcCableCost,
+    addonCatalog: mergedAddonCatalog,
+    refreshBrandOverrides,
     serviceFee,
     feeLabel,
     fullCost,
