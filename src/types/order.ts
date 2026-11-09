@@ -63,6 +63,8 @@ export interface Order extends BaseEntity {
   serviceType?: string
   platformName?: string
   remark?: string
+  // P0-243：订单卡片手写跟单备注（与订单备注 remark 平级隔离，不回写/不动 rawText）
+  cardNote?: string
   rawText?: string
   installType?: InstallType
   surveyNote?: string
