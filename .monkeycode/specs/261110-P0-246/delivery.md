@@ -23,3 +23,10 @@ A1 甲方原文=方程豹/A2 subBrand 无脏值/B1 比亚迪-汉 母品牌不动
 - orderCalc/parser 回归 20 条零改动（词表层新增，出口零改）
 - tsc 0+vite build+[BUILD CHECK] 前置/后置全过
 - 真实订单数据零经手
+
+
+## R2 简化增补（甲方 2026-11-10 二次裁示「直接修就行，不需要留记录」）
+- SubBrandFixTool 改一键直修：设置页一个「品牌归正」钮 → 点击直接修 → toast 报「已修正 N 单」（0 单时报「无需修正（0 单命中，幂等）」）
+- 无 plan 预览确认页、无修正记录页（run_at 留痕保留作保险）
+- 备份（cdz_v3_subbrand_backup_<ts>）+幂等（重跑即空）保留
+- 修正器核心 subBrandFix.ts 未动（plan/run 分离保留，仅 UI 层简化）
