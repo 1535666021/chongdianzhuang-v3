@@ -45,6 +45,7 @@ import TripFeeZeroTool from '../components/TripFeeZeroTool'
 import BreakerCostBackfillTool from '../components/BreakerCostBackfillTool'
 import ProfitAuditTool from '../components/ProfitAuditTool'
 import GhostTripFixTool from '../components/GhostTripFixTool'
+import SubBrandFixTool from '../components/SubBrandFixTool'
 import BindReconcilePanel from '../components/BindReconcilePanel'
 import BrandManager from '../components/BrandManager'
 type SettingSection =
@@ -160,7 +161,12 @@ export default function SettingsPage() {
       case 'profitAudit':
         return <ProfitAuditTool />
       case 'ghostTrip':
-        return <GhostTripFixTool />
+        return (
+          <>
+            <GhostTripFixTool />
+            <SubBrandFixTool />
+          </>
+        )
       case 'reset':
         return <RestoreFactory />
       case 'about':
