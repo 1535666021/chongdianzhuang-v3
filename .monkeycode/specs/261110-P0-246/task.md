@@ -1,6 +1,6 @@
 《施工队 · 任务书》P0-246
 
-编号：P0-246　签发：监理窗口　日期：2026-11-10　状态：待施工
+编号：P0-246　签发：监理窗口　日期：2026-11-10　状态：待施工（**三件全裁：甲方 2026-11-10 裁示「123都修」，件3 修正器 plan→run 生效**）
 基线：仓库 main 当前 HEAD=db55e1f
 首句铁律：开工前必读 .monkeycode/MEMORY.md → RULES.md → PLAYBOOK.md，读完再动手。
 
@@ -16,10 +16,10 @@
   L148/L470：extractSubBrand 两个调用点
 - src/constants/brands.ts L44 `PILE_BRAND_KEYWORDS`——桩品牌关键词表同缺子品牌
 
-═══ 三、施工三件 ═══
+═══ 三、施工三件（全部生效，无 plan-only 保留件）═══
 1. **品牌词表补子品牌**（只增不改）：KNOWN_BRANDS + PILE_BRAND_KEYWORDS 补"方程豹"；施工队全量梳理市面"母品牌-子品牌"写法（比亚迪系：方程豹/仰望/腾势等），凡文本中真实出现的子品牌词一并收录，词表增补清单写进 delivery。
 2. **最长匹配优先**：extractSubBrand 截词逻辑改 KNOWN_BRANDS **最长命中优先**——"比亚迪-方程豹"→方程豹（4字>3字）；subBrand 余量剥前导连字符/空白；L164-169 同款逻辑对齐；纯"比亚迪"单零扰动（无子品牌词时仍=比亚迪）。
-3. **存量修正器**（RULES §9 铁律：plan/run 分离+执行前 localStorage 备份+幂等+留痕+设置页入口）：扫存量单 brandName=比亚迪 且（subBrand 含方程豹 或 rawText/车型含"方程豹"）→ plan 列明细（姓名/单号/原值）→ run 归正 brandName=方程豹+清脏 subBrand。此项甲方尚未逐字裁示，随本书给甲方看书，甲方点头即生效；未点头前 plan-only 不 run。
+3. **存量修正器**（RULES §9 铁律：plan/run 分离+执行前 localStorage 备份+幂等+留痕+设置页入口；**甲方已裁示生效**）：扫存量单 brandName=比亚迪 且（subBrand 含方程豹 或 rawText/车型含"方程豹"）→ plan 列明细（姓名/单号/原值）→ run 归正 brandName=方程豹+清脏 subBrand；交付时附 plan 清单摘要+run 报告。
 
 ═══ 四、禁区 ═══
 - 禁改解析回归 20 条样例本体；新增断言走临时 runner 留输出摘要
