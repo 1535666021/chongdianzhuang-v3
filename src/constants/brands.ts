@@ -42,6 +42,10 @@ export function getBrandLabel(brand: string | undefined): string {
 /** P0-136：桩名称品牌识别映射——桩名称/车辆型号含关键词→品牌。按关键词长度降序存储（最长匹配优先）。
  * 出处逐条注明；新增条目须附出处。歧义（同长度多命中）由消费方保持原样并计数。 */
 export const PILE_BRAND_KEYWORDS: ReadonlyArray<{ kw: string; brand: string }> = [
+  // P0-246：子品牌词头部插入（最长匹配优先；同长歧义由消费方保持原样）
+  { kw: '方程豹', brand: '方程豹' }, // 比亚迪系子品牌（甲方实证：「比亚迪-方程豹」套装名）
+  { kw: '仰望', brand: '仰望' }, // 比亚迪系子品牌
+  { kw: '腾势', brand: '腾势' }, // 比亚迪系子品牌
   { kw: '银河微金刚', brand: '吉利' }, // 甲方实证样本（桩名称原文）
   { kw: '银河', brand: '吉利' }, // 任务书指定：银河=吉利银河系
   { kw: '极氪', brand: '吉利' }, // P0-112 吉利系判定词表同口径
