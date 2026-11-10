@@ -48,11 +48,30 @@ const ORDER_NO_PREFIX_RE = /^(?:D|HW)/;
 
 /** P0-133-R2：子品牌抽取——品牌值命中已知品牌词后剩余部分存subBrand（"吉利银河黑金刚"→吉利+银河黑金刚） */
 const KNOWN_BRANDS = ['吉利', '银河', '极氪', '五菱', '挚达', '长安', '零跑', '特斯拉', '比亚迪', '长城', '宝马', '奔驰', '奥迪', '保时捷', '大众', '丰田', '本田', '理想', '蔚来', '小鹏', '问界', '领克', 'smart', '别克', '荣威', '埃安', '哪吒', '深蓝']
+const SUB_BRAND_WORDS = [
+  '方程豹', '仰望', '腾势', '欧拉', '坦克', '魏牌', '星途', '捷途',
+  '深蓝', '阿维塔', '埃安', '昊铂', '乐道', '极狐', '岚图',
+  '问界', '智界', '享界', '尊界',
+]
+
+function cleanSubBrandRemainder(rest: string): string {
+  return rest.replace(/^[\s\-—–/\\]+/, '').trim()
+}
+
 function extractSubBrand(item: { brandName?: string; subBrand?: string }): void {
   if (!item.brandName) return
+  // P0-246 件2：子品牌词最长命中优先——"比亚迪-方程豹"→方程豹（子品牌词命中优先于母品牌词）
+  const subHits = SUB_BRAND_WORDS.filter((w) => item.brandName!.includes(w))
+  if (subHits.length > 0) {
+    const best = subHits.reduce((a, b) => (b.length > a.length ? b : a))
+    const rest = cleanSubBrandRemainder(item.brandName!.replace(best, ''))
+    item.brandName = best
+    if (rest && !KNOWN_BRANDS.includes(rest)) item.subBrand = rest
+    return
+  }
   for (const bw of KNOWN_BRANDS) {
     if (item.brandName.startsWith(bw) && item.brandName.length > bw.length) {
-      item.subBrand = item.brandName.slice(bw.length)
+      item.subBrand = cleanSubBrandRemainder(item.brandName.slice(bw.length))
       item.brandName = bw
       return
     }
@@ -145,6 +164,15 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
   item.phone = pickKv(kv, KV_FIELD_KEYS.phone);
   item.address = cleanAddressText(pickKv(kv, KV_FIELD_KEYS.address));
   item.brandName = pickKv(kv, KV_FIELD_KEYS.brandName);
+  // P0-246：品牌原始值子品牌优先归正——pickKv 词表截取先截母品牌（"比亚迪-方程豹 7kW墙盒"→比亚迪），
+  // 原始 kv 值仍含方程豹→归正方程豹；直写无品牌键的块扫整块兜底
+  const brandRaw246 = [...kv.entries()]
+    .filter(([k]) => KV_FIELD_KEYS.brandName.some((bk) => k.includes(bk)))
+    .map(([, v]) => v).join(' ')
+  const subHit246 = SUB_BRAND_WORDS
+    .filter((w) => brandRaw246.includes(w) || (!item.brandName && block.includes(w)))
+    .sort((a, b) => b.length - a.length)[0]
+  if (subHit246) item.brandName = subHit246
   extractSubBrand(item);
   // P0-133-R2：pickKv对品牌值有词表截取——从kv原始值补抽子品牌（"所属品牌：吉利银河黑金刚"→银河黑金刚）
   const brandRaw = kv.get('所属品牌') || kv.get('品牌') || kv.get('品牌型号')
@@ -162,11 +190,16 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
     if (!item.packageMeters) item.packageMeters = pkgRaw.match(/(\d+(?:\.\d+)?)\s*米/)?.[1] ?? ''
     if (!item.powerKw)       item.powerKw       = pkgRaw.match(/(\d+(?:\.\d+)?)\s*(?:KW|kw|千瓦)/)?.[1] ?? ''
     if (!item.brandName) {
-      // KNOWN_BRANDS 最长匹配；歧义（多词同长）保持空，禁猜
-      const hits = KNOWN_BRANDS.filter((b) => pkgRaw.includes(b))
-      const max = Math.max(0, ...hits.map((b) => b.length))
-      const best = hits.filter((b) => b.length === max)
-      if (best.length === 1) item.brandName = best[0]
+      // P0-246 件2：子品牌词命中优先（"比亚迪-方程豹 7kW墙盒"→方程豹）；无命中回退 KNOWN_BRANDS 最长匹配；歧义保持空禁猜
+      const subHit = SUB_BRAND_WORDS.filter((w) => pkgRaw.includes(w)).sort((a, b) => b.length - a.length)[0]
+      if (subHit) {
+        item.brandName = subHit
+      } else {
+        const hits = KNOWN_BRANDS.filter((b) => pkgRaw.includes(b))
+        const max = Math.max(0, ...hits.map((b) => b.length))
+        const best = hits.filter((b) => b.length === max)
+        if (best.length === 1) item.brandName = best[0]
+      }
     }
   }
   if (userInfo && !item.phone) {
@@ -438,6 +471,12 @@ export function parseFlowBlock(block: string): ParsedOrderItem {
     }
     if (ADDRESS_HINTS.test(line) && STRONG_ADDRESS_HINTS.test(line)) {
       if (!addressLine || line.length > addressLine.length) addressLine = line;
+    }
+    // P0-246 件1+件2：子品牌词优先入候选（行内含方程豹等→排母品牌词之前）
+    for (const word of SUB_BRAND_WORDS) {
+      if (line.toLowerCase().includes(word.toLowerCase()) && !brandCandidates.includes(word)) {
+        brandCandidates.unshift(word)
+      }
     }
     for (const word of BRAND_WORDS) {
       if (line.toLowerCase().includes(word.toLowerCase()) && !brandCandidates.includes(word)) {
