@@ -505,9 +505,9 @@ function CardNoteRow({ order }: { order: Order }) {
   if (!editing) {
     // R1-3：显示行点击=展开/收起（照备注块 showFullRemark 交互），行尾小编辑钮进编辑态
     return (
-      <div className="order-card__remark" onClick={(event) => { event.stopPropagation(); setShowFull((v) => !v) }}>
+      <div className="order-card__remark order-card__cardnote" onClick={(event) => { event.stopPropagation(); setShowFull((v) => !v) }}>
         <PenLine size={14} className="order-card__icon order-card__icon--top" />
-        <span className={showFull ? 'order-card__remark-text--full' : 'order-card__remark-text--clamp'}>{note}</span>
+        <span className={`order-card__cardnote-text ${showFull ? 'order-card__remark-text--full' : 'order-card__remark-text--clamp'}`}>{note}</span>
         <button
           type="button"
           aria-label="编辑跟单备注"
