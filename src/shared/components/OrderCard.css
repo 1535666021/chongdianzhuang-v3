@@ -335,6 +335,18 @@
 
 
 /* P0-090 A3：订单备注展示（单行截断 + 点击展开） */
+/* P0-245：手写跟单备注（cardNote）显示态修饰类——橙红加粗（甲方授权监理定 #ea580c/600，与"待办"橙同族）；
+   解析备注 order.remark 继续走 .order-card__remark 原灰色，零误伤；空态占位块不加此类，保持淡色 */
+.order-card__cardnote,
+.order-card__cardnote .order-card__remark-text--clamp,
+.order-card__cardnote .order-card__remark-text--full {
+  color: #ea580c;
+  font-weight: 600;
+}
+.order-card__cardnote .order-card__icon {
+  color: #ea580c;
+}
+
 .order-card__remark {
   display: flex;
   align-items: flex-start;
