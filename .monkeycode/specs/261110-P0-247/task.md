@@ -1,4 +1,4 @@
-《施工队 · 任务书》P0-247（v2 · 根因更正实证版）
+《施工队 · 任务书》P0-247（v3 · 甲方二次裁示：存量错单自动修，零手工）
 
 编号：P0-247　签发：监理窗口　日期：2026-11-10　状态：待施工
 基线：仓库 main 当前 HEAD=a4227e1
@@ -9,33 +9,28 @@
 甲方裁定（原话实录）：
 ①「用的材料必须得录入成本，不管从勘测口录入还是后期补录——线缆、辅材、管材、漏保、漏保盒都必须计入成本」
 ②「如果某个品牌成本价里没有这项材料，就**弹出窗口让我去绑定**，而不是默默把账记完」
-③「18m 是我在勘测时确确实实选了电缆输入的。如果字段有误就改成数字。查清楚到底为什么不计入成本」
+③「18m 是我在勘测时确确实实选了电缆输入的……查清楚到底为什么不计入成本」
+④「还要我自己去保存，不是你自动保存吗？」——**存量错单系统全自动归正，零手工操作**
 
-═══ 二、根因实证（监理 v1 判"文本提取"有误，已认账更正；v2 逐行读死全链，HEAD=a4227e1）═══
-**字段链路逐环实证=全通**：
-- SurveyForm.tsx L66-71「电缆距离(米)」输入框 `onChange=Number(...)`→数字类型；useSurvey.ts L46/L238-244 保存 `survey: {...form}`→`survey.cableDistance` 确实落库
-- useCompletion.ts 完工页预填：`fixedAux.cableMeters = completionCableMeters ?? (survey.cableDistance || 0)`——**预填带勘测米数**；profit memo `calcFullMaterialCost({cableMeters: form.fixedAux.cableMeters,...})`→`materialCost=total`→`buildSettlementBase`→`order.materialCost` 落库
-- OrderDetail.tsx 费用明细：头行「材料成本」=`order.materialCost` **存值**（截图 ¥5）；展开明细=`calcFullMaterialCost(buildFullMaterialCostInput(order))` 实时重算（吃 survey.cableDistance）
-
-**根因定案**：这单**完工落库那一刻**电缆米数在账上=0（最高概率时序=先点「标记完成」、事后补做勘测才填 18m——P0-238 交付前历史行为，无校验拦截）。落库存值=漏保盒兜底价 5 元（useCompletion `breakerBoxPrice = breaker?.costPrice || 5`），**¥5.00=漏保盒兜底价，一分不差**。之后补勘测写入 survey.cableDistance=18（故截图可见勘测 18m），但三层账铁规「已完成单冻结读存值」→事后补的 18m 进不了存值账，头行永显 5。
-**甲方自验**：截图里展开「材料成本」明细——若明细显「电缆 18米 × ¥17.9/米」，根因即实锤。
+═══ 二、根因实证（v2 版已逐行读死全链，结论不变）═══
+字段链路（SurveyForm L66-71→useSurvey L46/238-244→useCompletion 预填 completionCableMeters ?? survey.cableDistance→calcFullMaterialCost→order.materialCost 落库→OrderDetail 头行读存值）逐环全通。
+根因=**完工落库那一刻电缆米数在账上=0**（先标记完成、事后补勘测填 18m，无校验拦截），存值锁死漏保盒兜底价 5 元；三层账冻结→事后补录进不了存值账。
 
 ═══ 三、施工三件 ═══
-1. **完工/修改结算保存校验·米数不一致拦截**（新件，修本次根因）：保存时校验 `form.fixedAux.cableMeters === 0 && (survey.cableDistance > 0 || 预估文本含米数)`→弹窗「勘测已记 N 米电缆，当前按 0 米计成本，确定按 0 保存？」——选项：①带入勘测米数重算 ②坚持按 0（免责留痕）。杜绝"完工时米数空、事后补录进不了存值账"的静默漏账。
-2. **未绑定=弹窗绑定**（甲方核心新规则）：写入侧（完工核算保存/修改结算保存）调 calcFullMaterialCost 后——`unmatched` 非空即弹绑定窗：逐个选成本表条目（走 cdz_cost_mapping_v1+findCostPrice 链，P0-241 件3 入口复用），绑定完成重算再落库；**绑定前禁静默保存**。
-3. **存量错单修复通道**：本单（及同类"存值材料成本=漏保盒兜底 5 元且 survey.cableDistance>0"的已完成单）——甲方口令后走「修改结算」：完工页电缆米数预填已带回勘测值→确认重存→存值归正。修正器形态待甲方看书裁示（默认=不改冻结单，引导修改结算入口，尊重三层账）。
+1. **完工/修改结算保存校验·米数不一致拦截**：保存时 `cableMeters===0 && survey.cableDistance>0`→弹窗「勘测已记 N 米电缆，当前按 0 米计成本，确定按 0 保存？」（带入重算/坚持按 0 留痕），杜绝新单再静默漏账。
+2. **未绑定=弹窗绑定**：写入侧 calcFullMaterialCost 后 `unmatched` 非空→弹绑定窗（cdz_cost_mapping_v1 链，P0-241 件3 入口复用），绑定完成重算再落库；绑定前禁静默保存。
+3. **存量错单自动修正器·零手工**（甲方裁示④）：**部署上线后首次进入自动执行一次**（无需甲方点），静默归正+toast 报「已自动修正 N 单成本」。判定收窄（防误伤正常老单，三层账铁规不动）：已完成单 ∧ completionCableMeters 空/0 ∧ survey.cableDistance>0 ∧ 存值 materialCost 与实时出口值不一致 → 按 `calcFullMaterialCost(buildFullMaterialCostInput(order))` 出口值自动归正 materialCost/actualProfit/reconciliationProfit（P0-239 幽灵30 修正器同款 RULES §9：执行前 localStorage 备份+幂等+留痕文件）；正常老单（完工页有米数/勘测也 0）零触碰；改动明细写日志文件可查。
 
 ═══ 四、禁区 ═══
-- orderCalc 出口函数本体语义禁改（unmatched 返回机制保留）；匹配顺序/漏保矩阵/三层账铁规零触碰；已完成单只经「修改结算」改存值，禁自动重算
-- 既有橙警「预估偏低去绑定」（非阻断）保留不动；本单弹窗=写入侧阻断（甲方裁示），两机制并存
-- 禁改解析回归 20 条样例；真实订单/客户数据禁入仓库，测试脱敏（王某某/13800000000/某小区）
+- orderCalc 出口本体禁改；匹配顺序/漏保矩阵零触碰；**只修事故形态错单，禁全量重算所有已完成单**（改价后老单按完工时价冻结的铁规不破）
+- 既有橙警保留；弹窗=写入侧阻断（甲方裁示）
+- 禁改解析回归 20 条样例；测试脱敏（王某某/13800000000/某小区）
 
 ═══ 五、验收（核验窗过秤）═══
-1. 米数拦截：脱敏单 survey.cableDistance=18→完工页米数清 0→保存→弹窗带「勘测已记 18 米」提示；选带入→成本含电缆 18×17.9；选按 0→留痕保存
-2. 米数一致零打扰：米数=勘测值时保存无弹窗
-3. 未绑定弹窗：成本表删某必算项绑定→保存→弹窗列出→绑定→成本生效→落库；重跑不再弹
-4. 冻结实证：未走修改结算的已完成单数据零变化；走修改结算后存值=新算值
-5. 回归 20/20；npm run build tsc 0 错+[BUILD CHECK]；releaseNotes.ts 头追加 P0-247
+1. 米数拦截与未绑定弹窗：同 v2 验收 1/2/3
+2. 修正器：造 3 条脱敏事故形态单（完工米数0+勘测18m+存值5）+ 2 条正常老单（对照）→自动执行→3 条归正（材料成本含 电缆18×17.9+PVC）→2 条对照零变化→重跑空（幂等）→备份实证→日志文件列 3 条改动明细
+3. 甲方原单形态复跑同 2 结论
+4. 回归 20/20；npm run build tsc 0 错+[BUILD CHECK]；releaseNotes.ts 头追加 P0-247
 
 ═══ 六、交付方式 ═══
 push 一笔（message 含 P0-247）+ specs/261110-P0-247/delivery.md（自查实证清单：文件:行/命令/输出摘要，虚报一处全单退件），会话只报一行指针。
