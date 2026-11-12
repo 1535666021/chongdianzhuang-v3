@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { orderRepairRepository } from './features/order/repair/repository'
 import { purgeExpiredRecycleBin } from './features/order/utils/recycleBin'
 import { useOrderStore } from '@/stores/orderStore'
+import { runMeterMismatchFix } from '@/shared/dataFix/meterMismatchFix'
 import { ROUTES } from '@/routes/route'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { useOfflineStatus } from '@/shared/hooks/useOfflineStatus'
@@ -70,6 +71,11 @@ export default function App() {
     // P0-217 G1b：修复链整体延后到首屏渲染完成后调度（requestIdleCallback 缺省 setTimeout 兜底，禁裸用）
     const schedule = window.requestIdleCallback?.bind(window) ?? ((cb: () => void) => setTimeout(cb, 0))
     schedule(() => setTimeout(() => { void runStartupMaintenance() }, 0))
+    // P0-247 件3：米数不一致存量错单自动修正——仅首次进入执行一次（RUN_AT_KEY 幂等），同链调度不阻断首屏；toast 静默报数
+    schedule(() => setTimeout(() => {
+      const n = runMeterMismatchFix(orders)
+      if (n > 0) appToast?.success?.(`已自动修正 ${n} 单成本`)
+    }, 0))
   }, [])
 
   useEffect(() => {
