@@ -4,6 +4,7 @@ import { isDaomeiOrder } from '@/shared/utils/company'
 import { usePackageMeters } from './usePackageMeters'
 import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, needBreakerCost, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
+import { detectMeterMismatch, METER_ZERO_OVERRIDE_LOG_KEY } from '@/shared/dataFix/meterMismatchFix'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
 import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
@@ -401,6 +402,26 @@ export function useCompletion(orderId: string) {
   }, [form.materials])
 
   const save = useCallback(() => {
+    // P0-247 件1：米数不一致拦截——按 0 米计成本但勘测有米数 → 双选弹窗
+    const surveyMeters = order?.survey?.cableDistance || 0
+    if (detectMeterMismatch(form.fixedAux.cableMeters, surveyMeters)) {
+      const bringIn = window.confirm(`勘测已记 ${surveyMeters} 米电缆，当前按 0 米计成本。
+「确定」=带入重算为 ${surveyMeters} 米（重算后再点一次保存）；「取消」=再选。`)
+      if (bringIn) {
+        updateForm({ fixedAux: { ...form.fixedAux, cableMeters: surveyMeters, pvcMeters: surveyMeters } })
+        return false
+      }
+      if (!window.confirm(`坚持按 0 米保存本次订单？将写入留痕（键 ${METER_ZERO_OVERRIDE_LOG_KEY}）。`)) return false
+      try {
+        const log = JSON.parse(localStorage.getItem(METER_ZERO_OVERRIDE_LOG_KEY) || '[]')
+        log.push({ orderId, surveyMeters, at: new Date().toISOString() })
+        localStorage.setItem(METER_ZERO_OVERRIDE_LOG_KEY, JSON.stringify(log))
+      } catch { /* 留痕失败不阻断保存 */ }
+    }
+    // P0-247 件2：未绑定=弹窗绑定，禁静默保存——pendingCostBind=首个未绑定非免费配额非豁免材料；
+    // 弹窗由 OrderComplete 常驻挂载（不做绑定=逐条豁免留痕后转 null 可存，兼容 P0-241 事后处理口径）
+    if (pendingCostBind) return false
+
     if (!order) return false
 
     const savedMaterials = form.materials.filter((m) => m.name && m.quantity > 0).map((m) => ({
@@ -443,7 +464,7 @@ export function useCompletion(orderId: string) {
       updateMaterialFrequency({ ...order, status: '已完成', materials: savedMaterials })
     }
     return true
-  }, [order, orderId, form, profit, completeOrder, isEditMode, updateOrderStore])
+  }, [order, orderId, form, pendingCostBind, profit, completeOrder, isEditMode, updateOrderStore])
 
   return {
     order,
