@@ -230,7 +230,7 @@ export const addonMaterials_batch11Part1: Material[] = [
     "id": "addon_253",
     "name": "安装服务套包（30米线缆敷设）",
     "category": "线缆",
-    "categoryCode": "CABLE",
+    "categoryCode": "SERVICE", // P0-247 v4 件1④：套包一口价误挂 CABLE→SERVICE（码短路保 false；SERVICE=安装服务类既有码零类型扩展）
     "unit": "套",
     "costPrice": 0,
     "settlementPrice": 1350.0,
