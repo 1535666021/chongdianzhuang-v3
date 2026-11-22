@@ -8,7 +8,7 @@
 - **V4 已销号**：整体验收七条全过（R2 HEAD 334bf775）；线上=1535666021.github.io/chongdianzhuang（V4-D2 清空重推部署）；V3 保留互为备份；**V4 前端优化单挂起**（三点：颜色换 V3 墨绿 #2e7d5b/排列方式待截图/搜索待指认页面）；V4 数据迁移=V3 导出备份→V4 导入（兼容 V3 裸 JSON）
 - **P0-247 背景（甲方报障实证）**：已完成单勘测记「电缆…×18米」但材料成本存值=¥5（漏保盒兜底价）——根因=完工落库时刻电缆米数账上=0（先标记完成、事后补勘测），三层账冻结锁死。字段链逐环实证全通（SurveyForm L66-71→useSurvey L46/238-244→useCompletion 预填→calcFullMaterialCost→OrderDetail 头行读存值）。
 - 核验窗：待命（无在验单）
-- 基线 HEAD：V3 代码=955d0f6（11-21 状态同步笔 221b6d4 纯文书）；V3 文书=本笔（11-11 二次刷新；在途 247 v4 任务书 @2f09a38、248 v2 @083c9f8）
+- 基线 HEAD：V3 代码=db731a3；V3 文书=本销号笔；V4 代码=334bf775
 - 挂起：**无**
 - 最近动态（11-08→11-10）：239/240 状态节修正→242 交付/R1/整改/销号（胶囊层级化上线）→243 交付/R1/销号（卡片备注上线）→244 一次通过销号（辅材覆盖层）→241 终验销号→238 甲方口令核验销号→245 销号（备注橙红显色）→246 交付/销号（方程豹识别+一键归正）→**甲方报障 18 米线漏成本→247 v1/v2/v3 三版演进（认错更正：v1 误判"文本提取"作废；v2 实证根因=完工时刻米数 0 存值锁死；v3 甲方裁示"还要我自己去保存？自动修"→修正器全自动）**→**11-11：甲方纠正 248「漏保矩阵不包含漏保盒」→v2 口径钉版签发；甲方截图报勘测弹窗「两数不同步」（辅材电缆行 20 米 vs 电缆距离框 0）→监理实证 isCableMat 正则字面 bug+244 新增行无 categoryCode→247 v4 重开（填入即同步+存量形态B）**
 
@@ -30,6 +30,7 @@
 - **P0-245（dbd71cd；手写备注行显眼色）**：OrderCard 显示态改类 #ea580c+font-weight 600+零误伤（remark 块原灰/空态淡色）+verify-task 七条全过+回归 20/20+tsc 0+build 全过**
 - **P0-246（c937a55；比亚迪子品牌识别+一键归正）**：SUB_BRAND_WORDS 独立词表（19 词）+子品牌词优先最长匹配+rest 剥前导脏字符+三路径同修；修正器 plan/run 分离+备份+幂等+留痕+设置页 SubBrandFixTool；runner 16 断言全绿+回归 20/20+tsc 0+build 全过；边界待裁：B 条 subBrand=汉 仅 KV 路径达成（无回归）**
 - **P0-247（955d0f6；勘察米数与完工米数不符三件套）**：件1 拦截弹窗（save 顶部 detectMeterMismatch 按 0∧勘测>0→双选：确定=带入重算 return false/取消→坚持按 0 留痕 METER_ZERO_OVERRIDE_LOG_KEY）+件2 未绑定禁静默（pendingCostBind 收窄 chargeable+unmatched+非免费配额+非豁免→save return false）+件3 自动修正（App 首进 requestIdleCallback 幂等 RUN_AT+toast 静默报数；收窄三条件：已完成/有勘测米数/米数空 0；三出口 liveCalc 同刷）+备份 cdz_v3_metermismatch_backup_ 含原值+日志 from/to+幂等重跑=0；核验窗终验（11-13）：runner 14 断言全绿（T1 三态/T2 收窄/T3 修正+三出口同刷+存值确变/T4 备份含原值 RUN_AT 拼键实证/T5 幂等 0/回归 20/20）+tsc 0+build 前后检查全过+diff 面 4 载荷（meterMismatchFix 新/App/useCompletion/releaseNotes）无混笔（orderCalc/parser/回归零改动）**
+- **P0-250 @db731a3 已销号**（地址证伪+安庆修正器，见二节）；核验窗终验（11-22）：runner 13 断言全绿（七变体+plan 2 单+run 归正 2+备份含原值+日志+幂等 0+回归 20/20）+tsc 0+build 前后检查全过**
 - 各单明细在 specs/<日期-编号>/ 原文，禁重开
 
 ## 三、挂起项
