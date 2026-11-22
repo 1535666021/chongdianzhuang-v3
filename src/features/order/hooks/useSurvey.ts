@@ -71,9 +71,16 @@ export function useSurvey(order: Order) {
   const mergedAddonCatalog = useMemo(() => getBrandAddonsWithOverrides(effectiveBrand, addonMaterialsData), [effectiveBrand, ovVersion])
 
   // P0-103：万帮"线缆 X*Ymm²"行与电缆同口径（按布线距离超米计费），勘测/完工全链路同源
+  // P0-247 v4 件1：isCableMat 判定统一——categoryCode 短路（有码只看码，禁回退名字正则）；
+  // 无码行文本兜底正则去空格（原 /电缆敷设 | 线缆敷设/ 字面空格几乎全灭）；万帮按表计量电缆判定不动
   const isCableMat = (name: string) => {
     const mat = mergedAddonCatalog.find((a) => a.name === name)
-    return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
+    const byCategory = mat
+      ? mat.categoryCode
+        ? mat.categoryCode === 'CABLE'
+        : /电缆敷设|线缆敷设/.test(mat.name)
+      : /电缆敷设|线缆敷设/.test(name)
+    return byCategory || !!findWanbangMeteredCable(name)
   }
 
   // P0-188-R1：成本侧统一出口 calcFullMaterialCost（电缆全量+PVC+漏保盒+漏保器矩阵自动计入；
