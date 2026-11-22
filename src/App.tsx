@@ -4,6 +4,7 @@ import { orderRepairRepository } from './features/order/repair/repository'
 import { purgeExpiredRecycleBin } from './features/order/utils/recycleBin'
 import { useOrderStore } from '@/stores/orderStore'
 import { runMeterMismatchFix } from '@/shared/dataFix/meterMismatchFix'
+import { runAqAddressFix } from '@/shared/dataFix/anqingAddressFix'
 import { ROUTES } from '@/routes/route'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
 import { useOfflineStatus } from '@/shared/hooks/useOfflineStatus'
@@ -75,6 +76,11 @@ export default function App() {
     schedule(() => setTimeout(() => {
       const n = runMeterMismatchFix(orders)
       if (n > 0) appToast?.success?.(`已自动修正 ${n} 单成本`)
+    }, 0))
+    // P0-250 件3：导入地址缺省市存量修（安庆十区县补前缀）——首进一次（RUN_AT_KEY 幂等），同链调度；toast 静默报数
+    schedule(() => setTimeout(() => {
+      const n2 = runAqAddressFix(orders)
+      if (n2 > 0) appToast?.success?.(`已补齐 ${n2} 单地址省市层级`)
     }, 0))
   }, [])
 
