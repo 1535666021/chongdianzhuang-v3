@@ -242,6 +242,39 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
  * 六、流式块解析
  * -------------------------------------------------------------- */
 
+/* ============================================================
+ * P0-249：紧凑流左段地址清洗 + 安庆区县短名归一 + 重复层级去重
+ * 只作用于 parseCompactFlowBlock「是/否」分支写入 address 前；
+ * 非地址 token（日期区间/预约/权益/电表状态/电源性质）剔除，VIN/手机号残留剔除；
+ * 命中安庆区县短名且缺「安庆市」层级→规范「安徽省安庆市+区县+后续」并置 item.region='安庆'（REGIONS 白名单已含安庆）。
+ * ============================================================ */
+const AQ_COUNTIES = ['怀宁县', '迎江区', '大观区', '宜秀区', '潜山市', '桐城市', '太湖县', '宿松县', '望江县', '岳西县']
+
+// 非地址 token：进地址即污染（甲方实证样例：11.22-11.23/家用电表/权益到期/电表已安装/单位电）
+const COMPACT_NON_ADDRESS_TOKEN = /^(?:\d{1,2}\.\d{1,2}(?:-\d{1,2}\.\d{1,2})?|\d{1,2}月\d{1,2}日(?:[-~至]\d{1,2}月\d{1,2}日)?|预约.*|权益.*|电表已安装|电表已申请|家用电表|单位电(?:表|源)?|电源性质.*|已装表|未装表)$/
+
+function cleanCompactAddress(raw: string): { address: string; region: string } {
+  // 1) token 级剔除：非地址 token / VIN(17位) / 手机号残留 不入地址
+  const kept = raw.split(/\s+/).filter((tok) => {
+    if (!tok) return false
+    if (COMPACT_NON_ADDRESS_TOKEN.test(tok)) return false
+    if (/^[A-HJ-NPR-Z0-9]{17}$/i.test(tok)) return false // VIN
+    if (/^1[3-9]\d{9}$/.test(tok)) return false // 手机号残留
+    return true
+  })
+  let addr = kept.join('')
+  // 2) 安庆区县短名归一 + 重复层级去重
+  const hit = AQ_COUNTIES.find((c) => addr.includes(c))
+  if (!hit) return { address: addr, region: '' }
+  if (!addr.includes('安庆市')) addr = addr.replace(hit, `安徽省安庆市${hit}`)
+  const norm = `安徽省安庆市${hit}`
+  const start = addr.indexOf(norm)
+  if (start > 0) addr = addr.slice(start) // 前缀裸县名去除：怀宁县安徽省安庆市怀宁县…→规范式开头
+  const after = addr.indexOf(norm) + norm.length
+  if (addr.slice(after, after + hit.length) === hit) addr = addr.slice(0, after) + addr.slice(after + hit.length) // 层级叠写去重
+  return { address: addr, region: '安庆' }
+}
+
 function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
   const text = block.replace(/\s+/g, ' ').trim();
   const identity = text.match(/(?:^|\s)(\d{10,20})\s+([一-龥]{2,4})\s+(1[3-9]\d{9})\s+(.+)$/);
@@ -256,7 +289,10 @@ function parseCompactFlowBlock(block: string): ParsedOrderItem | null {
   item.serviceType = text.slice(0, identity.index).replace(/^\d{1,2}\.\d{1,2}\s+/, '').trim();
   const powerMatch = item.serviceType.match(POWER_RE);
   if (powerMatch) item.powerKw = powerMatch[1];
-  item.address = addressAndRemark[1].replace(/\s+/g, '');
+  // P0-249：写 address 前清洗（非地址 token 剔除+安庆短名归一+层级去重）；region 同步置安庆；remark 仍取「是/否」后尾段不回填
+      const compactClean = cleanCompactAddress(addressAndRemark[1])
+      item.address = compactClean.address
+      if (compactClean.region) item.region = compactClean.region;
   item.remark = addressAndRemark[2].trim();
   fillFallbacks(item, text);
   return item;
