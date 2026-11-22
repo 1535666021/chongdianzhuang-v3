@@ -251,7 +251,7 @@ export function parseKeyValueBlock(block: string): ParsedOrderItem {
 const AQ_COUNTIES = ['怀宁县', '迎江区', '大观区', '宜秀区', '潜山市', '桐城市', '太湖县', '宿松县', '望江县', '岳西县']
 
 // 非地址 token：进地址即污染（甲方实证样例：11.22-11.23/家用电表/权益到期/电表已安装/单位电）
-const COMPACT_NON_ADDRESS_TOKEN = /^(?:\d{1,2}\.\d{1,2}(?:-\d{1,2}\.\d{1,2})?|\d{1,2}月\d{1,2}日(?:[-~至]\d{1,2}月\d{1,2}日)?|预约.*|权益.*|电表已安装|电表已申请|家用电表|单位电(?:表|源)?|电源性质.*|已装表|未装表)$/
+const COMPACT_NON_ADDRESS_TOKEN = /^(?:\d{1,2}\.\d{1,2}(?:-\d{1,2}\.\d{1,2})?|\d{1,2}月\d{1,2}日(?:[-~至]\d{1,2}月\d{1,2}日)?|预约.*|权益.*|安装权益.*|电表已安装|电表已申请|家用电表|单位电(?:表|源)?|电源性质.*|已装表|未装表)$/
 
 function cleanCompactAddress(raw: string): { address: string; region: string } {
   // 1) token 级剔除：非地址 token / VIN(17位) / 手机号残留 不入地址
