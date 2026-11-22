@@ -1,17 +1,23 @@
-# P0-247 交付（结算保存米数拦截+未绑定禁静默保存+存量错单自动修正）
+# P0-247 v4 交付（isCableMat 码短路+数据修补+存量修形态B）
 
 ## 基线与载荷
-- 基线：main 28c42c1（P0-246 销号后 HEAD）
-- 载荷 4 文件（1 新+3 改）：meterMismatchFix.ts（新）/useCompletion.ts/App.tsx/releaseNotes.ts
+- 基线：main HEAD（v3 销号后）；载荷 4 文件：useSurvey.ts / meterMismatchFix.ts / addonMaterialData_batch11_捷途 part1 / releaseNotes.ts（前两笔 6538337/23e16f6 已推）
+- 件2=原 v3 件1/件3=原 v3 件2（v3 已销号）——v4 实增量=件1+件1④+件4 形态B
 
-## 三件实证
-1. **米数不一致拦截**（useCompletion.save 顶部）：fixedAux.cableMeters===0 ∧ survey.cableDistance>0 → confirm 双选——确定=带入重算（updateForm 电缆+PVC 米数=勘测值，重算后再点保存）；取消→二问=坚持按 0（写留痕 cdz_meter_zero_overrides 后保存）/再取消=中止
-2. **未绑定=弹窗绑定禁静默保存**（save 内 `if (pendingCostBind) return false`）：pendingCostBind=既有首未绑定非免费配额非豁免材料；CostBindModal 由 OrderComplete 常驻挂载；「不做绑定」=逐条豁免留痕转 null 后可存（P0-241 生态化口径兼容）
-3. **存量错单自动修正**（App.tsx 首个 useEffect，runStartupMaintenance 同款 requestIdleCallback 链）：runMeterMismatchFix=收窄三条件（已完成∧completionCableMeters 空/0∧survey.cableDistance>0∧materialCost≠实时导出）；命中→completionCableMeters 补勘测米数+materialCost/actualProfit/reconciliationProfit 按实时导出三出口同刷（buildFullMaterialCostInput 覆米数）；备份 cdz_v3_metermismatch_backup_<ts>+RUN_AT_KEY cdz_metermismatch_p0247_run_at 幂等+日志文件 cdz_metermismatch_fix_log（from/to）；toast「已自动修正 N 单成本」
+## 件1 实证
+- isCableMat 判定统一：有 categoryCode 只看码（===CABLE）；无码文本兜底 `/电缆敷设|线缆敷设/`（原字面空格正则仅「敷设+空格」形态侥幸命中——runner A0 双正则对比实证）
+- 万帮 findWanbangMeteredCable 零触碰（orderCalc L167 导出实证）
 
-## runner 汇总（脱敏假数据 13 断言 FAILS=0）
-T1 detect 三态（0vs30 拦/30vs30 放/0vs0 放）/T2 mm-1 命中·mm-2 已带米数不命中/T3 修正 1 单（米数=30+三出口刷新）/T4 RUN_AT_KEY+日志 from/to+备份含原值/T5 幂等重跑=0
+## 件1④ 数据文件核验（静态脚本全量扫描 addonMaterialData*.ts）
+- 「category=线缆∧categoryCode≠CABLE」行数=0——任务书预期失配形态不存在，无需向 CABLE 修补
+- **反向发现（裁示点）**：「安装服务套包（30米线缆敷设）」（addon_253，unit=套一口价）误挂 CABLE——件1新短路会判 true 与验收「套包必须 false」冲突；按任务书授权机制数据文件修补：CABLE→**SERVICE**（既有码零类型扩展，短路 false 保安全）
+- 观察不处理：接地线/上门服务等行有 CABLE 噪声码（既有脏数据非本单范围，报备待甲方裁）
 
-## 统一铁规矩自查
-- orderCalc/parser 零改动（输入型复用既有出口）；tsc 0+vite build+[BUILD CHECK] 前后置全过
-- 真实订单零经手；修正器静默执行不阻断首屏（requestIdleCallback 兜底 setTimeout）
+## 件4 形态B 实证
+- detectFormB：survey.cableDistance 空/0 ∧ **survey**.estimatedMaterials 含电缆敷设/线缆敷设行 qty>0 → 数量即米数（OrderSurvey 路径 types/order.ts L5 实证纠偏）
+- isMeterMismatchOrder/run 取米数=形态A∨形态B
+
+## runner 汇总（脱敏 FAILS=0）
+名称判定六连 A0-A6（正则 bug 对比/比亚迪=true/套包=false SERVICE 短路/万帮=true/套包外米=true/漏保盒=false/普通=false）
+件四九连 B1-B9（形态A/B 命中/已带米数·无电缆行不命中/修 2 单/米数=行数量 30/留痕/幂等=0）
+回归 20/20；tsc 0+vite build+[BUILD CHECK] 前后置全过
