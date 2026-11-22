@@ -19,15 +19,25 @@ export function detectMeterMismatch(cableMeters: number | undefined | null, surv
 }
 
 /** 命中条件（收窄三条件+存值不符） */
-export function isMeterMismatchOrder(order: Order): boolean {
-  if (order.status !== '已完成') return false
-  const sm = order.survey?.cableDistance || 0
-  if (sm <= 0) return false
-  if ((order.completionCableMeters ?? 0) !== 0) return false
-  const live = liveCalc(order, sm)
-  return order.materialCost !== live.materialCost
+/** 件4 形态B：勘测无电缆米数（空/0）但 estimatedMaterials 含电缆类行且数量>0 → 该数量即米数（OrderSurvey.estimatedMaterials 路径） */
+export function detectFormB(order: Order): number {
+  if ((order.survey?.cableDistance ?? 0) > 0) return 0
+  const cableRow = (order.survey?.estimatedMaterials || []).find((mm) => {
+    const q = (mm as { quantity?: number }).quantity || 0
+    if (q <= 0) return false
+    return (mm as { name?: string }).name?.includes('电缆敷设') || (mm as { name?: string }).name?.includes('线缆敷设')
+  })
+  return cableRow ? (cableRow as { quantity?: number }).quantity! : 0
 }
 
+export function isMeterMismatchOrder(order: Order): boolean {
+  if (order.status !== '已完成') return false
+  const meters = (order.survey?.cableDistance || 0) > 0 ? order.survey!.cableDistance! : detectFormB(order)
+  if (meters <= 0) return false
+  if ((order.completionCableMeters ?? 0) !== 0) return false
+  const live = liveCalc(order, meters)
+  return order.materialCost !== live.materialCost
+}
 /** 实时导出：buildFullMaterialCostInput 覆米数=勘测值 → 三出口 */
 export function liveCalc(order: Order, surveyMeters: number) {
   const input = { ...buildFullMaterialCostInput(order), cableMeters: surveyMeters, pvcMeters: surveyMeters }
@@ -53,7 +63,7 @@ export function runMeterMismatchFix(orders: Order[]): number {
     const log = JSON.parse(localStorage.getItem(METER_FIX_LOG_KEY) || '[]')
     const { updateOrder } = useOrderStore.getState()
     for (const o of targets) {
-      const sm = o.survey!.cableDistance!
+      const sm = detectFormB(o) || o.survey!.cableDistance!
       const live = liveCalc(o, sm)
       updateOrder(o.id, { completionCableMeters: sm, ...live })
       log.push({ id: o.id, from: { materialCost: o.materialCost, actualProfit: o.actualProfit, reconciliationProfit: o.reconciliationProfit }, to: live, at: new Date().toISOString() })
