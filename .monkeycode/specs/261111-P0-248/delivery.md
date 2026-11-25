@@ -1204,6 +1204,6 @@ export function runBreakerRowSelfCheck(): BreakerRowSelfCheckReport {
 text
 ## 部署结果（核验窗 11-26 06:21）
 - 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
-- 部署 run：另报（dispatch 后回填）
-- 回拉核验：version.json 对拍另报
-- 结论：P0-248 核验通过，部署进行中
+- 部署 run：45712554250 @c512249 success（手动 dispatch）
+- 回拉核验：线上 version.json=c512249 与 HEAD 全同；notes 头条=本单漏保必计说明
+- 结论：P0-248 核验通过+部署成功，销号成立
