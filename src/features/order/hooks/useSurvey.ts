@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { PLATFORM_FEE_RATE } from '@/constants/policy'
 import { useOrderStore } from '@/stores/orderStore'
-import { isGeelyBrand, calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable, calcFullMaterialCost, calcOrderServiceFee, isBreakerBoxRow, isBreakerMaterial } from '@/shared/utils/orderCalc'
+import { isGeelyBrand, calcOverFee, calcSurveyTotal, calcInstallFee, resolveOrderPackageMeters, findWanbangMeteredCable, calcFullMaterialCost, calcOrderServiceFee, isBreakerBoxRow, isBreakerMaterial, isCableLikeSurveyCharge } from '@/shared/utils/orderCalc'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { addonMaterialsData, brandList as hardcodedBrandList } from '@/constants/materialData'
 import { isHardcodedVehicleBrand } from '@/constants/brands'
@@ -73,15 +73,9 @@ export function useSurvey(order: Order) {
   // P0-103：万帮"线缆 X*Ymm²"行与电缆同口径（按布线距离超米计费），勘测/完工全链路同源
   // P0-247 v4 件1：isCableMat 判定统一——categoryCode 短路（有码只看码，禁回退名字正则）；
   // 无码行文本兜底正则去空格（原 /电缆敷设 | 线缆敷设/ 字面空格几乎全灭）；万帮按表计量电缆判定不动
-  const isCableMat = (name: string) => {
-    const mat = mergedAddonCatalog.find((a) => a.name === name)
-    const byCategory = mat
-      ? mat.categoryCode
-        ? mat.categoryCode === 'CABLE'
-        : /电缆敷设|线缆敷设/.test(mat.name)
-      : /电缆敷设|线缆敷设/.test(name)
-    return byCategory || !!findWanbangMeteredCable(name)
-  }
+  // P0-251：判定唯一出口 orderCalc.isCableLikeSurveyCharge（CABLE 码/freeQuota>0/无码去空格兜底/万帮表），
+  // useSurvey 与 SurveyModal 同源，禁第二份判定
+  const isCableMat = (name: string) => isCableLikeSurveyCharge(mergedAddonCatalog.find((a) => a.name === name), name)
 
   // P0-188-R1：成本侧统一出口 calcFullMaterialCost（电缆全量+PVC+漏保盒+漏保器矩阵自动计入；
   // 列表内电缆/漏保盒/漏保器行由出口统一处理故过滤；未绑定→unmatched 橙色警示 §5.3）
@@ -99,7 +93,11 @@ export function useSurvey(order: Order) {
     const mat = mergedAddonCatalog.find((a) => a.name === name)
     const unitPrice = mat?.settlementPrice ?? findWanbangMeteredCable(name)?.customerPrice
     if (!unitPrice) return 0
-    const { overFee } = calcOverFee(distance, resolveOrderPackageMeters(order), unitPrice)
+    // P0-251：显式免费额度（套包外线缆敷设 freeQuota=套餐内含米数）优先于套餐米数；
+    // 无额度行仍按套餐米数口径（order.packageMeters 优先，品牌默认兜底，禁组件硬编码）
+    const fq = mat?.freeQuota ?? 0
+    const quota = fq > 0 ? fq : resolveOrderPackageMeters(order)
+    const { overFee } = calcOverFee(distance, quota, unitPrice)
     return overFee
   }
 
@@ -161,7 +159,7 @@ export function useSurvey(order: Order) {
       if (exists) {
         const removed = prev.estimatedMaterials.filter((m) => m.name !== mat.name)
         // 如果移除的是电缆材料，清空相关字段
-        const isCableRemoved = mat.categoryCode === 'CABLE' || /电缆敷设|线缆敷设/.test(mat.name)
+        const isCableRemoved = isCableLikeSurveyCharge(mat) // P0-251：同一唯一出口
         return {
           ...prev,
           estimatedMaterials: removed,

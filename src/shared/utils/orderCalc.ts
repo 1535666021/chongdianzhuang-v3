@@ -173,6 +173,26 @@ export function isFreeQuotaMaterial(name: string) {
   return FREE_QUOTA_KEYWORDS.some((k) => name.includes(k)) || !!findWanbangMeteredCable(name)
 }
 
+/** P0-251：勘测电缆行客户收费判定唯一出口（useSurvey/SurveyModal/报告全链同源，禁第二份判定）。
+ * 命中口径：① categoryCode==='CABLE'；② 显式免费额度 (freeQuota ?? 0)>0（套包外线缆敷设类，
+ * 如 addon_312 freeQuota=30=套餐内含米数，套餐内不得向客户收费）；③ 无 categoryCode 时
+ * 去空格兜底 /电缆敷设|线缆敷设/（旧字面空格正则「电缆敷设␣」几乎全灭，已废）；
+ * 万帮按米线缆（findWanbangMeteredCable）同口径保留。查无材料行时按名字兜底（含万帮表）。
+ */
+export function isCableLikeSurveyCharge(
+  mat: { name: string; categoryCode?: string; freeQuota?: number } | null | undefined,
+  name = '',
+): boolean {
+  if (mat) {
+    if (mat.categoryCode === 'CABLE') return true
+    if ((mat.freeQuota ?? 0) > 0) return true
+    if (!mat.categoryCode && /电缆敷设|线缆敷设/.test(mat.name.replace(/\s+/g, ''))) return true
+    return false
+  }
+  const n = name.replace(/\s+/g, '')
+  return /电缆敷设|线缆敷设/.test(n) || !!findWanbangMeteredCable(name)
+}
+
 /** 漏保本体判定（别名：漏保/漏电保护器/漏保开关）：含"漏保/漏电保护"且非"漏保盒"（盒为安装辅材，厂家不提供） */
 export function isBreakerMaterial(name: string) {
   return /漏电保护|漏保/.test(name) && !/盒/.test(name)

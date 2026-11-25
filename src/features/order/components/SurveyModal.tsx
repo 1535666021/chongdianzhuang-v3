@@ -8,7 +8,7 @@ import { useOrderStore } from '@/stores/orderStore'
 import { Check, Edit3, Trash2, X } from 'lucide-react'
 import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import { useToast } from '@/shared/hooks/useToast'
-import { calcOverFee, resolveOrderPackageMeters, findWanbangMeteredCable } from '@/shared/utils/orderCalc'
+import { calcOverFee, resolveOrderPackageMeters, isCableLikeSurveyCharge } from '@/shared/utils/orderCalc'
 import { SurveyProfitPreview, SurveyProfitConclusion } from './SurveyProfitPreview'
 import StockTag from '@/shared/components/StockTag'
 import { SurveyReportModal } from './SurveyReportModal'
@@ -114,11 +114,9 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
     return () => { document.body.classList.remove('modal-open') }
   }, [])
 
-  const isCableMat = (name: string) => {
-    // P0-244：按名查表走唯一合并点（含新增项/改价）
-    const mat = addonCatalog.find((a) => a.name === name)
-    return (mat && (mat.categoryCode === 'CABLE' || /电缆敷设 | 线缆敷设/.test(mat.name))) || !!findWanbangMeteredCable(name)
-  }
+  // P0-251：本地旧正则（/电缆敷设 | 线缆敷设/ 含字面空格，与 useSurvey 不一致）已删——
+  // 判定唯一出口 orderCalc.isCableLikeSurveyCharge（CABLE 码/freeQuota>0/无码去空格兜底/万帮表）
+  const isCableMat = (name: string) => isCableLikeSurveyCharge(addonCatalog.find((a) => a.name === name), name)
 
   const orderPackageMeters = resolveOrderPackageMeters(order)
 
@@ -173,7 +171,9 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
       const short = mat ? mat.name : m.name
       // P0-099：报告材料行与预估费用同源——同一 calcOverFee + resolveOrderPackageMeters 输出
       const isCable = isCableMat(m.name), distance = form.cableDistance || 0
-      const over = isCable && mat ? calcOverFee(distance, orderPackageMeters, mat.settlementPrice) : null
+      // P0-251：免费额度（套包外线缆敷设 freeQuota=套餐内含米数）优先于套餐米数；套餐内该行小计 0，不打客户收费行
+      const quota = mat?.freeQuota && mat.freeQuota > 0 ? mat.freeQuota : orderPackageMeters
+      const over = isCable && mat ? calcOverFee(distance, quota, mat.settlementPrice) : null
       const subtotal = over ? over.overFee : m.unitPrice * m.quantity
       if (subtotal <= 0) return []
       return [over
@@ -350,6 +350,7 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                   {form.estimatedMaterials.length > 0 && (
                     <div className="modal-material-list">
                       {form.estimatedMaterials.map((m) => {
+                        const mat = addonCatalog.find((a) => a.name === m.name)
                         const isCable = isCableMat(m.name)
                         // P0-099：材料行超米费与预估费用同一函数同一输入（form.cableDistance），天然相等
                         const displayFee = isCable
@@ -363,7 +364,8 @@ export default function SurveyModal({ order, onClose }: SurveyModalProps) {
                             <span className="modal-material-name" style={{ minWidth: '88px', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', fontSize: adaptiveNameFontSize(m.name), whiteSpace: 'nowrap' }}>
                               {m.name}
                             </span>
-                            <span className="modal-material-price">¥{m.unitPrice}/m</span>
+                            {/* P0-251：单位展示按材料表 unit（套/个/次不再硬显示 /m） */}
+                            <span className="modal-material-price">¥{m.unitPrice}/{mat?.unit ?? 'm'}</span>
                             <input
                               type="number"
                               min={0}
