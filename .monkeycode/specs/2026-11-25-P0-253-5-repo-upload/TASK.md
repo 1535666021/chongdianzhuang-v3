@@ -1,0 +1,20 @@
+# 《施工队 · 任务书》P0-253-5
+
+施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），确认目录规范、接口约定、红线约束与历史教训后再编码。
+
+## 总则
+- 本系列原 P0-253A/P0-253B 已止损作废；必须按 P0-253-1 → 2 → 3 → 4 → 5 → 6 小步做，禁止一口气做完全系列。
+- 每个小任务独立 build、独立 delivery.md、独立回拉核验；做完一个停一个，等监理复验。
+- 真实明文/私钥/token 不进仓库、聊天、交付书；测试脱敏。
+
+## 范围
+在 253-4 复验通过后做：设置私仓 owner/repo/token；上传 today-new.age/.sha256；维护 base-current 与 today-new 两份，跨天滚动删旧；不做自动变更监听。
+
+## 不做
+不做私钥持久化、不做导入恢复、不做双向同步。
+
+## 验收
+1) token 错误有清晰提示且不入日志；2) 私仓只有 base/today 两份；3) 断网重试不丢密文；4) npm run build 通过；5) 交付 specs/2026-11-25-P0-253-5-repo-upload/delivery.md。
+
+施工队自行部署
+监理窗口 · 签发完毕
