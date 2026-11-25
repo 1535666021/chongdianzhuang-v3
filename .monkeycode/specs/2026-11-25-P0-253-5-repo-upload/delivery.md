@@ -42,3 +42,12 @@
 - 整改：`validateRepoConfig`（repoUpload.ts）——owner `^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$`（字母数字连字符≤39，首尾禁连字符=GitHub 真规则，较裁定建议加严）；repo `/^[a-zA-Z0-9._-]{1,100}$/`；双防线：UI 保存前红条拒绝 + `uploadSyncPackage` 入口拦截（非法配置零 fetch 外呼）
 - 整改实证：runner 13 断言 FAILS=0（合法/单字符/39 边界放行；下划线/首尾连字符/超 39/斜杠/超 100/空白 token 拒；上传入口拦截零外呼；合法回归可传）；build tsc 0 + 双 build-check 通过
 - 环境坑（入复盘）：/mnt/agents 盘 rm node_modules 超 120s 且禁符号链接（Operation not supported）→ 回 /tmp 工作区装包 45s 完成；ENV-PITFALLS 待补此两坑
+
+## 送达实证（2026-11-26 06:50，针对重新推送令「整改笔不可达」误判）
+
+- 核验窗 06:28/06:30 两次 fetch 失败系瞬时故障；本窗 06:22 推送即成功（PATCH ref 断言通过+回拉 sha256 对拍 3/3）
+- 仓库现况实证（06:50 复核）：
+  - `compare 6570523c...main` = ahead 3 / behind 0 → 整改笔完整在 main 历史，无分叉
+  - main 版 delivery.md 含本节（打回整改节 06:22 已入库）
+  - main 版 repoUpload.ts 含 `validateRepoConfig` 白名单双防线
+- 复验口径对照（按重新推送令）：owner≤39 首尾禁连字符 ✓ / repo≤100 字母数字._- ✓ / UI 红条拒存 ✓ / uploadSyncPackage 入口拦截零外发 ✓（runner 13 断言 FAILS=0 全量在本书「打回整改」节，return-R2535 其余证据免重测）
