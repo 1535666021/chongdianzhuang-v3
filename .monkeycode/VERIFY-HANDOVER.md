@@ -1,4 +1,4 @@
-# 核验窗交接书（2026-11-26 00:45，HEAD 43fc621）
+# 核验窗交接书（2026-11-26 00:55，HEAD 635fe59）
 
 ## 一、窗口身份
 - 角色：充电桩 v3 项目核验窗（GitHub 1535666021/chongdianzhuang-v3）
@@ -17,6 +17,8 @@
 238-250 销号行全在交接书二节；各单 return-R*/delivery 含本窗裁定与边界待裁项。
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
+
+**P0-253-5 已销号 @8ae850ee**（11-26 00:55 复验全过+部署成功）：diff 恰 4 src+本书零超范围（repoUpload.ts 新增 uploadSyncPackage today 两文件必传+probe base-current 404 才建基线（存在即跳过）+putFile HEAD 200 取 sha 覆盖/404 新建/401/403 分类+scheduleRetryWithBackoff 退避+saveRepoConfig 只存本机/RepoUploadTool.tsx token password 输入框/SettingsPage 接线/releaseNotes 头插）；runner 10/10（配置往返/全绿 PUT 4=today 双覆盖+base 双新建/token 在 Authorization 头非 body/500 HEAD 阶段零 PUT 拦截/失败密文保留）；回归 20/20；build 三连全过；部署 run 回拉另报。**边界疑点（如实上报不裁）**：任务书功能点 2"owner/repo 白名单校验"实现未见白名单正则（括号主承诺 token 只存本机已实证），缺项请甲方裁。
 
 **P0-253-4 已销号 @e9cc9e39**（11-26 00:45 复验全过+部署成功）：diff 恰 7 文件零超范围（changeQueue.ts 新增 QUEUE_DAY_KEY/SEQ_KEY/TODAY_AGE_KEY/TODAY_SHA_KEY 四键分离（253-2 契约键不变）+computeOrderDiff 四态（未变不入队/修改 upsert/新增 upsert/真删 tombstone）+getQueueStatus+flushQueue 失败保留暂存+scheduleFlush 30s 防抖幂等守卫/ChangeQueueTool.tsx 状态展示/SettingsPage 接线/App.tsx 挂启动链/releaseNotes 头插）；runner 14/14（四态 diff 全对/无公钥 flush 失败暂存保留/有公钥密文双键+队列清空+无明文 today-new.json+私钥解密回环 counts 吻合/契约键数组格式/防抖 30s）；回归 20/20；build 三连全过；部署 run 回拉另报。
 

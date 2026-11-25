@@ -25,3 +25,9 @@
 ## 教训/避坑
 - 浏览器直调 api.github.com 走 Contents API 需两次请求（HEAD 取 sha + PUT），422 常见原因是分支保护/路径冲突，单列文案
 - btoa 仅接受 Latin1：中文 sha256 说明行先 unescape(encodeURIComponent()) 再 btoa（本单文件名说明含中文风险已处理）
+
+## 部署结果（核验窗 11-26 00:55）
+- 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
+- 部署 run：另报（dispatch 后回填）
+- 回拉核验：version.json 对拍另报
+- 结论：P0-253-5 核验通过，部署进行中
