@@ -51,3 +51,7 @@
   - main 版 delivery.md 含本节（打回整改节 06:22 已入库）
   - main 版 repoUpload.ts 含 `validateRepoConfig` 白名单双防线
 - 复验口径对照（按重新推送令）：owner≤39 首尾禁连字符 ✓ / repo≤100 字母数字._- ✓ / UI 红条拒存 ✓ / uploadSyncPackage 入口拦截零外发 ✓（runner 13 断言 FAILS=0 全量在本书「打回整改」节，return-R2535 其余证据免重测）
+
+## 核验结论（核验窗 11-26 06:58）
+- 整改复验全过：白名单双防线 runner 11/11+build 三连+回归 20/20 沿用；部署 run 另报回填
+- 上文若含核验窗「核验返工令」节=误判误令，作废（整改 6570523 一直在库，根因短 SHA fetch 方法错）

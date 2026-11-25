@@ -18,7 +18,7 @@
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
 
-**P0-253-5 打回 @8ae850ee**（11-26 00:52 撤销销号改打回）：复验全量已过（diff 恰 4 src+本书/runner 10/10/回归 20/20/build 三连，证据留存 return-R2535.md）但任务书功能点 2「owner/repo 白名单校验」实现未见（lib/UI 均无白名单正则，仅三非空校验）=口径与功能不符→打回整改，补白名单校验后重新交付复验。已部署版本（c0df456）功能可用仅缺该校验，整改后随新部署覆盖。
+**P0-253-5 已销号 @6570523**（11-26 06:58 整改复验全过）：打回点「owner/repo 白名单校验」整改落地=repoUpload.ts +14（validateRepoConfig：owner 字母数字连字符≤39 首尾禁连字符/repo 字母数字._-≤100）+uploadSyncPackage 入口拦截（非法配置零 fetch 不外发）+RepoUploadTool.tsx +3 保存红条；整改增量 diff 恰 5 文件零超范围（含 return-R2535 送达实证节）；runner 11/11（合法零错/首连字符/40 超限/39 合法/空格/101 超限/100 合法/入口拦截零外发/放行无配置错）；回归 20/20 沿用（零交集）+build 三连全过；部署 run 回拉另报。**误判更正**：核验窗 06:30「整改笔不可达」结论系 fetch 短 SHA 方法错+per_page=2 核查不严所致（6570523 一直在 main 祖先链），误发重新推送令（f957b5a）与 delivery 误令节已标注作废，向施工队致歉；教训录 ENV-PITFALLS：判存否必用 compare API 或全 SHA fetch，禁短 SHA+禁小样本定论。
 
 **P0-253-4 已销号 @e9cc9e39**（11-26 00:45 复验全过+部署成功）：diff 恰 7 文件零超范围（changeQueue.ts 新增 QUEUE_DAY_KEY/SEQ_KEY/TODAY_AGE_KEY/TODAY_SHA_KEY 四键分离（253-2 契约键不变）+computeOrderDiff 四态（未变不入队/修改 upsert/新增 upsert/真删 tombstone）+getQueueStatus+flushQueue 失败保留暂存+scheduleFlush 30s 防抖幂等守卫/ChangeQueueTool.tsx 状态展示/SettingsPage 接线/App.tsx 挂启动链/releaseNotes 头插）；runner 14/14（四态 diff 全对/无公钥 flush 失败暂存保留/有公钥密文双键+队列清空+无明文 today-new.json+私钥解密回环 counts 吻合/契约键数组格式/防抖 30s）；回归 20/20；build 三连全过；部署 run 回拉另报。
 
