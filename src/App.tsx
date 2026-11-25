@@ -18,6 +18,7 @@ import { runAppointmentRangeMigration } from '@/shared/dataFix/migrateAppointmen
 import { runBreakerRowSelfCheck } from '@/shared/dataFix/breakerRowSelfCheckFix'
 import BottomTabBar from '@/shared/components/BottomTabBar'
 import ReleaseNotesBanner from '@/shared/components/ReleaseNotesBanner' // P0-234：更新通知顶部横幅
+import { startChangeQueue } from '@/features/settings/lib/changeQueue' // P0-253-4：变更监听防抖打包
 
 // 导出全局 toast
 export { toast }
@@ -67,6 +68,10 @@ export default function App() {
   const isOffline = useOfflineStatus()
   const orders = useOrderStore((s) => s.orders)
   const { toast: appToast, toasts, removeToast } = useToast()
+
+  useEffect(() => {
+    startChangeQueue()
+  }, [])
 
   useEffect(() => {
     // P0-217 G1b：修复链整体延后到首屏渲染完成后调度（requestIdleCallback 缺省 setTimeout 兜底，禁裸用）
