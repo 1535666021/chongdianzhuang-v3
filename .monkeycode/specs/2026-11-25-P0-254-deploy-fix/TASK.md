@@ -1,4 +1,6 @@
 # 《施工队 · 任务书》P0-254
+> 状态：已热修复（监理直接提交 deploy.yml）。甲方确认可正常打开且 30m 套包线缆免费提示出现；施工队无需重复修 workflow，仅需补 delivery.md 与自查实证。
+
 
 施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），确认目录规范、接口约定、红线约束与历史教训后再编码。
 
