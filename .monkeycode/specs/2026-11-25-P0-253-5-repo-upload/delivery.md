@@ -28,6 +28,6 @@
 
 ## 部署结果（核验窗 11-26 00:55）
 - 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
-- 部署 run：另报（dispatch 后回填）
-- 回拉核验：version.json 对拍另报
-- 结论：P0-253-5 核验通过，部署进行中
+- 部署 run：45657953999 @c0df456 success（手动 dispatch）
+- 回拉核验：线上 version.json=c0df456 与 HEAD 全同；notes 含本单私仓上传说明
+- 结论：P0-253-5 核验通过+部署成功，销号成立
