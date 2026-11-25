@@ -33,6 +33,9 @@ const round2 = (n: number): number => Math.round(n * 100) / 100
 
 /** 纯函数 plan（不写库）：已完成单；需自购缺行→补行；免配多行→删行；口径一致→跳过（重跑即空=幂等） */
 export function planBreakerRowSelfCheck(orders: Order[]): { items: BreakerRowPlanItem[] } {
+  // P0-248：漏保矩阵废除；已完成单按完工时刻快照冻结，启动自检不再补/删漏保器行（老单零变化铁律）
+  void orders
+  return { items: [] }
   const items: BreakerRowPlanItem[] = []
   for (const order of orders) {
     if (order.status !== '已完成') continue

@@ -253,9 +253,8 @@ export function calcFullMaterialCost(input: FullMaterialCostInput): FullMaterial
   meterCost('PVC', input.pvcMeters ?? input.cableMeters ?? 0)
   // 漏保盒每单必含（§1.6，不参与矩阵；默认1个）
   meterCost('漏保盒', input.breakerCount ?? 1)
-  // 漏保器按矩阵：领克全不含/五菱3.5kW不含/吉利厂家提供=0（§1.6）
-  // P0-197-R1：漏保矩阵新语义（不含=需自购计成本）；geelyFree 已并入 needBreakerCost
-  if (needBreakerCost(input.brandName || '', input.powerKw)) {
+  // P0-248：漏保矩阵废除——漏保器每单必计成本（漏保盒仍每单必含，二者互不替代）
+  {
     let breakerName = input.breakerType || ''
     if (!breakerName) {
       const fb = resolveCostMaterials().find((c) => /漏保|漏电保护/.test(c.name) && !/盒/.test(c.name))

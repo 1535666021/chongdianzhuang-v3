@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { JD_ADDON_PRICES } from '@/constants/addonPrice_jd'
 import { isDaomeiOrder } from '@/shared/utils/company'
 import { usePackageMeters } from './usePackageMeters'
-import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, needBreakerCost, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
+import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { detectMeterMismatch, METER_ZERO_OVERRIDE_LOG_KEY } from '@/shared/dataFix/meterMismatchFix'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -99,11 +99,12 @@ function buildMaterialItems(ctx: BreakdownCtx): ProfitBreakdownItem[] {
   }
   for (const m of ctx.materials) {
     if (isFreeQuotaMaterial(m.name)) continue
-    const breakerFree = ctx.breakerFreeByMatrix && isBreakerMaterial(m.name)
-    const unitCost = breakerFree ? 0 : resolveCostPrice(m.name)
+    // P0-248/P0-202：手加漏保行由固定漏保行统一展示，禁双计
+    if (isBreakerMaterial(m.name)) continue
+    const unitCost = resolveCostPrice(m.name)
     const amount = Math.round(unitCost * m.quantity * 100) / 100
-    if (amount > 0 || breakerFree) {
-      items.push({ name: m.name, calc: breakerFree ? `${m.name} ${m.quantity}${m.unit}（厂家提供）` : `${m.name} ${m.quantity}${m.unit} × ¥${unitCost}`, amount, materialName: m.name })
+    if (amount > 0) {
+      items.push({ name: m.name, calc: `${m.name} ${m.quantity}${m.unit} × ¥${unitCost}`, amount, materialName: m.name })
     }
   }
   return items
@@ -297,9 +298,9 @@ export function useCompletion(orderId: string) {
     const breaker = findCostMaterial('漏保盒')
     const cableCostPrice = cable?.costPrice || 17.9
     const pvcCostPrice = pvc?.costPrice || 1
-    // P0-213：漏保免配判定归并唯一出口 needBreakerCost（矩阵：吉利厂家提供/五菱7kW免配/其余含漏保单需自购；禁重写）
-    const breakerFreeByMatrix = !needBreakerCost(order?.brandName || '', order?.powerKw || '')
-    const breakerTypeCost = breakerFreeByMatrix ? 0 : (order ? resolveBreakerUnitCost(order) : 0)
+    // P0-248：漏保矩阵废除——漏保器每单必计；免配 0 支与「（厂家提供）」文案同步废除
+    const breakerFreeByMatrix = false
+    const breakerTypeCost = order ? resolveBreakerUnitCost(order) : 0
 
     // 增项应收：跳过电缆/线缆（已由固定辅材超米口径统一计算），其余按明细
     let addonReceivable = 0
