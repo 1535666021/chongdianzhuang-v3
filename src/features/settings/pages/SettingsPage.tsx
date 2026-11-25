@@ -26,6 +26,7 @@ import {
   Tag,
   KeyRound,
   FileDown,
+  Lock,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION, APP_BUILD_TIME } from '@/constants/common'
 import { runBrandBackfillManual } from '@/shared/dataFix/backfillBrand'
@@ -52,6 +53,7 @@ import BindReconcilePanel from '../components/BindReconcilePanel'
 import BrandManager from '../components/BrandManager'
 import BackupKeyManager from '../components/BackupKeyManager'
 import ExportSyncTool from '../components/ExportSyncTool'
+import LocalAgeTool from '../components/LocalAgeTool'
 type SettingSection =
   | 'haptics'
   | 'dupcheck'
@@ -70,7 +72,7 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey' | 'exportsync'
+  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey' | 'exportsync' | 'localage'
   | null
 export default function SettingsPage() {
   // P0-199-R1：隔离箱角标=箱内条数
@@ -96,6 +98,7 @@ export default function SettingsPage() {
     { id: 'bindReconcile' as const, label: '绑定对账', icon: Link2, desc: '未绑定增项一次清账' },
     { id: 'backupkey' as const, label: '备份密钥', icon: KeyRound, desc: '生成 age 密钥对：公钥本机保存，私钥只下载一次' },
     { id: 'exportsync' as const, label: '导出同步包', icon: FileDown, desc: '手动导出 JSON 同步包（去重计数）' },
+    { id: 'localage' as const, label: '本地加解密', icon: Lock, desc: 'age 加密解密同步包（断网可用）' },
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
     { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
@@ -152,6 +155,8 @@ export default function SettingsPage() {
         return <BackupKeyManager />
       case 'exportsync':
         return <ExportSyncTool />
+      case 'localage':
+        return <LocalAgeTool />
       case 'watermark':
         return <WatermarkTemplate />
       case 'lingpao':
