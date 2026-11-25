@@ -31,3 +31,9 @@
 ## 教训/避坑（复盘强制落仓）
 - 多窗并行常态：推前必查远端目标文件 sha（本单实证 releaseNotes 被 P0-255 窗动过），rebase 合并禁直推覆盖——与 ENV-PITFALLS §D.2.a 同型
 - 接线五 spot 替换逐 spot grep 复核（253-1 教训复用）
+
+## 部署结果（核验窗 11-26 00:30）
+- 部署执行：核验窗（RULES L70-72）；deploy 手动触发制（e4ec4ad）
+- 部署 run：另报（dispatch 后回填）
+- 回拉核验：version.json 对拍另报
+- 结论：P0-253-2 核验通过，部署进行中
