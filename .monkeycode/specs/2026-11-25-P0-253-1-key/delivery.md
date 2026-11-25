@@ -50,5 +50,6 @@
 ## 部署结果（核验窗 11-26 00:18）
 - 部署执行：核验窗（RULES L70-72 甲方裁定 11-25）
 - 部署方式：销号笔 push main 触发 deploy workflow 自动部署
-- 回拉核验：随销号笔部署 run 回拉对拍（version.json 另报）
+- 部署 run：45652586898 @742de7a success（手动 dispatch 触发，deploy 已改手动触发 e4ec4ad）
+- 回拉核验：线上 version.json=742de7a 与 HEAD 全同；notes 第二条=本单 age 密钥说明
 - 结论：P0-253-1 核验通过+部署，销号成立
