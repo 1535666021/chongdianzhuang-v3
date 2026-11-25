@@ -24,6 +24,7 @@ import {
   Inbox,
   Link2,
   Tag,
+  KeyRound,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION, APP_BUILD_TIME } from '@/constants/common'
 import { runBrandBackfillManual } from '@/shared/dataFix/backfillBrand'
@@ -48,6 +49,7 @@ import GhostTripFixTool from '../components/GhostTripFixTool'
 import SubBrandFixTool from '../components/SubBrandFixTool'
 import BindReconcilePanel from '../components/BindReconcilePanel'
 import BrandManager from '../components/BrandManager'
+import BackupKeyManager from '../components/BackupKeyManager'
 type SettingSection =
   | 'haptics'
   | 'dupcheck'
@@ -66,7 +68,7 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile'
+  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey'
   | null
 export default function SettingsPage() {
   // P0-199-R1：隔离箱角标=箱内条数
@@ -90,6 +92,7 @@ export default function SettingsPage() {
     { id: 'brand' as const, label: '品牌话术', icon: MessageSquare, desc: '各品牌专用话术模板' },
     { id: 'customBrands' as const, label: '品牌管理', icon: Tag, desc: '手动添加的品牌：查看与删除' },
     { id: 'bindReconcile' as const, label: '绑定对账', icon: Link2, desc: '未绑定增项一次清账' },
+    { id: 'backupkey' as const, label: '备份密钥', icon: KeyRound, desc: '生成 age 密钥对：公钥本机保存，私钥只下载一次' },
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
     { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
@@ -142,6 +145,8 @@ export default function SettingsPage() {
         return <BrandManager />
       case 'bindReconcile':
         return <BindReconcilePanel />
+      case 'backupkey':
+        return <BackupKeyManager />
       case 'watermark':
         return <WatermarkTemplate />
       case 'lingpao':
