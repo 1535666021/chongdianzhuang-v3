@@ -38,3 +38,9 @@
 2. 并行多窗 push 竞速：本单施工窗口内远端前进 3 笔（253-1 代码 + RULES 文书 ×2），唯一交集 releaseNotes.ts（头部追加 = 并行期冲突高发位），两行并存解决。检查项：多窗并行期 commit/push 前先 GET ref 核 HEAD。
 3. 复用判定函数先读定义（R-0.4 函数版）：isZhidaWulingOrder 单参恒 false 系死路径，首版差点复用失误；读定义后改为调用方模板布尔预映射（与行内候选同口径）。检查项：复用任何判定/映射函数前先读其定义全分支。
 4. 工具链记录：git 通道 TLS 挂 → Contents API 链（定式已落 ENV-PITFALLS 第四节）；PATCH 422 = 远端前进换 base 重建。
+
+## 部署结果（核验窗 11-26 00:10）
+- 部署执行：核验窗（RULES L70-72 甲方裁定 11-25，部署归核验窗）
+- 部署笔：dd7068f（Deploy run 45651413963 success，push main 自动触发）
+- 回拉核验：线上 version.json=dd7068f 与 HEAD 全同；notes 头条=本单更新说明
+- 结论：P0-255 核验通过+部署成功，销号成立
