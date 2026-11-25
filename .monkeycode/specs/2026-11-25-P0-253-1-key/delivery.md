@@ -46,3 +46,9 @@
 3. **@noble/curves v2 API 变更**：导入路径须 `.js` 后缀（`@noble/curves/ed25519.js`）；`utils.randomPrivateKey()` 已移除，改 `x25519.keygen()` 返回 {secretKey, publicKey}。
    - 定式：新装依赖先 node 单行实测 API 形状再写码，禁凭 v1 记忆。
 4. **curl 命令行参数长度上限**：package-lock 级大文件 push 用 `-d @payload.json` 走文件，禁命令行内联 JSON（Argument list too long 亲历）。
+
+## 部署结果（核验窗 11-26 00:18）
+- 部署执行：核验窗（RULES L70-72 甲方裁定 11-25）
+- 部署方式：销号笔 push main 触发 deploy workflow 自动部署
+- 回拉核验：随销号笔部署 run 回拉对拍（version.json 另报）
+- 结论：P0-253-1 核验通过+部署，销号成立

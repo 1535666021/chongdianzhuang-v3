@@ -1,4 +1,4 @@
-# 核验窗交接书（2026-11-26 00:14，HEAD dd7068f）
+# 核验窗交接书（2026-11-26 00:18，HEAD c061963）
 
 ## 一、窗口身份
 - 角色：充电桩 v3 项目核验窗（GitHub 1535666021/chongdianzhuang-v3）
@@ -17,6 +17,8 @@
 238-250 销号行全在交接书二节；各单 return-R*/delivery 含本窗裁定与边界待裁项。
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
+
+**P0-253-1 已销号 @3c3136ff**（11-26 00:18 复验全过+部署成功）：diff 恰 6 文件零超范围（ageKey.ts 新增 generateAgeKeyPair X25519+bech32/bech32m 公钥 age1.../私钥 AGE-SECRET-KEY-1...+persistPublicKey 只存公钥+buildSecretKeyFileContent 私钥下载文件含保管提示/BackupKeyManager.tsx 私钥 Blob 一次性下载，内存即焚绝不写 localStorage/SettingsPage.tsx KeyRound 图标+backupkey 菜单节+render 接线/package.json+lock @noble/curves+@scure/base/releaseNotes 行与 255 并存）；runner 10/10（age1 前缀/密钥对不同/公钥持久化往返/私钥文件三要素/私钥零持久化全键扫描/公钥长度）；回归 20/20；build 三连全过；部署随销号笔 push 触发，回拉对拍另报。
 
 **P0-255 已销号 @15228a1**（11-26 00:10 复验全过+部署成功）：diff 恰 5 src 文件零超范围（AddMaterialsSheet 价表数据源+品牌过滤+频率排序+客户价载荷+删弹窗点价改/MaterialPicker 频率排序 slice 前+搜索后+brandName prop+模板布尔预映射/useCompletion.addMaterials 客户价进 settlementPrice+customerSubtotal round 同口径+findCostPrice 成本绑定/OrderComplete brandName 一行/releaseNotes 头插）；runner 13/13 双版本同绿（四品牌候选纯净/空品牌空候选/fakeFreq 降序/进单映射 80×10=800/findCostPrice 独立/251 链路零触碰 isFreeQuotaMaterial+30m total 572 基线对拍一致）；回归 20/20；build 三连全过；部署 run 45651413963 @dd7068f success，线上 version.json=dd7068f 对拍全同，delivery 已写回部署结果。
 
