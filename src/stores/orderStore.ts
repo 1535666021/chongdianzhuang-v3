@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Order, OrderFilter } from '@/types'
 import { LocalStorageAdapter } from '@/shared/storage'
-import { initMaterialFrequency } from '@/features/material/hooks/useMaterialFrequency'
+import { initMaterialFrequency, registerFrequencyOrdersProvider } from '@/features/material/hooks/useMaterialFrequency'
 import { generateSeedOrders } from '@/features/order/seed/seedOrders'
 import { todayLocal } from '@/constants/availableWindow' // P0-228：完成日期本地时区口径
 
@@ -164,6 +164,7 @@ export const useOrderStore = create<OrderState>((set, get) => ({
     storage.set('list', merged)
     set({ orders: merged })
     initMaterialFrequency(merged)
+    registerFrequencyOrdersProvider(() => merged)
     return { added, skipped, updated }
   },
   importFromLegacy: (legacyOrders) => {
