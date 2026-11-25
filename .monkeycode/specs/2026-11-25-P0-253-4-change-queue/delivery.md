@@ -29,6 +29,6 @@
 
 ## 部署结果（核验窗 11-26 00:45）
 - 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
-- 部署 run：另报（dispatch 后回填）
-- 回拉核验：version.json 对拍另报
-- 结论：P0-253-4 核验通过，部署进行中
+- 部署 run：45656289941 @b7e80c7 success（手动 dispatch）
+- 回拉核验：线上 version.json=b7e80c7 与 HEAD 全同；notes 头条=本单变更队列说明
+- 结论：P0-253-4 核验通过+部署成功，销号成立
