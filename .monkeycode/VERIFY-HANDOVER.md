@@ -1,39 +1,39 @@
-# 核验窗交接书（2026-11-22 08:56，HEAD a7d7aee0）
+# 核验窗交接书（2026-11-25 15:40，HEAD 5d988ed）
 
 ## 一、窗口身份
 - 角色：充电桩 v3 项目核验窗（GitHub 1535666021/chongdianzhuang-v3）
-- 本窗任期：2026-11-08 至 11-22，经手 P0-238→247 十单全销（打回整改闭环 4 单：241 两轮/242 R1/243 R1）
-- 11-22 新窗首单：**P0-249 已销号**（破链单：目录无 task.md/verify-task.md，甲方 08:49 明令"核验 249"=追认）
+- 本窗任期：2026-11-08 至 11-25，经手 P0-238→250 十三单全销（打回整改闭环 4 单）
 - 下一窗口令"核验"=按 verify-task/任务书口径过秤；文书落库即视为送达
 
-## 二、在途（均无物可验）
+## 二、在途（按优先级）
 | 单 | 状态 | 要点 |
 |---|---|---|
-| P0-247 v4 | 重开·待施工 | task.md @2f09a38（11-21）：件1 新=勘测填入即同步（isCableMat 正则字面 bug：`\|`两侧带空格几乎全灭+244 新增行无 categoryCode）+原件 2/3/4+件4 形态B（存量兜截图类）。v3 已销号 @955d0f6 |
-| P0-248 | 待施工 | @083c9f8 v2 钉版（11-15）：漏保矩阵废除——只管漏保器（每单必含必计，免配分支废除），漏保盒 L235 无条件行禁动（甲方纠正实录），三层账不动 |
+| P0-251 | 已交付·待验 | c9f6f82（11-25）：套包外线缆敷设客户侧免费额度唯一出口（isCableLikeSurveyCharge 判定统一）；delivery @261125-P0-251，任务书 @2026-11-25-P0-251/TASK.md（注意：251 双目录，监理换命名约定） |
+| P0-247 v4 | 已交付·待验（压 4 天） | d51eb4d+370a7a3（11-22）：勘测填入即同步+isCableMat 正则字面 bug+件4 形态B；v3 已销 @955d0f6 |
+| P0-249 | 已交付·待验 | 数据清洗单（11-22 凌晨） |
+| P0-252 | 签发·待施工 | TASK.md @2026-11-25-P0-252（11-25 07:39） |
+| P0-248 | 待施工（10 天无动静） | 漏保矩阵废除 v2 钉版 @083c9f8；漏保器每单必含必计，漏保盒 L235 禁动，三层账不动 |
 
-**销号行**：P0-249（11-22 销）：地址紧凑流清洗·紧凑行污染修复——基线 c8245ae3→6d7ccaa0，diff 恰 2 src 文件（parser-engines.ts 恰 1 函数块 cleanCompactAddress+address 写入行 3 行注入/releaseNotes 头追加）+1 文书目录，零超范围；runner=回归 20/20+十场景断言（A1 清洗精确/A2a 五污染词全拒/A2b VIN 手机号残留剔除/A3+B1 迎江短名归一/B3 否分支不硬切/C1 层级去重/D1 合肥不变/D2 非安庆不置 region）FAILS=0；E1 无「是/否」行双版本回落逐字节一致（不被硬切实证）；tsc 0+vite build+[BUILD CHECK] 前后全过。破链记账：249 无任务书无核验书，依甲方明令过秤销号，性质=追认。
+238-250 销号行全在交接书二节；各单 return-R*/delivery 含本窗裁定与边界待裁项。
 
-238-247 销号行全在交接书二节；核验过程方法与本窗裁定（含边界待裁项）见各单目录 return-R*/delivery。
-
-## 三、环境坑位（实测定式）
-1. /tmp 内核级重置（分钟~小时级）：重建=codeload tar（约 10 秒）+ /mnt/agents/output/v3work/nm241.tgz 恢复依赖，20 秒完事；禁 npm install（/mnt ENOTCONN）。**本窗实测补充**：跨沙箱 /mnt 不延续，nm241.tgz 不可用时 npm install 在 /tmp 直接可用（522 包 13 秒）；raw.githubusercontent 链路 SSL EOF 复发，读文件一律走 Contents API vnd.github.raw
-2. 整仓 clone 网络不稳（HTTP2 framing 复发）：用 codeload+contents API；文书落库走 contents API PUT（带 sha 防覆盖）
-3. zustand SSR 组件实证：getInitialState create 时固化，setState 注入读不到——须种子预写 mock localStorage（复合键 cdz_v3_*_list/data）
-4. mock localStorage 枚举不可达（闭包 mem）：备份 key 用 RUN_AT 值拼或 getItem 直查
-5. runner 断言纪律：初报 FAIL 先疑构造错（字段名/key 格式/期望值口径/过滤条件把 FAILS= 行误计入），双版本对拍定无回归再判真 FAIL——本窗 10 余起初报 FAIL 全是我方构造错，无一误伤交付
-6. esbuild 打包：react-dom/server 需 format=cjs；ESM import 提升→mock 模块须独立文件首位 import；import.meta.env 需 define 注入
+## 三、环境坑位（实测定式，同 11-22 版）
+1. /tmp 内核级重置：重建=codeload tar（约 10 秒，偶发失败重试或 git clone --depth 1 -c http.version=1.1 循环 3-4 次）+ /mnt/agents/output/v3work/nm241.tgz 恢复依赖
+2. 文书落库走 contents API PUT 带 sha 防覆盖；短 SHA（7 位）作 trees/contents 的 ref 会 404，必须完整 SHA
+3. zustand SSR 组件实证：getInitialState create 时固化——种子预写 mock localStorage（复合键 cdz_v3_*_list/data）
+4. mock localStorage 枚举不可达（闭包 mem）：备份/日志键用 getItem 直查或 RUN_AT 拼键
+5. runner 断言纪律：初报 FAIL 先疑构造错（字段名/返回结构/键名/期望值），双版本对拍定无回归再判真 FAIL——本窗 20+ 起初报 FAIL 全是我方构造错，无一误伤交付
+6. esbuild：react-dom/server 需 format=cjs；import.meta.env 需 define 注入；ESM 提升→mock 独立文件首位 import
 
 ## 四、资产
-- /mnt/agents/output/v3work/：nm241.tgz（依赖）+ 各单 h*.tar.gz 快照
-- /tmp 会被重置，工作区必须重建于 /tmp、tar 包留 /mnt
+/mnt/agents/output/v3work/：nm241.tgz（依赖）+ 各单快照 tar
 
 ## 五、令牌纪律
-ghp 由甲方投喂，禁明文输出/禁落任何文件/用完即弃。跨窗必须重新投喂，本窗未留存。
+ghp 甲方投喂，禁明文/禁落文件/用完即弃；跨窗必须重新投喂，本窗未留存。
 
 ## 六、待办
-1. 247 v4/248 任一交付→甲方口令"核验"→按第三节口径过秤（预期 runner 断言+回归 20/20+tsc+build+双版本 diff 对拍）
-2. 248 若动漏保盒 L235 或三层账=直接打回（甲方纠正实录红线）
-3. 247 v4 件1 若只改 isCableMat 正则不补 categoryCode 校验=待裁项
+1. P0-251/247 v4/249 三单已交付待验——甲方口令"核验"即过秤（251 优先，今天新交付）
+2. 247 v4 件1 若只改 isCableMat 正则不补 categoryCode 校验=待裁项
+3. 248 动漏保盒 L235 或三层账=直接打回（红线）
+4. 252 交付后排队验
 
-—— 核验窗（2026-11-22）
+—— 核验窗（2026-11-25）
