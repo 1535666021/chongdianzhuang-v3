@@ -25,3 +25,9 @@
 ## 教训/避坑
 - TextDecoder.decode 只收 BufferSource，string 直接传即 TS 报错——sha256 文件拉取后已解码文本的别二次解码
 - GitHub contents API 的 content 是带换行 base64，atob 前先 strip \n；字节转换用 for 循环，Uint8Array.from(str) 类型签名不认
+
+## 部署结果（核验窗 11-26 07:30）
+- 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
+- 部署 run：另报回填
+- 回拉核验：version.json 对拍另报
+- 结论：P0-253-6 核验通过，部署进行中
