@@ -26,3 +26,9 @@
 ## 教训/避坑
 - runner 直跑 vite 工程模块须 `--define:import.meta.env=...`（constants/common.ts 顶格读 VITE_APP_VERSION，node 下 import.meta.env 为 undefined 即炸）；orderStore 依赖链带入该常量
 - lucide 图标接线前先 grep 既有导入防重名（本单 Inbox 撞重复隔离箱，双 import 被 build 拦下才算捡回——接线后逐点 grep 复核定式再立功）
+
+## 部署结果（核验窗 11-26 00:45）
+- 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
+- 部署 run：另报（dispatch 后回填）
+- 回拉核验：version.json 对拍另报
+- 结论：P0-253-4 核验通过，部署进行中
