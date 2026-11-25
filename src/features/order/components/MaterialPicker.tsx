@@ -15,6 +15,7 @@ import type { MaterialInput, FixedAuxInput } from '../types/completion'
 import { formatCurrency } from '@/shared/utils/format'
 import StockTag from '@/shared/components/StockTag'
 import { JD_ADDON_MATERIALS } from '@/constants/addonPrice_jd'
+import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 
 interface Props {
   materials: MaterialInput[]
@@ -32,13 +33,15 @@ interface Props {
   onApplyJdTemplate?: () => void
   /** P0-217：点击"成本"区请求绑定/改绑（未传=纯展示兼容） */
   onRequestCostBind?: (materialName: string) => void
-  /** P0-241件2：添加材料弹窗批量进单（useCompletion.addMaterials） */
-  onBatchAdd?: (list: { name: string; unit: string; quantity: number; costPrice: number }[]) => void
+  /** P0-241件2：添加材料弹窗批量进单（useCompletion.addMaterials）；P0-255：载荷=客户价 */
+  onBatchAdd?: (list: { name: string; unit: string; quantity: number; settlementPrice: number }[]) => void
+  /** P0-255：当前订单有效品牌（透传批量弹窗，候选=该品牌客户价表） */
+  brandName?: string
   /** P0-241件1：改价成功后通知父级刷新该行显示价 */
   onPriceChanged?: () => void
 }
 
-export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, showJdTemplate, onApplyJdTemplate, onRequestCostBind, onBatchAdd, onPriceChanged }: Props) {
+export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove, onUpdateFixedAux, showWanbangTemplate, onApplyWanbangTemplate, showZhidaTemplate, showJdTemplate, onApplyJdTemplate, onRequestCostBind, onBatchAdd, brandName, onPriceChanged }: Props) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showPicker, setShowPicker] = useState<number | null>(null)
   // P0-241件1：行内改价态 {index, value}；件2：添加材料弹窗
@@ -73,9 +76,11 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
       : showZhidaTemplate
         ? allAddons.filter((m) => m.brand === '挚达/五菱')
         : allAddons
+  // P0-255·D：候选按使用频率排序（工具=useMaterialFrequency，禁新写）；搜索过滤后也按频率排再截断
+  const frequency = getMaterialFrequency()
   const filtered = searchQuery
-    ? catalog.filter((m) => m.name.includes(searchQuery)).slice(0, 30)
-    : catalog.slice(0, 20)
+    ? sortMaterialsByFrequency(catalog.filter((m) => m.name.includes(searchQuery)), frequency).slice(0, 30)
+    : sortMaterialsByFrequency(catalog, frequency).slice(0, 20)
 
   const selectMaterial = (index: number, material: typeof addonMaterialsData[0]) => {
     onUpdate(index, {
@@ -302,6 +307,7 @@ export function MaterialPicker({ materials, fixedAux, onAdd, onUpdate, onRemove,
       </div>
       {showAddSheet && onBatchAdd && (
         <AddMaterialsSheet
+          brandName={showZhidaTemplate ? '挚达/五菱' : showWanbangTemplate ? '万帮吉利' : brandName}
           onClose={() => setShowAddSheet(false)}
           onConfirm={(list) => { onBatchAdd?.(list); setShowAddSheet(false) }}
         />

@@ -287,6 +287,7 @@ export default function OrderComplete() {
               onApplyJdTemplate={applyJdAddonTemplate}
               onRequestCostBind={(name) => setManualCostBind(name)}
               onBatchAdd={addMaterials}
+              brandName={order.brandName}
             />
           </div>
 

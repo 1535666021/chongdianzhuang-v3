@@ -187,19 +187,26 @@ export function useCompletion(orderId: string) {
     setForm((prev) => ({ ...prev, ...updates }))
   }, [])
 
-  // P0-241件2：添加材料弹窗——成本表条目一次全进单（行结构同 addMaterial 既有口径）
-  const addMaterials = useCallback((list: { name: string; unit: string; quantity: number; costPrice: number }[]) => {
+  // P0-255：添加材料弹窗——当前品牌客户价表条目一次全进单；客户价进 settlementPrice/customerSubtotal，
+  // 成本另走既有成本绑定解析（findCostPrice），与本弹窗解耦（行结构同 addMaterial 既有口径）
+  const addMaterials = useCallback((list: { name: string; unit: string; quantity: number; settlementPrice: number }[]) => {
     if (!list.length) return
     setForm((prev) => ({
       ...prev,
       materials: [
         ...prev.materials,
-        ...list.map((it) => ({
-          id: Math.random().toString(36).slice(2),
-          name: it.name, spec: '', quantity: it.quantity, unit: it.unit,
-          settlementPrice: 0, costPrice: it.costPrice,
-          customerSubtotal: 0, costSubtotal: it.costPrice * it.quantity,
-        })),
+        ...list.map((it) => {
+          const sp = it.settlementPrice || 0
+          const cp = findCostPrice(it.name) ?? 0
+          const qty = it.quantity || 0
+          return {
+            id: Math.random().toString(36).slice(2),
+            name: it.name, spec: '', quantity: qty, unit: it.unit,
+            settlementPrice: sp, costPrice: cp,
+            customerSubtotal: Math.round(sp * qty * 100) / 100,
+            costSubtotal: Math.round(cp * qty * 100) / 100,
+          }
+        }),
       ],
     }))
   }, [])

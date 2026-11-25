@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react'
 import { X, Search, Link2 } from 'lucide-react'
-import { getAllCostMaterials } from '@/shared/utils/costMaterialsResolver'
+import { getAllAddonMaterials } from '@/shared/utils/addonMaterialsResolver'
 import { getCostMapping, setCostMapping } from '@/shared/storage/costMappingStorage'
 import { calcFullMaterialCost, findCostPrice } from '@/shared/utils/orderCalc'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { useToast } from '@/shared/hooks/useToast'
 import { formatCurrency } from '@/shared/utils/format'
 import CostItemPicker from '@/shared/components/CostItemPicker'
+import { isWanbangGeelyOrder } from '@/constants/addonPrice_wanbang_geely'
+import { isZhidaWulingOrder } from '@/constants/addonPrice_zhida_wuling'
+import { getMaterialFrequency, sortMaterialsByFrequency } from '@/features/material/hooks/useMaterialFrequency'
 import type { Material } from '@/types/material'
 
 interface Picked {
@@ -14,24 +16,25 @@ interface Picked {
   name: string
   unit: string
   quantity: number
-  costPrice: number
+  settlementPrice: number
 }
 
 interface Props {
   onClose: () => void
+  /** P0-255：当前订单有效品牌（MaterialPicker 已按模板布尔映射挚达/五菱、万帮吉利；此处再做吉利单参兜底）——候选=该品牌客户价表（禁成本表/禁他牌） */
+  brandName?: string
   /** 件2：确认一次全进单（useCompletion.addMaterials） */
-  onConfirm: (list: { name: string; unit: string; quantity: number; costPrice: number }[]) => void
+  onConfirm: (list: { name: string; unit: string; quantity: number; settlementPrice: number }[]) => void
 }
 
-/** P0-241件2：添加材料底部上拉半屏弹窗——成本表全量+搜索+复选+就地数量+点价改（写成本表全局）+绑定状态。
- *  铁规矩：弹窗零自算——已选区合计金额一律读 calcFullMaterialCost 出口 total。
+/** P0-255：添加材料底部上拉半屏弹窗——当前品牌客户价表+搜索+复选+就地数量+绑定状态。
+ *  铁规矩：弹窗零自算——已选区合计金额一律读 calcFullMaterialCost 出口 total；行价=客户价；
+ *  成本不进本弹窗（进单时由 useCompletion 走 findCostPrice 既有成本绑定解析）。
  */
-export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
+export default function AddMaterialsSheet({ onClose, brandName, onConfirm }: Props) {
   const [query, setQuery] = useState('')
   const [picked, setPicked] = useState<Picked[]>([])
   const [bindFor, setBindFor] = useState<string | null>(null)
-  const [priceEdit, setPriceEdit] = useState<{ id: string; value: string } | null>(null)
-  const setCostPrice = useSettingsStore((s) => s.setCostPrice)
   const toast = useToast()
 
   useEffect(() => {
@@ -39,34 +42,32 @@ export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
     return () => { document.body.classList.remove('modal-open') }
   }, [])
 
-  const catalog = getAllCostMaterials()
+  // P0-255·A：候选=当前订单品牌客户价表（P0-130 品牌口径复用：万帮吉利单参映射兜底；挚达/五菱由调用方模板布尔预映射）；品牌空=未配置
+  const targetBrand = useMemo(() => {
+    const b = (brandName || '').trim()
+    if (!b) return ''
+    return isWanbangGeelyOrder(b) ? '万帮吉利' : isZhidaWulingOrder(b) ? '挚达/五菱' : b
+  }, [brandName])
+
+  // P0-255·D：候选按使用频率排序（slice 前）；搜索过滤后再按频率排、再截断
+  const frequency = useMemo(() => getMaterialFrequency(), [])
+  const catalog = useMemo(() => {
+    if (!targetBrand) return []
+    const brandItems = getAllAddonMaterials().filter((m) => (m.brand || '') === targetBrand)
+    return sortMaterialsByFrequency(brandItems, frequency)
+  }, [targetBrand, frequency])
+
   const filtered = useMemo(
-    () => (query ? catalog.filter((m) => m.name.includes(query)) : catalog).slice(0, 50),
-    [query, catalog],
+    () => sortMaterialsByFrequency(query ? catalog.filter((m) => m.name.includes(query)) : catalog, frequency).slice(0, 50),
+    [query, catalog, frequency],
   )
 
   const isPicked = (id: string) => picked.some((p) => p.id === id)
   const toggle = (m: Material) => {
-    setPicked((prev) => (isPicked(m.id) ? prev.filter((p) => p.id !== m.id) : [...prev, { id: m.id, name: m.name, unit: m.unit || '个', quantity: 1, costPrice: m.costPrice || 0 }]))
+    setPicked((prev) => (isPicked(m.id) ? prev.filter((p) => p.id !== m.id) : [...prev, { id: m.id, name: m.name, unit: m.unit || '个', quantity: 1, settlementPrice: m.settlementPrice || 0 }]))
   }
   const updateQty = (id: string, quantity: number) => {
     setPicked((prev) => prev.map((p) => (p.id === id ? { ...p, quantity: Math.max(0, Number.isFinite(quantity) ? quantity : 0) } : p)))
-  }
-
-  // 件1/件2 改价同口径：直改成本表绑定价（settingsStore 覆盖制=全局生效），目标=映射目标条目，无映射=同名条目
-  const costEntryOf = (name: string) => {
-    const target = getCostMapping(name) || name
-    return getAllCostMaterials().find((m) => m.name === target) || null
-  }
-  const applyPrice = (entryId: string, name: string, raw: string) => {
-    const entry = getAllCostMaterials().find((m) => m.id === entryId)
-    if (!entry) { toast.toast.error('未找到成本条目，请先绑定'); return }
-    const v = Number(raw)
-    if (!Number.isFinite(v) || v < 0) { toast.toast.error('价格必须≥0'); return }
-    setCostPrice(entry.id, v) // 价格唯一写入源=成本表（cdz 覆盖层），findCostPrice 唯一来源不动
-    toast.toast.success('已改成本表，以后所有单都按新价')
-    setPicked((prev) => prev.map((p) => (p.id === entryId ? { ...p, costPrice: v } : p)))
-    setPriceEdit(null)
   }
 
   // 铁规矩1：合计读出口——把已选喂给出口，total 直接展示（含未绑定项按 0，与单内口径一致）
@@ -78,6 +79,7 @@ export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
     }).total
   }, [picked])
 
+  // P0-255·C：成本另走成本绑定——此处仅展示绑定状态/建立绑定，不显示、不修改成本价
   const bindState = (name: string) => {
     const mapped = getCostMapping(name)
     if (mapped) return { label: `绑定到 ${mapped}`, ok: true }
@@ -88,7 +90,7 @@ export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
     <div className="fixed inset-0 z-[10000] flex items-end bg-black/40" onClick={onClose}>
       <div className="bg-white w-full max-h-[80vh] rounded-t-2xl flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-          <h3 className="font-semibold text-sm text-gray-900">添加材料（成本表全量）</h3>
+          <h3 className="font-semibold text-sm text-gray-900">添加材料（品牌客户价表）</h3>
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
 
@@ -104,7 +106,7 @@ export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索成本表条目..."
+              placeholder={targetBrand ? `搜索${targetBrand}价表条目...` : '搜索价表条目...'}
               className="w-full pl-7 pr-2 py-1.5 text-sm border border-gray-200 rounded-lg"
               autoFocus
             />
@@ -139,32 +141,14 @@ export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
                 ) : (
                   <span className="text-gray-400 text-xs w-14 text-right shrink-0">{m.unit || '个'}</span>
                 )}
-                {priceEdit?.id === m.id ? (
-                  <span className="flex items-center gap-1 shrink-0">
-                    <input
-                      autoFocus
-                      type="number"
-                      value={priceEdit.value}
-                      onChange={(e) => setPriceEdit({ id: m.id, value: e.target.value })}
-                      className="w-16 text-right border border-blue-300 rounded px-1 py-0.5 text-xs"
-                    />
-                    <button type="button" className="text-xs text-white bg-blue-600 rounded px-1.5 py-0.5" onClick={() => applyPrice(m.id, m.name, priceEdit.value)}>存</button>
-                    <button type="button" className="text-xs text-gray-400" onClick={() => setPriceEdit(null)}>×</button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    title="点价改（写成本表，全局生效）"
-                    onClick={() => setPriceEdit({ id: m.id, value: String(p?.costPrice ?? m.costPrice ?? 0) })}
-                    className="text-xs text-blue-600 underline shrink-0"
-                  >
-                    ¥{p?.costPrice ?? m.costPrice ?? 0}
-                  </button>
-                )}
+                <span className="text-xs text-blue-600 shrink-0">¥{m.settlementPrice}</span>
               </div>
             )
           })}
-          {filtered.length === 0 && <p className="text-center text-sm text-gray-400 py-4">无匹配条目</p>}
+          {catalog.length === 0 && (
+            <p className="text-center text-sm text-gray-400 py-4">未配置当前品牌价表</p>
+          )}
+          {catalog.length > 0 && filtered.length === 0 && <p className="text-center text-sm text-gray-400 py-4">无匹配条目</p>}
         </div>
 
         <div className="px-4 py-3 border-t border-gray-100 flex gap-2">
@@ -172,7 +156,7 @@ export default function AddMaterialsSheet({ onClose, onConfirm }: Props) {
           <button
             type="button"
             disabled={picked.length === 0}
-            onClick={() => onConfirm(picked.map((p) => ({ name: p.name, unit: p.unit, quantity: p.quantity, costPrice: p.costPrice })))}
+            onClick={() => onConfirm(picked.map((p) => ({ name: p.name, unit: p.unit, quantity: p.quantity, settlementPrice: p.settlementPrice })))}
             className="flex-1 py-2 rounded-lg text-sm text-white bg-blue-600 disabled:bg-gray-300"
           >
             确认添加（{picked.length}）
