@@ -30,3 +30,11 @@ E. 若集成到 v3，只允许提供“导出后加密文件”的本地入口�
 
 施工队自行部署
 监理窗口 · 签发完毕
+
+## 软件衔接与同步口径（2026-11-25 甲方补充）
+- v3 localStorage 是用户数据唯一事实源；`cdz-user-backup` 只是加密冷备，不做第二事实源，不做自动双向同步。
+- 新网页/工具只做本地文件加解密与导入导出；不得内嵌 GitHub token/私钥，不得自动上传真实明文。
+- 上传衔接：v3 导出 `export.json` → 工具用公钥加密成 `.age/.sha256` → 私仓保存；导出文件必须带 `schemaVersion/exportedAt/counts`。
+- 下载衔接：私仓取 `.age/.sha256` → 本地解密 → 校验 sha256 与 schema → 导入前先生成本地 pre-import 备份 → 用户确认后替换 v3 localStorage → reload。禁静默 merge；冲突按导出时间和单数提示人工确认。
+- 跨网页限制：不同 origin 的新网页不能直读 v3 localStorage，只能经导出/导入文件衔接；同 origin 也只允许显式按钮，禁后台同步。
+- 验收补充：脱敏样例走完 export→encrypt→decrypt→import→reload；错误 schema、损坏 sha256、缺字段必须拦截。
