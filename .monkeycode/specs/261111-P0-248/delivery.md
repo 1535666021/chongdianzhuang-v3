@@ -1202,3 +1202,8 @@ export function runBreakerRowSelfCheck(): BreakerRowSelfCheckReport {
 - 冻结：runBreakerRowSelfCheck 已完成单零写入
 - 令牌：两段式注入仅用于 API 推送；未落明文/未入记忆
 text
+## 部署结果（核验窗 11-26 06:21）
+- 部署执行：核验窗（RULES L70-72）；deploy 手动触发制
+- 部署 run：另报（dispatch 后回填）
+- 回拉核验：version.json 对拍另报
+- 结论：P0-248 核验通过，部署进行中

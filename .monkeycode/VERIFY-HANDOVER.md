@@ -1,4 +1,4 @@
-# 核验窗交接书（2026-11-26 00:55，HEAD 635fe59）
+# 核验窗交接书（2026-11-26 06:21，HEAD 132a990）
 
 ## 一、窗口身份
 - 角色：充电桩 v3 项目核验窗（GitHub 1535666021/chongdianzhuang-v3）
@@ -27,6 +27,8 @@
 **P0-253-2 已销号 @a7f1f36**（11-26 00:30 复验全过+部署成功）：diff 恰 4 src 文件+本书零超范围（exportSync.ts 新增 schema v1 五要素+dedupeChanges 去重保留后条+countChanges+buildExportPackage+validateExportPackage 错误收集+readPendingChanges 队列契约 cdz_v3_change_queue/ExportSyncTool.tsx 组包→离线自校验→失败红条→cdz-sync-<baseDate>.json 下载/SettingsPage.tsx FileDown+类型联合+菜单项+case 渲染 5 处接线/releaseNotes 头插与 255/253-1 并存）；runner 13/13（组包五要素/离线校验过/baseDate 透传/同键去重保留后条/counts 语义 total=3 upserts=2 deletes=1/反向五证全拦/队列空包合法+回环）；三不做零出现实证（crypto/encrypt/监听/fetch 全 0）；回归 20/20；build 三连全过；部署 run 回拉另报。
 
 **P0-253-1 已销号 @3c3136ff**（11-26 00:18 复验全过+部署成功）：diff 恰 6 文件零超范围（ageKey.ts 新增 generateAgeKeyPair X25519+bech32/bech32m 公钥 age1.../私钥 AGE-SECRET-KEY-1...+persistPublicKey 只存公钥+buildSecretKeyFileContent 私钥下载文件含保管提示/BackupKeyManager.tsx 私钥 Blob 一次性下载，内存即焚绝不写 localStorage/SettingsPage.tsx KeyRound 图标+backupkey 菜单节+render 接线/package.json+lock @noble/curves+@scure/base/releaseNotes 行与 255 并存）；runner 10/10（age1 前缀/密钥对不同/公钥持久化往返/私钥文件三要素/私钥零持久化全键扫描/公钥长度）；回归 20/20；build 三连全过；部署随销号笔 push 触发，回拉对拍另报。
+
+**P0-248 已销号 @132a990**（11-26 06:20 复验全过+部署成功）：diff 恰 4 文件零超范围（orderCalc 矩阵废 needBreakerCost 豁免移除→漏保器每单必计/漏保盒行未动/breakerRowSelfCheckFix 自检冻结 return {items:[]} 幂等零写入/useCompletion 恒 false+手加漏保行 skip 禁双计/releaseNotes 头插）；红线实证：**漏保盒 L235 在 diff 中 0 出现=零改动**；runner 9/9（吉利/领克/五菱 3.5kW 漏保器 C40 必计金额>0+漏保盒=5+单一行不双计+C40=26.8+老单冻结 items=[]——初报 5 FAIL 均我方构造错：input 缺 extraItems 必填字段+漏保器行名='C40'）；回归 20/20；build 三连全过；部署 run 回拉另报。
 
 **P0-255 已销号 @15228a1**（11-26 00:10 复验全过+部署成功）：diff 恰 5 src 文件零超范围（AddMaterialsSheet 价表数据源+品牌过滤+频率排序+客户价载荷+删弹窗点价改/MaterialPicker 频率排序 slice 前+搜索后+brandName prop+模板布尔预映射/useCompletion.addMaterials 客户价进 settlementPrice+customerSubtotal round 同口径+findCostPrice 成本绑定/OrderComplete brandName 一行/releaseNotes 头插）；runner 13/13 双版本同绿（四品牌候选纯净/空品牌空候选/fakeFreq 降序/进单映射 80×10=800/findCostPrice 独立/251 链路零触碰 isFreeQuotaMaterial+30m total 572 基线对拍一致）；回归 20/20；build 三连全过；部署 run 45651413963 @dd7068f success，线上 version.json=dd7068f 对拍全同，delivery 已写回部署结果。
 
