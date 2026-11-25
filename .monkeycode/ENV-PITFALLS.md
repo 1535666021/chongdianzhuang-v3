@@ -45,3 +45,9 @@
    - a) fast-forward 拒绝 = 远端又前进（本仓多窗并行常态，本单 10 分钟内远端前进 3 次）：重查 HEAD 换 base_tree 重建 tree 再打（blob 已建可复用，只重打 tree+commit）。
    - b) 出口代理 flip 限流（见二节）：降频重试，勿与 a) 混为一谈。
 3. rebase 冲突卡死处置定式：冲突标记的替换串必须与文件实际字节完全一致（缩进/引号风格任一不符 = 未命中 → 标记残留 → rebase --continue 卡死且无报错）。处置：git rebase --abort 回干净点，改走 git reset --hard origin/main + git checkout <本地commit> -- <文件清单> 重放（等价可预测）。勿在卡死的 rebase 态里手修继续。
+
+## GitHub Pages 部署 500（2026-11-26 00:02 复盘）
+- 现象：build 绿、upload-pages-artifact 成功，deploy-pages 在 `Creating Pages deployment failed` 返回 GitHub `500`，Request ID `7C00:3F1CBE:3CEC8A1:C06FF6A:6B07068F`。
+- 根因：这是 GitHub Pages 服务端创建 deployment 失败，不是构建坏、不是 artifact 缺失、也不是 P0-255 代码问题。
+- 判别：若 annotation 是 `Failed to create deployment (status: 500)`，按 GitHub 服务端故障处理；若是 `No artifacts named github-pages`，才查 artifact/actions read。
+- 处理：稍后在核验窗口 Re-run deploy；持续失败看 githubstatus Pages/Actions；不要因单次 500 改代码或 workflow。
