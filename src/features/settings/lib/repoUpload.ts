@@ -30,6 +30,18 @@ export function saveRepoConfig(cfg: RepoConfig): void {
   localStorage.setItem(REPO_CFG_KEY, JSON.stringify(cfg))
 }
 
+export const OWNER_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,37}[a-zA-Z0-9])?$|^[a-zA-Z0-9]$/
+export const REPO_PATTERN = /^[a-zA-Z0-9._-]{1,100}$/
+
+// P0-253-5 打回整改：owner/repo 白名单校验（R2535：不匹配则红条拒绝保存/拒绝上传）
+export function validateRepoConfig(cfg: RepoConfig): string[] {
+  const errors: string[] = []
+  if (!OWNER_PATTERN.test(cfg.owner)) errors.push('owner 仅允许字母/数字/连字符且不超过 39 字符')
+  if (!REPO_PATTERN.test(cfg.repo)) errors.push('repo 仅允许字母/数字/点/下划线/连字符且不超过 100 字符')
+  if (!cfg.token.trim()) errors.push('token 不能为空')
+  return errors
+}
+
 export interface UploadResult {
   ok: boolean
   error?: string
@@ -70,6 +82,8 @@ async function putFile(cfg: RepoConfig, path: string, contentBase64: string, fet
 
 // 上传主流程：today 两文件必传；私仓无 base 两文件时顺带建立（=首次基线）
 export async function uploadSyncPackage(cfg: RepoConfig, fetchImpl: FetchImpl = fetch): Promise<UploadResult> {
+  const cfgErrors = validateRepoConfig(cfg)
+  if (cfgErrors.length > 0) return { ok: false, error: cfgErrors.join('；') }
   const age = localStorage.getItem(TODAY_AGE_KEY)
   const shaFile = localStorage.getItem(TODAY_SHA_KEY)
   if (!age || !shaFile) return { ok: false, error: '本机还没有今日密文包，请先在变更队列打包' }

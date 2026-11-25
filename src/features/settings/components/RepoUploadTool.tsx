@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CloudUpload, Save, Check, AlertTriangle, RefreshCw } from 'lucide-react'
 import {
   loadRepoConfig, saveRepoConfig, uploadSyncPackage, scheduleRetryWithBackoff,
-  getLastUpload, getRetryCount, cancelRetry, RepoConfig,
+  getLastUpload, getRetryCount, cancelRetry, validateRepoConfig, RepoConfig,
 } from '../lib/repoUpload'
 
 // P0-253-5 私仓上传：配置 owner/repo/token → 上传今日密文包；断网自动退避重试不丢密文
@@ -20,6 +20,8 @@ export default function RepoUploadTool() {
     setError(''); setMsg('')
     if (!owner.trim() || !repo.trim() || !token.trim()) { setError('owner/repo/token 三项都要填'); return }
     const c = { owner: owner.trim(), repo: repo.trim(), token: token.trim() }
+    const cfgErrors = validateRepoConfig(c)
+    if (cfgErrors.length > 0) { setError(`白名单校验未过，已拒绝保存：${cfgErrors.join('；')}`); return }
     saveRepoConfig(c)
     setCfg(c)
     setMsg('私仓配置已本机保存（token 只存本机，不外传日志）')
