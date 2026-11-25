@@ -1,5 +1,5 @@
 # 《施工队 · 任务书》P0-257
-> 状态：已并入 P0-258，禁止单独施工；以 `.monkeycode/specs/2026-11-26-P0-258-freq-reconcile/TASK.md` 为准。
+> 状态：恢复单独施工（P0-258 合并错误作废）。
 
 
 施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），每轮结束重读最新版，再按本任务书施工。

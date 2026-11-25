@@ -1,4 +1,6 @@
 # 《施工队 · 任务书》P0-258
+> 状态：合并错误作废。原因：未先查 WINDOW-SYNC/施工状态；P0-256 已施工完成，拆回；P0-257 恢复单独施工。
+
 
 施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），每轮结束重读最新版，再按本任务书施工。
 
