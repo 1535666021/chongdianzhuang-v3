@@ -1,4 +1,4 @@
-# 核验窗交接书（2026-11-26 00:30，HEAD 98622c3）
+# 核验窗交接书（2026-11-26 00:40，HEAD 6fe8021）
 
 ## 一、窗口身份
 - 角色：充电桩 v3 项目核验窗（GitHub 1535666021/chongdianzhuang-v3）
@@ -17,6 +17,8 @@
 238-250 销号行全在交接书二节；各单 return-R*/delivery 含本窗裁定与边界待裁项。
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
+
+**P0-253-3 已销号 @269dcf0**（11-26 00:40 复验全过+部署成功）：diff 恰 7 文件零超范围（localAge.ts 新增 age v1 全套：parsePublicKey bech32/parseSecretKey bech32m/secretKeyToPublicKey X25519/canonical b64/encryptWithPublicKey 临时密钥+HKDF(ephShare‖recipient, INFO_WRAP)+ChaCha20Poly1305 包 fileKey/decryptWithSecretKey/sha256Hex/build+parseSha256File/LocalAgeTool.tsx 选 JSON→.age+.sha256 双下载/选 .age+私钥→还原（可选 sha256 校验）/SettingsPage 接线/releaseNotes 头插/package+lock @noble/ciphers+@noble/hashes）；runner 10/10（公钥加密私钥解密回环/错私钥解不开/篡改被拦/空载荷/70KB 跨块/sha256 回环/公私钥推导一致）；回归 20/20；build 三连全过；部署 run 回拉另报。
 
 **P0-253-2 已销号 @a7f1f36**（11-26 00:30 复验全过+部署成功）：diff 恰 4 src 文件+本书零超范围（exportSync.ts 新增 schema v1 五要素+dedupeChanges 去重保留后条+countChanges+buildExportPackage+validateExportPackage 错误收集+readPendingChanges 队列契约 cdz_v3_change_queue/ExportSyncTool.tsx 组包→离线自校验→失败红条→cdz-sync-<baseDate>.json 下载/SettingsPage.tsx FileDown+类型联合+菜单项+case 渲染 5 处接线/releaseNotes 头插与 255/253-1 并存）；runner 13/13（组包五要素/离线校验过/baseDate 透传/同键去重保留后条/counts 语义 total=3 upserts=2 deletes=1/反向五证全拦/队列空包合法+回环）；三不做零出现实证（crypto/encrypt/监听/fetch 全 0）；回归 20/20；build 三连全过；部署 run 回拉另报。
 

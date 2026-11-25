@@ -27,3 +27,9 @@
 - TS 5.7+ Uint8Array 泛型：lib 返回类型声明 `Uint8Array` 会拓宽成 ArrayBufferLike，Blob 入参要 cast `as Uint8Array<ArrayBuffer>`（本单两处，已修）
 - @noble/ciphers v2 chacha20poly1305(key,nonce) 只暴露 encrypt/decrypt（v1 的 seal/open 已移除）；@scure/base v2.4 无 b64 导出，用 base64（带填充）自行去 '=' + 严格字符集校验实现 canonical base64
 - age 规范细节易错三处：文件头 MAC 覆盖范围=含末尾换行、不含 '---' 行；块 nonce=11 字节大端计数（自 0）+标志字节（0x01=最后块）；HKDF salt=none 必须显式传 32 字节全零（noble 不自动补零）
+
+## 部署结果（核验窗 11-26 00:40）
+- 部署执行：核验窗（RULES L70-72 甲方裁定 11-25，覆盖本任务书"施工队自行部署"旧表述）；deploy 手动触发制（e4ec4ad）
+- 部署 run：另报（dispatch 后回填）
+- 回拉核验：version.json 对拍另报
+- 结论：P0-253-3 核验通过，部署进行中
