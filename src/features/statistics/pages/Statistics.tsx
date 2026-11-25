@@ -24,6 +24,8 @@ function getAmountFontClass(value: number) {
   return 'text-xs'
 }
 
+const ALL_MONTHS = '__ALL__' // P0-252：统计范围「全部」哨兵值（真实年月不可能等于它）
+
 function formatMonth(month: string) {
   const [year, value] = month.split('-')
   return `${year}年${value}月`
@@ -44,7 +46,10 @@ export default function Statistics() {
   const [detailType, setDetailType] = useState<'reconciliation' | 'actual' | null>(null)
 
   const months = useMemo(() => Array.from(new Set([currentMonth, ...orders.map(getOrderMonth)])).sort((a, b) => b.localeCompare(a)), [currentMonth, orders])
-  const selectedOrders = useMemo(() => orders.filter((order) => getOrderMonth(order) === selectedMonth), [orders, selectedMonth])
+  // P0-252：「全部」不按月份过滤，范围=当前 CompanyFilter 数据源 orders（activeOrders）
+  const selectedOrders = useMemo(() => selectedMonth === ALL_MONTHS ? orders : orders.filter((order) => getOrderMonth(order) === selectedMonth), [orders, selectedMonth])
+  // P0-252：导出/明细弹窗的月份文案——ALL 传「全部」，文件名=对账单_全部.xlsx
+  const exportMonth = selectedMonth === ALL_MONTHS ? '全部' : selectedMonth
   const currentCompany = useUIStore((st) => st.currentCompany)
   const completedOrders = useMemo(() => selectedOrders.filter((order) => order.status === '已完成' && companyHit(order, currentCompany)), [selectedOrders, currentCompany])
   const stats = useMemo(() => completedOrders.reduce((total, order) => {
@@ -71,6 +76,7 @@ export default function Statistics() {
       <main className="space-y-4">
         <div className="mx-4 flex justify-center">
           <select aria-label="选择统计月份" value={selectedMonth} onChange={(event) => setSelectedMonth(event.target.value)} className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm">
+            <option value={ALL_MONTHS}>全部</option>
             {months.map((month) => <option key={month} value={month}>{formatMonth(month)}</option>)}
           </select>
         </div>
@@ -90,17 +96,17 @@ export default function Statistics() {
             <Metric label="台均增项" value={averageAddon} color="text-blue-600" />
           </div>
           <div className="flex justify-between px-2 text-xs text-gray-400"><span>维修统计：待数据支撑</span><span>勘测统计：待数据支撑</span></div>
-          <button type="button" onClick={() => exportReconciliationCsv(selectedOrders, selectedMonth)} className="w-full rounded-xl bg-green-600 py-3 text-sm font-medium text-white">导出Excel对账单</button>
+          <button type="button" onClick={() => exportReconciliationCsv(selectedOrders, exportMonth)} className="w-full rounded-xl bg-green-600 py-3 text-sm font-medium text-white">导出Excel对账单</button>
         </div>
 
         {/* P0-153-R1：按天明细 + 逐单盈亏榜（月份下拉联动：共用 completedOrders） */}
-        <DailyBreakdownSection orders={completedOrders} />
-        <ProfitBoardSection orders={completedOrders} />
+        <DailyBreakdownSection orders={completedOrders} rangeLabel={selectedMonth === ALL_MONTHS ? '当前范围' : '该月'} />
+        <ProfitBoardSection orders={completedOrders} rangeLabel={selectedMonth === ALL_MONTHS ? '当前范围' : '该月'} />
         <div className="mx-4"><PlatformBreakdown orders={completedOrders} /></div>
         <div className="mx-4"><button onClick={() => navigate('/finance')} className="flex w-full items-center justify-between rounded-xl border border-gray-200 bg-white p-3 transition-colors hover:bg-gray-50"><span className="flex items-center gap-2 text-sm font-medium text-gray-800"><FileText size={16} className="text-blue-600" />查看财务对账</span><span className="text-xs font-medium text-blue-600">进入 →</span></button></div>
 
       </main>
-      {detailType && <ProfitDetailModal month={selectedMonth} orders={completedOrders} type={detailType} onClose={() => setDetailType(null)} />}
+      {detailType && <ProfitDetailModal month={exportMonth} orders={completedOrders} type={detailType} onClose={() => setDetailType(null)} />}
     </div>
   )
 }

@@ -11,7 +11,7 @@ const fmt = (v: number) => `${v < 0 ? '-' : ''}${formatCurrency(Math.abs(v))}`
 const nameOf = (o: Order) => o.customerName || '未命名'
 
 /** 按天明细：默认展开最近3天，其余折叠单行（日期+单数+当天利润合计） */
-export function DailyBreakdownSection({ orders }: { orders: Order[] }) {
+export function DailyBreakdownSection({ orders, rangeLabel = '该月' }: { orders: Order[]; rangeLabel?: string }) {
   const { days, expandedKeys, toggle } = useDailyBreakdown(orders)
   // P0-185：当月合计（客户付费=ΣcustomerPrice，利润=ΣactualProfit）
   const monthCustomerTotal = Math.round(days.reduce((sum, d) => sum + d.customerPriceTotal, 0) * 100) / 100
@@ -20,7 +20,7 @@ export function DailyBreakdownSection({ orders }: { orders: Order[] }) {
     <section className="mx-4 rounded-2xl bg-white p-4 shadow-sm">
       <h2 className="mb-3 text-sm font-bold text-gray-800">按天明细</h2>
       {days.length === 0 ? (
-        <p className="text-xs text-gray-400">该月暂无完成订单</p>
+        <p className="text-xs text-gray-400">{rangeLabel}暂无完成订单</p>
       ) : (
         <div className="space-y-2">
           {days.map((d) => {
@@ -69,7 +69,7 @@ export function DailyBreakdownSection({ orders }: { orders: Order[] }) {
 }
 
 /** 逐单盈亏榜：赚/亏/全部筛选，金额绝对值倒序 */
-export function ProfitBoardSection({ orders }: { orders: Order[] }) {
+export function ProfitBoardSection({ orders, rangeLabel = '该月' }: { orders: Order[]; rangeLabel?: string }) {
   const [filter, setFilter] = useState<'all' | 'win' | 'loss'>('all')
   const rows = useMemo(
     () =>
@@ -94,7 +94,7 @@ export function ProfitBoardSection({ orders }: { orders: Order[] }) {
         ))}
       </div>
       {rows.length === 0 ? (
-        <p className="text-xs text-gray-400">该月暂无完成订单</p>
+        <p className="text-xs text-gray-400">{rangeLabel}暂无完成订单</p>
       ) : (
         <ul className="space-y-1">
           {rows.map((o) => (
