@@ -1,4 +1,6 @@
 # 《施工队 · 任务书》P0-253B
+> 状态：暂停（2026-11-25）。原因：P0-254 Pages deploy 修复优先；恢复由监理另发，施工队不得施工。
+
 
 施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），确认目录规范、接口约定、红线约束与历史教训后再编码。
 
