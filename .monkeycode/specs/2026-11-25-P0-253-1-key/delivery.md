@@ -31,3 +31,18 @@
 - 渲染入口：设置页菜单「备份密钥」→ section `backupkey` → BackupKeyManager
 - 关键行：ageKey.ts L27-35（keygen+编码）/L37-45（持久化只写公钥）；组件 L42-52（生成+只存公钥）/L72-86（下载+即焚）
 - 功能冒烟：设置→备份密钥→生成密钥对→下载私钥（浏览器弹下载 .txt）→刷新页面→功能态正常、localStorage 仅 cdz_v3_backup_age_pubkey 一条
+
+## 教训/避坑（2026-11-25 复盘强制落仓）
+
+1. **多 spot 文本替换必须逐 spot grep 复核**（本单亲历 FAIL→已修）
+   - 现象：菜单入口行未落上，功能在设置页进不去。
+   - 根因：python str.replace 目标串缩进写错（6 空格 vs 实际 4 空格），replace 未命中无报错静默跳过。
+   - 误判：assert 只查类型串存在，没查菜单项锚点。
+   - 定式：N 处替换 = N 次 grep 复核（锚点行号+内容双核），禁只查总数。
+2. **Pages 部署 500 = 服务端瞬时故障，非代码问题**
+   - 现象：build job success，deploy step `Failed to create deployment (status: 500)`。
+   - 定式：HEAD 与 run 一致时 re-run 该 run 归正（勿推空提交）；**2026-11-25 甲方裁定部署归核验窗口，施工队自此禁碰部署/线上配置/workflow 密钥**。
+   - 本单部署已由核验窗链路完成：线上 version.json=4a450f5（含本单 releaseNote，只读校验实证）。
+3. **@noble/curves v2 API 变更**：导入路径须 `.js` 后缀（`@noble/curves/ed25519.js`）；`utils.randomPrivateKey()` 已移除，改 `x25519.keygen()` 返回 {secretKey, publicKey}。
+   - 定式：新装依赖先 node 单行实测 API 形状再写码，禁凭 v1 记忆。
+4. **curl 命令行参数长度上限**：package-lock 级大文件 push 用 `-d @payload.json` 走文件，禁命令行内联 JSON（Argument list too long 亲历）。
