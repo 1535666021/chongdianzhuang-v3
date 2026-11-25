@@ -38,3 +38,10 @@
 - 后台 detached 进程会被无声清杀：**关键循环同步分段跑**（每轮 ≤120s 硬限），进度落盘日志（/mnt/agents/output/*.log）防丢。
 - 环境修复与代码载荷**分推**：环境坑修复不进业务 commit，教训/文档单独一笔。
 - 归因诚实：本轮 P0-253A 久拖 = 上述环境三连（FUSE+代理+tmp 被卷），非任务书或代码问题；253A 代码面与 runner 22/22 早已就绪。
+
+### D. git 通道劣化与 API 竞速定式（2026-11-25 P0-255 实战增补）
+1. git push 报 non-fast-forward 后紧跟 GnuTLS recv error(-110)/TLS 挂 = git 智能 HTTP 通道整体劣化：勿重试 git 通道（两轮实证全挂、空耗窗口）。直接走 Contents API 链：GET ref/heads/main 查 HEAD → POST git/blobs → POST git/trees(base_tree=当前远端 HEAD) → POST git/commits(parents=[HEAD]) → PATCH git/refs/heads/main。单 commit 干净落库。
+2. PATCH ref 返 422 有两义，先判别再处置：
+   - a) fast-forward 拒绝 = 远端又前进（本仓多窗并行常态，本单 10 分钟内远端前进 3 次）：重查 HEAD 换 base_tree 重建 tree 再打（blob 已建可复用，只重打 tree+commit）。
+   - b) 出口代理 flip 限流（见二节）：降频重试，勿与 a) 混为一谈。
+3. rebase 冲突卡死处置定式：冲突标记的替换串必须与文件实际字节完全一致（缩进/引号风格任一不符 = 未命中 → 标记残留 → rebase --continue 卡死且无报错）。处置：git rebase --abort 回干净点，改走 git reset --hard origin/main + git checkout <本地commit> -- <文件清单> 重放（等价可预测）。勿在卡死的 rebase 态里手修继续。
