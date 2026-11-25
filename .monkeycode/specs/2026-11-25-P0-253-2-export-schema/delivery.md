@@ -34,6 +34,6 @@
 
 ## 部署结果（核验窗 11-26 00:30）
 - 部署执行：核验窗（RULES L70-72）；deploy 手动触发制（e4ec4ad）
-- 部署 run：另报（dispatch 后回填）
-- 回拉核验：version.json 对拍另报
-- 结论：P0-253-2 核验通过，部署进行中
+- 部署 run：45653639492 @e62c96e success（手动 dispatch）
+- 回拉核验：线上 version.json=e62c96e 与 HEAD 全同
+- 结论：P0-253-2 核验通过+部署成功，销号成立
