@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react'
 import { JD_ADDON_PRICES } from '@/constants/addonPrice_jd'
 import { isDaomeiOrder } from '@/shared/utils/company'
 import { usePackageMeters } from './usePackageMeters'
-import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, resolveBreakerUnitCost } from '@/shared/utils/orderCalc'
+import { getOrderPlatformFee, resolveOrderPackageMeters, calcInstallFee, isGeelyBrand, calcOverFee, calcPlatformFee, isFreeQuotaMaterial, isBreakerMaterial, calcMaterialCost, calcActualProfitByPolicy, calcReconciliationProfit, calcTripSubsidy, isBusinessTripOrder, findCostPrice, resolveCostPrice, calcFullMaterialCost, resolveBreakerUnitCost, resolveCustomerReceivable } from '@/shared/utils/orderCalc'
 import { useOrderStore } from '@/stores/orderStore'
 import { detectMeterMismatch, METER_ZERO_OVERRIDE_LOG_KEY } from '@/shared/dataFix/meterMismatchFix'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -308,7 +308,7 @@ export function useCompletion(orderId: string) {
       if (isFreeQuotaMaterial(m.name)) continue
       addonReceivable += m.customerSubtotal
     }
-    const customerReceivable = addonReceivable + cableReceivable
+    const customerReceivable = resolveCustomerReceivable(form.customerPriceOverride, addonReceivable, cableReceivable)
 
     // 增项材料成本：排除电缆/PVC/漏保（由统一出口按矩阵计入），吉利单漏保成本归零
     // P0-202（§1.6 增补裁定1）：手加漏保行统一由 calcFullMaterialCost 出口按 needBreakerCost 拦截，此处只滤免费配额材料
