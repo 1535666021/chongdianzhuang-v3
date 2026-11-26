@@ -68,11 +68,8 @@ export function sortMaterialsByFrequency<T extends { name: string }>(
   for (const f of freq ?? []) {
     freqMap[f.name] = f.count
   }
-  const isCable36 = (name: string) =>
-    name.includes('3*6') || name.includes('3×6') || name.includes('3x6') || name.includes('3X6')
+  // P0-256-R2（17:19 增补）：禁 3×6 硬编码置顶——一律按使用频率排序，低频自然沉底
   return [...materials].sort((a, b) => {
-    if (isCable36(a.name)) return -1
-    if (isCable36(b.name)) return 1
     const countA = freqMap[a.name] || 0
     const countB = freqMap[b.name] || 0
     return countB - countA

@@ -32,3 +32,11 @@
 ## 教训/避坑
 - runner 断言失败先疑测试自身：本轮两 FAIL 均测试编排错（接口无 brand 字段/init 会重置缓存），代码零改动即转绿——断言前须先读被测接口真实形状
 - orderStore↔useMaterialFrequency 若直接互相 import 会构成 ESM 循环（store 构造即调 init），provider 注册模式解耦
+
+## 打回整改 + 增补对齐（2026-11-26 17:2x）
+
+- 核验窗复验打回（15:22）：main 仍含 isCable36 硬编码置顶且频率统计跳过 isFreeQuotaMaterial，缺 branch/commit/delivery/部署实证——根因是本分支未合并，main 呈旧态
+- 甲方增补（17:19）：不得用硬编码 3×6 规则置顶——电缆/3×6/YJV/PVC 计入频率后按使用频率排序，低频材料排后不删不藏
+- 整改 R2：`sortMaterialsByFrequency` 删除 isCable36 硬编码置顶（3*6/3×6/3x6/3X6 特判整段移除），改纯频率降序
+- 三实证：branch=本分支（task/P0-256-frequency-sort）/commit=整改笔（本笔）/delivery=本书；runner 6 断言 FAILS=0 新增双向实证（3×6 低频被压后 + 高频自然第一）；A/C 原整改回归全绿
+- 部署实证：归核验窗合并后按线上 version.json 核（本窗禁部署）
