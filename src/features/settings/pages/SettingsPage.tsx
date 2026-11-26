@@ -45,12 +45,7 @@ import LingpaoTemplate from '../components/LingpaoTemplate'
 import ScriptManager from '../components/ScriptManager'
 import AmapConfig from '../components/AmapConfig'
 import SalaryCalculator from '../components/SalaryCalculator'
-import PolicyFixTool from '../components/PolicyFixTool'
 import { useOrderStore } from '@/stores/orderStore'
-import TripFeeZeroTool from '../components/TripFeeZeroTool'
-import BreakerCostBackfillTool from '../components/BreakerCostBackfillTool'
-import ProfitAuditTool from '../components/ProfitAuditTool'
-import GhostTripFixTool from '../components/GhostTripFixTool'
 import SubBrandFixTool from '../components/SubBrandFixTool'
 import BindReconcilePanel from '../components/BindReconcilePanel'
 import BrandManager from '../components/BrandManager'
@@ -78,8 +73,7 @@ type SettingSection =
   | 'scripts'
   | 'map'
   | 'salary'
-  | 'policyfix'
-  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey' | 'exportsync' | 'localage' | 'changequeue' | 'repoupload' | 'importrestore' | 'reconcile'
+  | 'subbrandfix' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey' | 'exportsync' | 'localage' | 'changequeue' | 'repoupload' | 'importrestore' | 'reconcile'
   | null
 export default function SettingsPage() {
   // P0-199-R1：隔离箱角标=箱内条数
@@ -94,6 +88,7 @@ export default function SettingsPage() {
   const menuItems = [
     { id: 'backup' as const, label: '数据导入', icon: Upload, desc: '从老系统导入订单数据' },
     { id: 'dupcheck' as const, label: '订单查重', icon: ShieldCheck, desc: '铁重/疑重扫描与自动清理（数据全程本地）' },
+    { id: 'subbrandfix' as const, label: '子品牌价格修正', icon: Wrench, desc: '子品牌价格批量修正（数据全程本地）' },
     { id: 'quarantine' as const, label: `重复隔离箱${qCount > 0 ? `（${qCount}）` : ''}`, icon: Inbox, desc: '录入时静默隔离的重复单（主页零污染）' },
     { id: 'map' as const, label: '地图配置', icon: MapPin, desc: '高德Key、缩放级别' },
     { id: 'cost' as const, label: '成本表管理', icon: DollarSign, desc: '编辑20项辅材成本价' },
@@ -114,11 +109,6 @@ export default function SettingsPage() {
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
     { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
     { id: 'salary' as const, label: '工资计算器', icon: Calculator, desc: '快速估算单笔订单工资' },
-    { id: 'policyfix' as const, label: '9-10月旧账修正', icon: Wrench, desc: '政策包自动重算（一次性）' },
-    { id: 'tripfix' as const, label: '出差扣点归0', icon: Wrench, desc: '存量出差单platformFee修正（一次性）' },
-    { id: 'breakercost' as const, label: '漏保成本回填', icon: ShieldCheck, desc: 'P0-197-R1 漏保矩阵语义反转后存量材料成本纠正（幂等）' },
-    { id: 'profitAudit' as const, label: '利润一致性巡检', icon: ShieldCheck, desc: 'actualProfit重算核对回写（一次性）' },
-    { id: 'ghostTrip' as const, label: '幽灵补助纠正', icon: ShieldCheck, desc: '未点出差胶囊但补助>0 的存量单归0并重算（一次性·P0-239）' },
     { id: 'haptics' as const, label: '触感反馈', icon: Vibrate, desc: '复制/删除/预约成功轻震' },
     { id: 'reset' as const, label: '恢复出厂设置', icon: RotateCcw, desc: '清空所有本地数据' },
     { id: 'about' as const, label: '关于', icon: Info, desc: `${APP_NAME} v${APP_VERSION}` },
@@ -186,21 +176,8 @@ export default function SettingsPage() {
         return <AmapConfig />
       case 'salary':
         return <SalaryCalculator />
-      case 'policyfix':
-        return <PolicyFixTool />
-      case 'tripfix':
-        return <TripFeeZeroTool />
-      case 'breakercost':
-        return <BreakerCostBackfillTool />
-      case 'profitAudit':
-        return <ProfitAuditTool />
-      case 'ghostTrip':
-        return (
-          <>
-            <GhostTripFixTool />
-            <SubBrandFixTool />
-          </>
-        )
+      case 'subbrandfix':
+        return <SubBrandFixTool />
       case 'reset':
         return <RestoreFactory />
       case 'about':
