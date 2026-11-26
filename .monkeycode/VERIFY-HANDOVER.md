@@ -21,6 +21,8 @@
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
 
+**P0-257-R1 已销号 @956448e**（11-27 02:00 复验全过+部署成功）：task/P0-257-R1-direct-system 分支复验（runner 12/12：单号映射/客户名标准化/品牌透传/收费/日期三源/安装费近似/无字段置 0/月份过滤/空范围不造假/时间戳转 ISO——初报 3 FAIL 均我方构造错：name 字段名/月份显式传参/恒 0 设计语义误读为直读；回归 20/20+build 三连）→合并（reconcile.ts +50/ReconcileTool 20 改恰声明增量）；部署 run 45871594298；线上 version.json=956448e 对拍全同。
+
 **P0-256-R1 已销号 @65d77d33**（11-27 01:40 复验全过）：证据型返工单零代码改动（256 合并 16da254 已覆盖 R1 全部要求）——grep 三证（isFreeQuotaMaterial=0 命中/isCable36=0/三入口 sortMaterialsByFrequency 在）+runner 10/10（YJV/PVC/3×6/30m 计频/低频不删不藏/最高频第一/同频 tie-break 稳定/单订单增量+1/三入口同序——初报 3 FAIL 均我方构造错：tie-break 语义期望矛盾、传数组而非单订单、进行中过滤层位置误设）+build 三连全过；无代码可合无需部署（main 已 256 版）。
 
 **P0-260 已销号 @26db418**（11-26 23:45 复验全过+部署成功）：task/P0-260-customer-accept 分支复验（runner 10/10：override650 优先/含 0 优先/留空走政策/round2dp/扣点随实收+回归 20/20+build 三连）→文件级合并（恰 5 文件 29 插 2 删：orderCalc 纯函数 resolveCustomerReceivable/useCompletion memo 一行/OrderComplete 实收输入/completion.ts 字段/releaseNotes 头插）；部署 run 45851872266；线上 version.json=26db418 对拍全同。
