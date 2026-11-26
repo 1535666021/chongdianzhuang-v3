@@ -191,7 +191,7 @@ export function matchAll(acct: AcctRecord[], sys: SysRecord[]): MatchResult[] {
       if (!usedS.has(j)) { usedA.add(i); usedS.add(j); results.push({ type: 'matched', acct: a, sys: sys[j], score: 100, reason: '单号精确' }) }
     }
   })
-  // 2. 手机号精确
+  // 2. 手机号精确；未中再辅助尾号 8 位（双方唯一才成对，防误配）
   const sByPhone = new Map<string, number[]>()
   sys.forEach((s, i) => { if (s.phone) { const l = sByPhone.get(s.phone) ?? []; l.push(i); sByPhone.set(s.phone, l) } })
   acct.forEach((a, i) => {
@@ -199,6 +199,14 @@ export function matchAll(acct: AcctRecord[], sys: SysRecord[]): MatchResult[] {
     for (const j of sByPhone.get(a.phone) ?? []) {
       if (!usedS.has(j)) { usedA.add(i); usedS.add(j); results.push({ type: 'matched', acct: a, sys: sys[j], score: 90, reason: '手机号精确' }); return }
     }
+  })
+  const tail8 = (p: string) => p.slice(-8)
+  const sByTail = new Map<string, number[]>()
+  sys.forEach((s, i) => { if (s.phone.length >= 8) { const l = sByTail.get(tail8(s.phone)) ?? []; l.push(i); sByTail.set(tail8(s.phone), l) } })
+  acct.forEach((a, i) => {
+    if (usedA.has(i) || !a.phone || a.phone.length < 8) return
+    const cands = (sByTail.get(tail8(a.phone)) ?? []).filter((j) => !usedS.has(j))
+    if (cands.length === 1) { const j = cands[0]; usedA.add(i); usedS.add(j); results.push({ type: 'matched', acct: a, sys: sys[j], score: 80, reason: '手机尾号8位（辅助）' }) }
   })
   // 3. 姓名+日期±3天+金额一致
   const parseT = (s: string) => Date.parse(s)
