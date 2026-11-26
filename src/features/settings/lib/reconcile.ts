@@ -145,6 +145,56 @@ export function buildSysRecord(row: RawRow): SysRecord {
   }
 }
 
+// P0-257-R1：系统侧免导入直读——Order 直映 SysRecord，默认当月可按月过滤
+export interface OrderLike {
+  id: string | number
+  customerName?: string
+  phone?: string
+  address?: string
+  status?: string
+  customerPrice?: number
+  materialCost?: number
+  laborCost?: number
+  brandName?: string
+  orderNo?: string
+  completeDate?: string
+  actualInstallDate?: string
+  createdAt?: number | string
+}
+
+export function ordersToSysRecords(orders: OrderLike[], month?: string): SysRecord[] {
+  const out: SysRecord[] = []
+  for (const o of orders) {
+    const tsRaw = o.completeDate || o.actualInstallDate || ''
+    const date = tsRaw
+      ? excelDateToISO(tsRaw)
+      : typeof o.createdAt === 'number'
+        ? new Date(o.createdAt).toISOString().slice(0, 10)
+        : excelDateToISO(o.createdAt ?? '')
+    if (month && !date.startsWith(month)) continue
+    out.push({
+      side: 'sys',
+      date,
+      orderNo: String(o.orderNo || o.id || ''),
+      name: normalizeName(o.customerName),
+      phone: normalizePhone(o.phone),
+      address: normalizeAddress(o.address),
+      brand: String(o.brandName ?? ''),
+      // 口径近似：安装费=材料+人工（直读无独立安装费字段；匹配主锚为单号/手机号/总额）
+      installFee: Math.round(((o.materialCost ?? 0) + (o.laborCost ?? 0)) * 100) / 100,
+      meters: 0,
+      customerFee: o.customerPrice ?? 0,
+      detail: {},
+      status: String(o.status ?? ''),
+      finishDate: date,
+      cablePrice: 0,
+      units: 1,
+      raw: o as unknown as RawRow,
+    })
+  }
+  return out
+}
+
 // ---- 匹配 ----
 export type MatchType = 'matched' | 'acct-only' | 'sys-only' | 'suspect'
 
