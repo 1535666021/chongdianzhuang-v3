@@ -21,6 +21,8 @@
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
 
+**P0-260 已销号 @26db418**（11-26 23:45 复验全过+部署成功）：task/P0-260-customer-accept 分支复验（runner 10/10：override650 优先/含 0 优先/留空走政策/round2dp/扣点随实收+回归 20/20+build 三连）→文件级合并（恰 5 文件 29 插 2 删：orderCalc 纯函数 resolveCustomerReceivable/useCompletion memo 一行/OrderComplete 实收输入/completion.ts 字段/releaseNotes 头插）；部署 run 45851872266；线上 version.json=26db418 对拍全同。
+
 **P0-256 已销号 @16da254**（11-26 17:45 复验全过+部署成功）：task/P0-256-frequency-sort 分支复验（runner 7/7：3*6 免配额入频/仅已完成统计/provider 懒重算/不重复计数+回归 20/20+build 三连）→文件级合并 main（useMaterialFrequency +18-8/orderStore +3-2/releaseNotes 头插保 257 条目）；部署 run 45794870567；线上 version.json=16da254 对拍全同。
 
 **P0-253-6 已销号 @9e5988b5**（11-26 07:30 复验全过+部署成功）：diff 恰 4 src+本书零超范围（importRestore.ts 新增 verifyAndParsePackage 三层校验 sha256/JSON/schema+mergePackages today 覆盖 base+computeImportPlan 四分类（非 order=noop/delete→墓碑/upsert 无→adds/深等→noop/不同→conflicts）+applyImportPlan 默认冲突 skip 不静默+backupBeforeImport {at,orders} 备份键可回滚/ImportRestoreTool.tsx 选文件+sha+密钥→还原报告/SettingsPage 接线/releaseNotes 行）；runner 15/15（四分类计数/默认跳过 A 保本地/墓碑 T 删/新增写入/take-remote 生效/备份包装回环/merge 同键覆盖/三层校验过/坏 sha 拦/坏 JSON 拦——初报 B2 FAIL 系我方构造错：备份={at,orders} 包装我误比裸数组）；回归 20/20；build 三连全过；部署 run 回拉另报。
