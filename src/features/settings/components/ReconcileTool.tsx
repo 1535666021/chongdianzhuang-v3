@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Scale, Play, Download, Trash2, Check } from 'lucide-react'
+import { useOrderStore } from '@/stores/orderStore'
 import {
-  sheetRows, buildAcctRecord, buildSysRecord, matchAll, summarize, exportDiffsCsv,
+  sheetRows, buildAcctRecord, ordersToSysRecords, matchAll, summarize, exportDiffsCsv,
   MatchResult, ReconcileSummary, DIFF_CAUSES,
 } from '../lib/reconcile'
 
@@ -22,7 +23,7 @@ function downloadText(text: string, filename: string) {
 
 export default function ReconcileTool() {
   const [acctFile, setAcctFile] = useState<File | null>(null)
-  const [sysFile, setSysFile] = useState<File | null>(null)
+  const [month, setMonth] = useState<string>(() => new Date().toISOString().slice(0, 7))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [results, setResults] = useState<MatchResult[] | null>(null)
@@ -33,16 +34,15 @@ export default function ReconcileTool() {
 
   const run = async () => {
     setError(''); setResults(null); setSummary(null)
-    if (!acctFile || !sysFile) { setError('请同时选择会计账单和系统订单导出'); return }
+    if (!acctFile) { setError('请先选择会计账单导入'); return }
+    const sys = ordersToSysRecords(useOrderStore.getState().orders, month)
+    if (sys.length === 0) { setError(`当前范围（${month}）无系统订单，不生成假差异`); return }
     setBusy(true)
     try {
-      const ab = (f: File) => f.arrayBuffer()
-      const [aBuf, sBuf] = await Promise.all([ab(acctFile), ab(sysFile)])
+      const aBuf = await acctFile.arrayBuffer()
       const { rows: aRows, warnings: aw } = sheetRows(aBuf)
-      const { rows: sRows, warnings: sw } = sheetRows(sBuf)
-      if (!aRows.length || !sRows.length) { setError(`表为空或解析失败（${[...aw, ...sw].join('；') || '无行'}）`); return }
+      if (!aRows.length) { setError(`会计表为空或解析失败（${aw.join('；') || '无行'}）`); return }
       const acct = aRows.map(buildAcctRecord)
-      const sys = sRows.map(buildSysRecord)
       const res = matchAll(acct, sys)
       setResults(res)
       setSummary(summarize(res))
@@ -70,12 +70,12 @@ export default function ReconcileTool() {
     <div className="p-4 space-y-4">
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
         <Scale size={18} className="text-blue-500 mt-0.5 shrink-0" />
-        <p className="text-xs text-blue-600">本地对账：两侧表格导入本机比对，零网络零日志。匹配优先级：单号→手机号→姓名+日期±3天+金额→模糊（疑似同人进人工确认）。补贴/管理费仅内部差因。</p>
+        <p className="text-xs text-blue-600">本地对账：会计表导入，系统侧直读本机订单（默认当月，可切月份），零网络零日志。匹配优先级：单号→手机号→姓名+日期±3天+金额→模糊（疑似同人进人工确认）。补贴/管理费仅内部差因。</p>
       </div>
 
       <div className="space-y-2">
         <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setAcctFile(e.target.files?.[0] ?? null)} className={inputCls} />
-        <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => setSysFile(e.target.files?.[0] ?? null)} className={inputCls} />
+        <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg" />
         <div className="flex gap-2">
           <button onClick={run} disabled={busy} className="flex-1 py-2.5 text-sm text-white rounded-lg flex items-center justify-center gap-1.5 disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)' }}>
             <Play size={14} />
