@@ -1,5 +1,6 @@
 # 《施工队 · 任务书》P0-256
-> 状态：甲方确认已施工完成（2026-11-26 07:06）。施工队需补 delivery/翻牌/核验指针；不得再并入他书。
+> 状态：复验打回（2026-11-26 15:22）。原因：main 当前仍含 `isCable36` 强制置顶且频率统计跳过 `isFreeQuotaMaterial`，线上仍按旧顺序；施工队必须补 branch/commit/delivery/部署实证，核验窗复验后才算完成。
+
 
 
 施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），每轮结束重读最新版，再按本任务书施工。
