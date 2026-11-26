@@ -212,6 +212,20 @@ export default function OrderComplete() {
 
             <div className="order-complete__form-item">
               <label className="order-complete__label">
+                <span>💵</span>
+                客户实收（元）
+              </label>
+              <input
+                type="number"
+                value={form.customerPriceOverride ?? profit.customerReceivable}
+                onChange={(e) => updateForm({ customerPriceOverride: parseFloat(e.target.value) })}
+                placeholder="留空=政策应收"
+                className="order-complete__input"
+              />
+            </div>
+
+            <div className="order-complete__form-item">
+              <label className="order-complete__label">
                 <span>🏢</span>
                 平台扣点（元）
               </label>

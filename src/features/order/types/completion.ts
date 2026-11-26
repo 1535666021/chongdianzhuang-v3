@@ -52,5 +52,7 @@ export interface CompletionFormData {
   laborCost: number
   platformFeeOverride?: number
   serviceFeeOverride?: number
+  /** P0-260：客户验收实收手改（覆盖政策输出，留空走政策） */
+  customerPriceOverride?: number
   notes: string
 }

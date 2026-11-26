@@ -44,6 +44,16 @@ export function getSettlementFee(order: Order): number {
 }
 
 /** P0-204：费率唯一来源=PLATFORM_FEE_RATE（平台差异化费率与0.2默认兜底已废止）；吉利=0 保留 */
+// P0-260：客户验收实收——override 优先于政策输出（增项+电缆），round2dp；override 仅动客户实收，不动扣点/服务费口径
+export function resolveCustomerReceivable(
+  override: number | undefined,
+  addonReceivable: number,
+  cableReceivable: number
+): number {
+  const base = override ?? (addonReceivable + cableReceivable)
+  return Math.round(base * 100) / 100
+}
+
 export function getOrderPlatformFee(
   order: Order,
   customerReceivable: number
