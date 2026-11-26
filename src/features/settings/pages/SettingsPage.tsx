@@ -29,6 +29,7 @@ import {
   Lock,
   CloudUpload,
   DownloadCloud,
+  Scale,
 } from 'lucide-react'
 import { APP_NAME, APP_VERSION, APP_BUILD_TIME } from '@/constants/common'
 import { runBrandBackfillManual } from '@/shared/dataFix/backfillBrand'
@@ -59,6 +60,7 @@ import LocalAgeTool from '../components/LocalAgeTool'
 import ChangeQueueTool from '../components/ChangeQueueTool'
 import RepoUploadTool from '../components/RepoUploadTool'
 import ImportRestoreTool from '../components/ImportRestoreTool'
+import ReconcileTool from '../components/ReconcileTool'
 type SettingSection =
   | 'haptics'
   | 'dupcheck'
@@ -77,7 +79,7 @@ type SettingSection =
   | 'map'
   | 'salary'
   | 'policyfix'
-  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey' | 'exportsync' | 'localage' | 'changequeue' | 'repoupload' | 'importrestore'
+  | 'profitAudit' | 'ghostTrip' | 'tripfix' | 'breakercost' | 'quarantine' | 'customBrands' | 'bindReconcile' | 'backupkey' | 'exportsync' | 'localage' | 'changequeue' | 'repoupload' | 'importrestore' | 'reconcile'
   | null
 export default function SettingsPage() {
   // P0-199-R1：隔离箱角标=箱内条数
@@ -107,6 +109,7 @@ export default function SettingsPage() {
     { id: 'changequeue' as const, label: '变更队列', icon: Inbox, desc: '订单变更 30 秒防抖打包今日密文包' },
     { id: 'repoupload' as const, label: '私仓上传', icon: CloudUpload, desc: '上传今日密文包（base+today 两份）' },
     { id: 'importrestore' as const, label: '导入恢复', icon: DownloadCloud, desc: '私仓拉密文本地解密恢复（冲突人工处理）' },
+    { id: 'reconcile' as const, label: '本地对账', icon: Scale, desc: '会计账单×系统订单导入比对（零网络）' },
     { id: 'watermark' as const, label: '水印设置', icon: Type, desc: '图片水印文字配置' },
     { id: 'lingpao' as const, label: '零跑模板', icon: List, desc: '零跑品牌增项模板' },
     { id: 'scripts' as const, label: '话术生成', icon: Sparkles, desc: '品牌话术模板管理' },
@@ -171,6 +174,8 @@ export default function SettingsPage() {
         return <RepoUploadTool />
       case 'importrestore':
         return <ImportRestoreTool />
+      case 'reconcile':
+        return <ReconcileTool />
       case 'watermark':
         return <WatermarkTemplate />
       case 'lingpao':
