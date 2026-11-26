@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { Scale, Play, Download, Trash2, Check } from 'lucide-react'
+import { Scale, Play, Download, Trash2, Check, AlertTriangle } from 'lucide-react'
 import { useOrderStore } from '@/stores/orderStore'
 import {
-  sheetRows, buildAcctRecord, ordersToSysRecords, matchAll, summarize, exportDiffsCsv,
-  MatchResult, ReconcileSummary, DIFF_CAUSES,
+  parseAcctWorkbook, rowsForMonth, prevMonth, buildReport, buildAcctRecord,
+  ordersToSysRecords, matchAll, exportDiffsCsv,
+  MatchResult, ReconcileReport,
 } from '../lib/reconcile'
 
-// P0-257 本地对账：两侧 Excel 导入→标准化→匹配→差因拆分→汇总→导出；全程本机零网络
+// P0-257-R1+增补：会计 Excel 导入（可多工作表），系统侧直读本机订单；默认上一自然月；四类分组可视化+报告
 const CONFIRMED_KEY = 'cdz_v3_reconcile_confirmed'
 
 function downloadText(text: string, filename: string) {
@@ -21,31 +22,38 @@ function downloadText(text: string, filename: string) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+function personLine(r: MatchResult): string {
+  const side = r.acct ?? r.sys
+  if (!side) return ''
+  return [side.name, side.phone, side.address].filter(Boolean).join(' · ')
+}
+
 export default function ReconcileTool() {
   const [acctFile, setAcctFile] = useState<File | null>(null)
-  const [month, setMonth] = useState<string>(() => new Date().toISOString().slice(0, 7))
+  const [month, setMonth] = useState<string>(() => prevMonth())
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [report, setReport] = useState<ReconcileReport | null>(null)
   const [results, setResults] = useState<MatchResult[] | null>(null)
-  const [summary, setSummary] = useState<ReconcileSummary | null>(null)
   const [confirmed, setConfirmed] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem(CONFIRMED_KEY) ?? '[]')) } catch { return new Set() }
   })
 
   const run = async () => {
-    setError(''); setResults(null); setSummary(null)
+    setError(''); setReport(null); setResults(null)
     if (!acctFile) { setError('请先选择会计账单导入'); return }
     const sys = ordersToSysRecords(useOrderStore.getState().orders, month)
     if (sys.length === 0) { setError(`当前范围（${month}）无系统订单，不生成假差异`); return }
     setBusy(true)
     try {
       const aBuf = await acctFile.arrayBuffer()
-      const { rows: aRows, warnings: aw } = sheetRows(aBuf)
-      if (!aRows.length) { setError(`会计表为空或解析失败（${aw.join('；') || '无行'}）`); return }
-      const acct = aRows.map(buildAcctRecord)
-      const res = matchAll(acct, sys)
+      const { sheets, warnings } = parseAcctWorkbook(aBuf)
+      if (!sheets.length) { setError(`会计表解析失败（${warnings.join('；') || '无工作表'}）`); return }
+      const rows = rowsForMonth(sheets, month)
+      if (!rows.length) { setError(`会计表无 ${month} 数据，不生成假差异`); return }
+      const res = matchAll(rows.map(buildAcctRecord), sys)
       setResults(res)
-      setSummary(summarize(res))
+      setReport(buildReport(res))
     } catch (e) {
       setError(e instanceof Error ? e.message : '核对失败')
     } finally { setBusy(false) }
@@ -60,17 +68,34 @@ export default function ReconcileTool() {
     localStorage.setItem(CONFIRMED_KEY, JSON.stringify([...next]))
   }
 
-  const clearAll = () => {
-    setResults(null); setSummary(null); setError('')
-  }
+  const clearAll = () => { setReport(null); setResults(null); setError('') }
 
   const inputCls = 'block w-full text-xs text-gray-600 file:mr-2 file:px-3 file:py-1.5 file:text-xs file:border-0 file:rounded-lg file:bg-blue-50 file:text-blue-700'
+
+  const groupTitle = (label: string, count: number, danger: boolean) => (
+    <p className={`text-xs font-medium px-3 py-2 ${danger ? 'text-red-600 bg-red-50' : 'text-gray-600 bg-gray-50'}`}>{label}（{count}）</p>
+  )
+
+  const personRow = (r: MatchResult, danger: boolean, i: number) => (
+    <div key={`${r.type}-${i}`} className={`px-3 py-2 text-xs space-y-0.5 border-l-4 ${danger ? 'border-red-400 bg-red-50/50' : 'border-transparent'}`}>
+      <p className={danger ? 'font-medium text-red-700' : 'text-gray-700'}>{personLine(r) || '（无姓名）'}</p>
+      {r.acct && <p className="text-gray-500">会计：{r.acct.date} {r.acct.orderNo} 实收 {(r.acct.onlineFee - r.acct.deduction).toFixed(2)}</p>}
+      {r.sys && <p className="text-gray-500">系统：{r.sys.date} {r.sys.orderNo} 应收 {r.sys.customerFee.toFixed(2)}</p>}
+      {r.type === 'suspect' && (
+        <button onClick={() => toggleConfirm(r)} className="mt-1 px-2 py-1 text-xs border rounded-lg border-gray-300 text-gray-600 flex items-center gap-1">
+          {confirmed.has(`${r.acct?.orderNo || r.acct?.phone}|${r.sys?.orderNo || r.sys?.phone}`) ? <><Check size={11} className="text-green-600" />已人工确认同人</> : '标记为同人（人工确认）'}
+        </button>
+      )}
+    </div>
+  )
+
+  const totalFlags = report ? report.missingCount + report.extraCount + report.diffCount + report.suspectCount : 0
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
         <Scale size={18} className="text-blue-500 mt-0.5 shrink-0" />
-        <p className="text-xs text-blue-600">本地对账：会计表导入，系统侧直读本机订单（默认当月，可切月份），零网络零日志。匹配优先级：单号→手机号→姓名+日期±3天+金额→模糊（疑似同人进人工确认）。补贴/管理费仅内部差因。</p>
+        <p className="text-xs text-blue-600">本地对账：只传会计 Excel（可多工作表自动识月），系统侧直读本机订单。默认核对上一自然月，可手改。空范围不造假差异。</p>
       </div>
 
       <div className="space-y-2">
@@ -85,53 +110,45 @@ export default function ReconcileTool() {
             <Trash2 size={12} />
             清除
           </button>
-          <button onClick={() => results && downloadText(exportDiffsCsv(results), `对账差异表-${new Date().toISOString().slice(0, 10)}.csv`)} disabled={!results}
+          <button onClick={() => results && downloadText(exportDiffsCsv(results), `对账差异表-${month}.csv`)} disabled={!results}
             className="px-3 py-2.5 text-xs border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-40 flex items-center gap-1">
             <Download size={12} />
-            导出差异表
+            另存报告
           </button>
         </div>
       </div>
 
-      {error && <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">{error}</p>}
+      {error && (
+        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <AlertTriangle size={15} className="text-amber-500 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-700">{error}</p>
+        </div>
+      )}
 
-      {summary && (
+      {report && (
         <div className="space-y-2">
           <div className="grid grid-cols-3 gap-2 text-xs">
-            <div className="border border-gray-200 rounded-lg p-2.5"><p className="text-gray-500">会计总收</p><p className="font-medium text-gray-800 mt-0.5">{summary.acctTotal.toFixed(2)}</p></div>
-            <div className="border border-gray-200 rounded-lg p-2.5"><p className="text-gray-500">系统总收</p><p className="font-medium text-gray-800 mt-0.5">{summary.sysTotal.toFixed(2)}</p></div>
-            <div className="border border-gray-200 rounded-lg p-2.5"><p className="text-gray-500">总差额</p><p className={`font-medium mt-0.5 ${Math.abs(summary.totalDiff) >= 0.01 ? 'text-red-600' : 'text-green-600'}`}>{summary.totalDiff.toFixed(2)}</p></div>
+            <div className="border border-gray-200 rounded-lg p-2.5"><p className="text-gray-500">系统单数</p><p className="font-medium text-gray-800 mt-0.5">{report.sysCount}</p></div>
+            <div className="border border-gray-200 rounded-lg p-2.5"><p className="text-gray-500">会计单数</p><p className="font-medium text-gray-800 mt-0.5">{report.acctCount}</p></div>
+            <div className="border border-gray-200 rounded-lg p-2.5"><p className="text-gray-500">金额差额</p><p className={`font-medium mt-0.5 ${Math.abs(report.amountDiffTotal) >= 0.01 ? 'text-red-600' : 'text-green-600'}`}>{report.amountDiffTotal.toFixed(2)}</p></div>
           </div>
-          <div className="border border-gray-200 rounded-lg p-2.5 text-xs space-y-1">
-            <p className="text-gray-500">状态：对上 {summary.statusCounts.matched} / 疑似 {summary.statusCounts.suspect} / 只有会计 {summary.statusCounts['acct-only']} / 只有系统 {summary.statusCounts['sys-only']} / 差异单 {summary.diffOrderCount}</p>
-            <p className="text-gray-500">差因小计：{DIFF_CAUSES.map((c) => `${c} ${summary.causeTotals[c].toFixed(2)}`).join('　')}</p>
+          <div className="border border-gray-200 rounded-lg p-2.5 text-xs">
+            <p className="text-gray-600">对比报告（{month}）：总单数 系统 {report.sysCount} / 会计 {report.acctCount}；对上 {report.matchedCount}；会计缺失 {report.missingCount}；会计多出 {report.extraCount}；金额不一致 {report.diffCount}；疑似同人 {report.suspectCount}；金额差汇总 {report.amountDiffTotal.toFixed(2)}</p>
           </div>
         </div>
       )}
 
-      {results && (
-        <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-72 overflow-y-auto">
-          {results.slice(0, 200).map((r, i) => {
-            const key = r.acct && r.sys ? `${r.acct.orderNo || r.acct.phone}|${r.sys.orderNo || r.sys.phone}` : ''
-            const tagColor = r.type === 'matched' ? 'text-green-600' : r.type === 'suspect' ? 'text-amber-600' : 'text-red-600'
-            return (
-              <div key={i} className="px-3 py-2 text-xs space-y-0.5">
-                <p className={tagColor}>
-                  {r.type === 'matched' ? '对上' : r.type === 'suspect' ? '疑似同人' : r.type === 'acct-only' ? '只有会计' : '只有系统'}
-                  　{r.reason}{r.score > 0 ? `（${r.score}分）` : ''}
-                </p>
-                {r.acct && <p className="text-gray-600">会计：{r.acct.date} {r.acct.orderNo} {r.acct.name} {r.acct.phone} 实收 {(r.acct.onlineFee - r.acct.deduction).toFixed(2)}</p>}
-                {r.sys && <p className="text-gray-600">系统：{r.sys.date} {r.sys.orderNo} {r.sys.name} 应收 {r.sys.customerFee.toFixed(2)}</p>}
-                {r.type === 'suspect' && (
-                  <button onClick={() => toggleConfirm(r)} className="mt-1 px-2 py-1 text-xs border rounded-lg flex items-center gap-1 border-gray-300 text-gray-600">
-                    {confirmed.has(key) ? <><Check size={11} className="text-green-600" />已人工确认同人</> : '标记为同人（人工确认）'}
-                  </button>
-                )}
-              </div>
-            )
-          })}
-          {results.length > 200 && <p className="px-3 py-2 text-xs text-gray-400">仅展示前 200 条，共 {results.length} 条，导出看全量</p>}
+      {report && totalFlags > 0 && (
+        <div className="border border-gray-200 rounded-lg divide-y divide-gray-100 max-h-80 overflow-y-auto text-xs">
+          {report.missingCount > 0 && (<>{groupTitle('会计缺失（系统有·会计无）', report.missingCount, true)}{report.missing.map((r, i) => personRow(r, true, i))}</>)}
+          {report.extraCount > 0 && (<>{groupTitle('会计多出（会计有·系统无）', report.extraCount, true)}{report.extra.map((r, i) => personRow(r, true, i))}</>)}
+          {report.diffCount > 0 && (<>{groupTitle('金额不一致', report.diffCount, false)}{report.diffs.map((r, i) => personRow(r, false, i))}</>)}
+          {report.suspectCount > 0 && (<>{groupTitle('疑似同人（待人工确认）', report.suspectCount, false)}{report.suspects.map((r, i) => personRow(r, false, i))}</>)}
         </div>
+      )}
+
+      {report && totalFlags === 0 && (
+        <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg p-2.5">全部对上，无差异</p>
       )}
     </div>
   )

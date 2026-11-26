@@ -195,6 +195,98 @@ export function ordersToSysRecords(orders: OrderLike[], month?: string): SysReco
   return out
 }
 
+// ---- 多工作表与月度报告（2026-11-27 甲方增补） ----
+export interface AcctSheet { sheet: string; month: string; rows: RawRow[] }
+
+// 工作表识月：表名优先（2026-10/10月/2026年10月），退化为表内日期列众数
+export function detectSheetMonth(sheetName: string, rows: RawRow[]): string | null {
+  const m = sheetName.match(/(20\d{2})[-_.年\s]?(\d{1,2})/)
+  if (m) return `${m[1]}-${String(parseInt(m[2], 10)).padStart(2, '0')}`
+  const counts = new Map<string, number>()
+  for (const r of rows) {
+    const d = excelDateToISO(pick(r, ['日期']))
+    if (/^\d{4}-\d{2}/.test(d)) {
+      const k = d.slice(0, 7)
+      counts.set(k, (counts.get(k) ?? 0) + 1)
+    }
+  }
+  let best: string | null = null
+  let bn = 0
+  for (const [k, v] of counts) { if (v > bn) { bn = v; best = k } }
+  return best
+}
+
+export function parseAcctWorkbook(buf: ArrayBuffer): { sheets: AcctSheet[]; warnings: string[] } {
+  const wb = XLSX.read(buf, { type: 'array', cellDates: false })
+  const sheets: AcctSheet[] = []
+  for (const name of wb.SheetNames) {
+    const ws = wb.Sheets[name]
+    if (!ws) continue
+    const rows = XLSX.utils.sheet_to_json<RawRow>(ws, { defval: '', raw: true })
+    if (!rows.length) continue
+    sheets.push({ sheet: name, month: detectSheetMonth(name, rows) ?? '', rows })
+  }
+  return { sheets, warnings: sheets.length ? [] : ['工作簿无有效工作表'] }
+}
+
+// 按目标月取会计行：多表按识月过滤；单表/无识月按行内日期过滤
+export function rowsForMonth(sheets: AcctSheet[], month: string): RawRow[] {
+  const dated = sheets.filter((sh) => sh.month)
+  if (dated.length > 0) {
+    const hit = dated.filter((sh) => sh.month === month).flatMap((sh) => sh.rows)
+    if (hit.length) return hit
+    return []
+  }
+  return sheets.flatMap((sh) =>
+    sh.rows.filter((r) => excelDateToISO(pick(r, ['日期'])).startsWith(month))
+  )
+}
+
+export function prevMonth(d = new Date()): string {
+  const x = new Date(d.getFullYear(), d.getMonth() - 1, 1)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${x.getFullYear()}-${p(x.getMonth() + 1)}`
+}
+
+export interface ReconcileReport {
+  sysCount: number
+  acctCount: number
+  matchedCount: number
+  missingCount: number
+  extraCount: number
+  diffCount: number
+  suspectCount: number
+  amountDiffTotal: number
+  missing: MatchResult[]
+  extra: MatchResult[]
+  diffs: MatchResult[]
+  suspects: MatchResult[]
+}
+
+export function buildReport(results: MatchResult[]): ReconcileReport {
+  const missing = results.filter((r) => r.type === 'sys-only')
+  const extra = results.filter((r) => r.type === 'acct-only')
+  const suspects = results.filter((r) => r.type === 'suspect')
+  const matched = results.filter((r) => r.type === 'matched')
+  const diffs = matched.filter(
+    (r) => r.acct && r.sys && Math.abs(splitDiff(r.acct, r.sys).totalDiff) >= 0.01
+  )
+  const amountDiffTotal = Math.round(
+    matched.reduce((a, r) => (r.acct && r.sys ? a + splitDiff(r.acct, r.sys).totalDiff : a), 0) * 100
+  ) / 100
+  return {
+    sysCount: matched.length + missing.length + suspects.length,
+    acctCount: matched.length + extra.length + suspects.length,
+    matchedCount: matched.length,
+    missingCount: missing.length,
+    extraCount: extra.length,
+    diffCount: diffs.length,
+    suspectCount: suspects.length,
+    amountDiffTotal,
+    missing, extra, diffs, suspects,
+  }
+}
+
 // ---- 匹配 ----
 export type MatchType = 'matched' | 'acct-only' | 'sys-only' | 'suspect'
 
