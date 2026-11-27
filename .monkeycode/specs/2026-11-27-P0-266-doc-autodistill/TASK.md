@@ -1,6 +1,8 @@
-# 《施工队 · 任务书》P0-266
+# 《监理窗 · 自执行 SOP》P0-266
+> 非施工任务书，施工队/核验窗忽略；这是监理窗在文档守卫告警后的自执行维护流程。
 
-施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），每轮结束重读最新版，再按本任务书施工。
+
+监理窗执行前第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），每轮结束重读最新版，再按本任务书施工。
 
 ## 目标
 把“文档守卫提醒后自动蒸馏”固化为常驻维护任务：当 `.github/workflows/doc-size-guard.yml` 对 `.monkeycode/*.md` 报 SOFT/HARD 后，监理窗自动做安全蒸馏并回跑守卫。
@@ -18,5 +20,4 @@ E. 留痕：在归档文件头写来源、归档日期、保留原则；必要�
 3) guard 重跑通过/只剩 warning。  
 4) delivery.md 记录触发文件、before/after bytes、archive 路径。
 
-施工队自行部署
-监理窗口 · 签发完毕
+监理窗口 · 自执行维护
