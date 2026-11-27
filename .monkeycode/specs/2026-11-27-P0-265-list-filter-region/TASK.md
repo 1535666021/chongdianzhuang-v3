@@ -27,3 +27,8 @@
 
 施工队自行部署
 监理窗口 · 签发完毕
+
+## 关键缺陷修正（2026-11-28 07:06 甲方裁定）
+- 当前 `TagCloud` 的「全部(N)」用 `tags.reduce(sum count)`，而 region tags 是层级累计：一单会计入省/市/区县/乡镇多级，导致 9 单被加成 26。
+- 必修：`全部(N)` 只能等于当前过滤后的订单数 `base.length`，不得等于各级 count 相加；TagCloud 需增加 `total` prop，`useTagCounts` 返回 `regionTotal=base.length`。
+- 若区域层级树未完成，临时也要把层级 tags 按“累计标签”展示且标明不可相加；不得把 26 当订单总数。
