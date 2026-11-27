@@ -1,4 +1,6 @@
 # 《施工队 · 任务书》P0-264
+> 状态：已并入 P0-265，禁止单独施工。
+
 
 施工队接单后第一步：依次读取 .monkeycode/MEMORY.md、.monkeycode/RULES.md、.monkeycode/PLAYBOOK.md（三读，缺一不动手），每轮结束重读最新版，再按本任务书施工。
 
