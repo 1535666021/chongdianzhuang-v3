@@ -12,8 +12,9 @@ export function buildRegionTree(orders: Order[]): RegionNode {
   const root: RegionNode = { name: '', count: 0, children: new Map() }
   for (const o of orders) {
     const chain = extractAreaChain(o.address || '')
+    // P0-268-B：去省级，市→区县→乡镇三级下钻
     const levels = chain
-      ? [chain.province, chain.city, chain.district, chain.township].filter((x): x is string => Boolean(x))
+      ? [chain.city, chain.district, chain.township].filter((x): x is string => Boolean(x))
       : []
     if (!levels.length) levels.push('未知区域')
     root.count += 1

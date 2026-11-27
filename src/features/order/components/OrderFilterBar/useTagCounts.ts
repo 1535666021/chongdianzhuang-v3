@@ -18,6 +18,16 @@ export function useTagCounts(orders: Order[], state: FilterState) {
     return extractRegionTags(base, 'region')
   }, [orders, state.statusFilter, state.installType, state.brand, state.platform, state.keyword])
 
+  const baseCount = useMemo(() => {
+    const baseFilter: OrderFilter = {
+      status: state.statusFilter === 'all' ? undefined : state.statusFilter,
+      installType: state.installType,
+      brand: state.brand,
+      platform: state.platform,
+      keyword: state.keyword || undefined,
+    }
+    return filterOrders(orders, baseFilter).length
+  }, [orders, state.statusFilter, state.installType, state.brand, state.platform, state.keyword])
   const typeCounts = useMemo(() => {
     const baseFilter: OrderFilter = {
       status: state.statusFilter === 'all' ? undefined : state.statusFilter,
@@ -30,5 +40,5 @@ export function useTagCounts(orders: Order[], state: FilterState) {
     return extractTypeCounts(base)
   }, [orders, state.statusFilter, state.selectedTag, state.brand, state.platform, state.keyword])
 
-  return { tagCounts, typeCounts }
+  return { tagCounts, typeCounts, baseCount }
 }

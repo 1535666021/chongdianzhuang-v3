@@ -34,7 +34,7 @@ export default function OrderFilterBar({ orders, initialStatus = 'all', initialG
     toggleSmart,
   } = useFilterState(initialStatus, initialGroupMode, initialSortBy)
 
-  const { tagCounts, typeCounts } = useTagCounts(orders, state)
+  const { tagCounts, typeCounts, baseCount } = useTagCounts(orders, state)
 
   const brands = useMemo(
     () => extractBrandOptions(filterOrders(orders, { ...filter, brand: undefined })),
@@ -57,7 +57,7 @@ export default function OrderFilterBar({ orders, initialStatus = 'all', initialG
         onToggleDimension={toggleDimension}
         onToggleSmart={toggleSmart}
       />
-      <TagCloud tags={tagCounts} selected={state.selectedTag} onSelect={setSelectedTag} />
+      <TagCloud tags={tagCounts} total={baseCount} selected={state.selectedTag} onSelect={setSelectedTag} />
       <TypeFilter types={typeCounts} selected={state.installType} onSelect={setInstallType} />
       <BrandPlatformSelect
         brands={brands}
