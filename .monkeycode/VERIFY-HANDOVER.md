@@ -1,3 +1,24 @@
+## 〇、本窗任期（2026-11-27 起，三通道扫描铁律上岗）
+
+- 本窗扫描姿势：main 通道+task/* 分支逐个开 specs 查 delivery+看板通道，三者缺一不可（253-5/256/260/259 四连误判教训）
+- 令牌故障记录：甲方投喂 ghp 首次 401（本窗 shell 单引号未展开变量，误报令牌失效，实为有效——已复盘）
+- git 协议 HTTP/2 断流不通，合并/推送全程走 GitHub API（merges/git database/contents）；API 更新 ref 不触发 push 事件，Pages 部署须 workflow_dispatch
+
+### 本窗经手销号
+| 单 | 销号@SHA | 复验实证 |
+|---|---|---|
+| P0-261 已完成虚拟列表 | 82d40d0e（合并@main） | 三补丁逐字吻合（virtualEnabled 提前 L130/slice 条件化 L135/按钮条件 L288/单一事实源）+diff 面无混笔+build 全过 |
+| P0-257-R1 增补（多工作表识月+默认上月+可视化报告） | dc3651cb（合并@main，解冲突三文件：reconcile/ReconcileTool 取分支版，releaseNotes 四条目并存） | 本窗自建 runner 20/20（prevMonth 跨年/识月三形态/当月过滤时间戳/空域双端/多表取行/对账往返 matched+acct-only+sys-only）+UI 四声明审计+合并版全量 build 全过 |
+
+### 本窗经手打回
+| 单 | 判定 | 备注 |
+|---|---|---|
+| P0-259 | ~~打回 R1~~→**撤销** | 基于旧分支头 68b60fc0 判孤儿文件未删；查 main 提交史实证 11-26 23:04 已由前窗合并销号 4199e4cd（五删 2 改版含孤儿文件全删），打回前提不成立，return-R1 未落库作废 |
+
+### 待办
+- 部署 run 45995229427（workflow_dispatch@ecad85b7）in_progress，成功即回填看板+version.json 对拍
+- P0-247 v4/249 甲方裁暂停不提示不重提；P0-248 待施工；V4 优化单挂起等甲方补图
+
 # 核验窗交接书（2026-11-27 06:57，HEAD 1a193417）
 
 ## 一、窗口身份
