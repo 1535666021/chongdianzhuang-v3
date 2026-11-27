@@ -40,3 +40,8 @@
 
 ## 8. Pages 版本号坑（详则见 MEMORY.md 第1条）
 - 勿 re-run 历史部署 run（GITHUB_SHA 取旧 sha，版本号贴旧）；异常处置=查 HEAD→curl 线上资源→re-run 该 HEAD 的 run，勿推空提交
+
+## 施工队 / 核验窗开工核验（2026-11-27）
+- 施工队：接单、回复“无任务”、切换任务前，必读 `WINDOW-SYNC.md` 与目标任务 TASK；上一单未解除阻塞时不得开工。交付必须写 `specs/<日期-编号>/delivery.md` 并翻牌。
+- 核验窗：合并/部署/销号前，必读施工 delivery、build/回拉核验证据、上一任务是否阻塞；证据不足不得合并。合并后更新 `WINDOW-SYNC.md` 并写 NOTICE。
+- 两窗都受 RULES「开新任务先核验旧任务」约束；违反导致返工/误合并，责任在对应窗。
