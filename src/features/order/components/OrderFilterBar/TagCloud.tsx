@@ -1,11 +1,11 @@
 interface TagCloudProps {
   tags: { label: string; count: number }[]
+  total: number // P0-268-A：总数=基集合去重长度，禁标签计数求和（一单一多标签会虚增）
   selected: string | null
   onSelect: (tag: string | null) => void
 }
 
-export default function TagCloud({ tags, selected, onSelect }: TagCloudProps) {
-  const total = tags.reduce((sum, tag) => sum + tag.count, 0)
+export default function TagCloud({ tags, total, selected, onSelect }: TagCloudProps) {
 
   return (
     <div className="ofb-tag-cloud" role="group" aria-label="标签云">
