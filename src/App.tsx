@@ -4,6 +4,7 @@ import { orderRepairRepository } from './features/order/repair/repository'
 import { purgeExpiredRecycleBin } from './features/order/utils/recycleBin'
 import { useOrderStore } from '@/stores/orderStore'
 import { runMeterMismatchFix } from '@/shared/dataFix/meterMismatchFix'
+import { companyHit } from '@/shared/utils/company' // P0-265-B
 import { runAddressReextract } from '@/shared/dataFix/anqingAddressFix'
 import { ROUTES } from '@/routes/route'
 import { useVersionCheck } from '@/shared/hooks/useVersionCheck'
@@ -19,6 +20,7 @@ import { runBreakerRowSelfCheck } from '@/shared/dataFix/breakerRowSelfCheckFix'
 import BottomTabBar from '@/shared/components/BottomTabBar'
 import ReleaseNotesBanner from '@/shared/components/ReleaseNotesBanner' // P0-234：更新通知顶部横幅
 import { startChangeQueue } from '@/features/settings/lib/changeQueue' // P0-253-4：变更监听防抖打包
+import { useUIStore } from '@/stores/uiStore' // P0-265-B
 
 // 导出全局 toast
 export { toast }
@@ -110,10 +112,12 @@ export default function App() {
       .forEach(addKnownPlatform)
   }, [orders])
 
-  // 底部气泡：首页=待办数，已预约=已预约数（老系统同款红点提示）
+  const currentCompany = useUIStore((st) => st.currentCompany) // P0-265-B：徽章公司口径
+  // 底部气泡：首页=当前公司口径总数（P0-265-B），已预约=已预约数（老系统同款红点提示）
   const badgeMap: Record<string, number> = {
     '待办': orders.filter((o) => o.status === '待办').length,
     '已预约': orders.filter((o) => o.status === '已预约').length,
+    首页: orders.filter((o) => companyHit(o, currentCompany)).length, // P0-265-B：首页徽章=当前公司口径可见订单总数
   }
 
   return (

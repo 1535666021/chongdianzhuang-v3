@@ -23,7 +23,9 @@ import { Recycle, Plus, FileText, PackagePlus, CalendarPlus, Boxes } from 'lucid
 import { useInventoryStore } from '@/stores/inventoryStore'
 import { EmptyState } from '@/shared/components/EmptyState'
 import { useOrderStore } from '@/stores/orderStore'
-import CompanyFilter from '@/shared/components/CompanyFilter' // P0-222
+import RegionTree from '@/features/order/components/RegionTree' // P0-265-C
+import { matchRegionPath } from '@/features/order/components/regionTreeModel'
+import type { CompanyKey } from '@/shared/utils/company'
 import { useUIStore } from '@/stores/uiStore' // P0-222
 import { companyHit } from '@/shared/utils/company' // P0-222
 import { getKnownPlatforms } from '@/shared/storage/platformStorage'
@@ -108,7 +110,10 @@ export default function OrderList({ fixedStatus }: Props) {
   const deleteOrder = useOrderStore((state) => state.deleteOrder)
   const updateOrder = useOrderStore((state) => state.updateOrder)
   const { orders } = useOrderList(filter)
-  const currentCompany = useUIStore((s) => s.currentCompany) // P0-222：公司档位（全部/本杨/到每家/未分）
+  // P0-265-A：公司档位改本地会话态（默认全部，不读不写 cdz_current_company_v1，手动筛选不落库）
+  const [currentCompany, setCurrentCompany] = useState<CompanyKey>('all')
+  const [regionPath, setRegionPath] = useState<string[] | null>(null) // P0-265-C：区域树选中路径（null=不过滤）
+  const isHome = useMemo(() => window.location.pathname === '/', [])
   const knownPlatforms = getKnownPlatforms()
 
   const today = todayLocal() // P0-228：本地时区今日判定（isToday 比较逻辑不动）
@@ -131,10 +136,10 @@ export default function OrderList({ fixedStatus }: Props) {
   // P0-222：仅完成页追加 companyHit 公司过滤（唯一出口）；待办/已预约/全部 Tab 走原样零改动
   const displayOrders = useMemo(
     () => {
-      const filtered = fixedStatus === '已完成' ? orders.filter((o) => companyHit(o, currentCompany)) : orders
+      const filtered = orders.filter((o) => companyHit(o, currentCompany) && matchRegionPath(o, regionPath))
       return virtualEnabled ? filtered : filtered.slice(0, showCount)
     },
-    [orders, showCount, fixedStatus, currentCompany, virtualEnabled],
+    [orders, showCount, fixedStatus, currentCompany, virtualEnabled, regionPath],
   )
   const groupMode = filter.groupMode ?? 'region'
   // P0-167：已完成Tab分组键=实际完工日（与统计按天明细口径一致）；其余Tab维持原键
@@ -151,6 +156,11 @@ export default function OrderList({ fixedStatus }: Props) {
     setShowCount(50)
   }, [filter])
 
+  // P0-265-B：当前公司口径订单（筛选条同源 + 区域树数据源）
+  const companyOrders = useMemo(
+    () => allOrders.filter((o) => companyHit(o, currentCompany)),
+    [allOrders, currentCompany],
+  )
   const hasAnyOrder = allOrders.length > 0
   const resetFilters = () => setResetKey((key) => key + 1)
   // P0-206-M：库存入口角标（R-11.10：stock≤minStock且minStock>0 的条目数；默认0不预警）
@@ -170,7 +180,6 @@ export default function OrderList({ fixedStatus }: Props) {
       {/* 操作按钮 */}
       <div className="order-list__toolbar">
         {/* P0-222：完成页页头公司胶囊（统计页同款引用；其余 Tab 不渲染） */}
-        {fixedStatus === '已完成' && <CompanyFilter />}
         <div className="order-list__actions">
           <button
             onClick={() => navigate('/order/new')}
@@ -229,15 +238,42 @@ export default function OrderList({ fixedStatus }: Props) {
       {/* P0-142-R3：预约区间明天到期的已约单——顶部提醒条（当天一次） */}
       {fixedStatus === '待办' && <AppointmentExpiryBanner />}
 
+      {/* P0-265-A：公司筛选档位（三 Tab 常驻，默认全部=不滤；会话态不落库）+ 非默认档提示横幅 */}
+      <div className="px-3 pt-2 flex flex-wrap items-center gap-1.5 text-xs">
+        {([['all', '全部'], ['benyang', '本杨'], ['daomei', '到每家'], ['unassigned', '未分公司']] as [CompanyKey, string][]).map(([k, label]) => (
+          <button
+            key={k}
+            onClick={() => setCurrentCompany(k)}
+            className={`px-2.5 py-1 rounded-full border ${currentCompany === k ? 'border-blue-400 bg-blue-50 text-blue-700 font-medium' : 'border-gray-200 text-gray-500'}`}
+          >
+            {label}
+          </button>
+        ))}
+        {currentCompany !== 'all' && (
+          <span className="ml-auto flex items-center gap-1.5 text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-1">
+            当前仅显示已选公司
+            <button onClick={() => setCurrentCompany('all')} className="underline font-medium">一键全部</button>
+          </span>
+        )}
+      </div>
+
       {/* 多维筛选与分组 */}
       <OrderFilterBar
         key={resetKey}
-        orders={allOrders}
+        orders={companyOrders} // P0-265-B：筛选/计数与列表同源=当前公司过滤后
         initialStatus={initialStatus}
         initialGroupMode="time"
         initialSortBy={fixedStatus === '已完成' ? 'completeDate' : fixedStatus === '已预约' ? 'appointmentDate' : 'businessTime'}
         onFilterChange={setFilter}
       />
+
+      {/* P0-265-C：区域层级树（逐级下钻，计数，父级可收起）——首页挂载，选中路径过滤列表 */}
+      {isHome && (
+        <RegionTree
+          orders={companyOrders}
+          onSelectRegion={(p) => setRegionPath(p)}
+        />
+      )}
 
       {/* 订单列表：P0-145-R1 骨架与列表互斥渲染——数据就绪即整区切真实列表，零残留占位 */}
       <div className="order-list__content">
