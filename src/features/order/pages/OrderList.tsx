@@ -126,10 +126,15 @@ export default function OrderList({ fixedStatus }: Props) {
             onEditBrand={setEditBrandOrder}
     />
   )
+  // P0-261：虚拟模式判定提前——虚拟滚动启用时全量直出，禁 showCount 截断（DOM 仍受窗口约束）
+  const virtualEnabled = orders.length > VIRTUAL_THRESHOLD && !showSkeleton
   // P0-222：仅完成页追加 companyHit 公司过滤（唯一出口）；待办/已预约/全部 Tab 走原样零改动
   const displayOrders = useMemo(
-    () => (fixedStatus === '已完成' ? orders.filter((o) => companyHit(o, currentCompany)) : orders).slice(0, showCount),
-    [orders, showCount, fixedStatus, currentCompany],
+    () => {
+      const filtered = fixedStatus === '已完成' ? orders.filter((o) => companyHit(o, currentCompany)) : orders
+      return virtualEnabled ? filtered : filtered.slice(0, showCount)
+    },
+    [orders, showCount, fixedStatus, currentCompany, virtualEnabled],
   )
   const groupMode = filter.groupMode ?? 'region'
   // P0-167：已完成Tab分组键=实际完工日（与统计按天明细口径一致）；其余Tab维持原键
@@ -140,7 +145,6 @@ export default function OrderList({ fixedStatus }: Props) {
     ...g.orders.map((o) => ({ key: o.id, type: 'card' as const, order: o })),
   ]), [orderGroups])
   // P0-169：多选模式移除，虚拟列表不再受其抑制
-  const virtualEnabled = orders.length > VIRTUAL_THRESHOLD && !showSkeleton
   const virtual = useVirtualRows(flatRows, virtualEnabled)
 
   useEffect(() => {
@@ -281,7 +285,7 @@ export default function OrderList({ fixedStatus }: Props) {
                 </section>
               ))
             )}
-            {orders.length > showCount && (
+            {!virtualEnabled && orders.length > showCount && (
               <button
                 onClick={() => setShowCount((n) => n + 50)}
                 className="order-list__load-more"
