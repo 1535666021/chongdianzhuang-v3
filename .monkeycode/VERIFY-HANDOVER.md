@@ -42,6 +42,8 @@
 
 **P0-252 已销号 @1307eb65**（11-25 晚复验全过）：基线 dad9b17d→1307eb65 diff 恰 3 src 文件零超范围（Statistics.tsx ALL_MONTHS 哨兵+首项「全部」+selectedOrders 三元短路零拷贝+exportMonth 统一变量联动导出钮/ProfitDetailModal+rangeLabel 传参/MonthDetailSections 两组件 rangeLabel 默认'该月'空态文案/releaseNotes 头插 1 条）；runner 9/9 FAILS=0（ALL 5=5 含 createdAt 兜底单/原引用返回/2026-11 过滤 3 单/10 月 1/9 月 1/哨兵不在真实月份集/空集合 ALL=0）；parser 回归 20/20；build 三连全过；任务书 F 条"另发现不改"已证保持原样（exportReconciliationCsv 函数体零改动，文件名 对账单_${month}.xlsx 原样，ALL 传'全部'由传参侧成立）。
 
+**P0-265 已销号 @bc49b28**（11-28 06:20 复验全过+部署成功）：task/P0-265-list-filter-region（262/263/264 合并单）复验（runner 15/15：省市区三级树聚合/乡镇需街道后缀/路径导航/匹配七例——初报 4 FAIL 均我方构造错：树为虚拟根 4 层模型误设、皖苏同省误数、乡镇格式误用；回归 20/20+build 三连）→合并（5 src：RegionTree.tsx/regionTreeModel.ts 新增+OrderList/App/releaseNotes）；部署 run 46075628980；线上 version.json=bc49b28 对拍全同。
+
 **P0-259 已销号 @4199e4c**（11-27 07:12 复验全过+部署成功）：task/P0-259-remove-oneoff-tools 复验（grep 五组件名+五菜单 id 全仓零命中 ZERO-DANGLING/SubBrandFix 独立 case/reconcile 保留/haptics 保留+分支 build 三连+合并态 build 三连）。**两处合并纠正（如实标注）**：①分支 orderStore 删 256-R2 registerFrequencyOrdersProvider=会致 256-R1 懒重算回退→合并时保留 main 版 provider（256R1-regress 3/3 无回退实证）；②分支基于老 main 缺 260 resolveCustomerReceivable→orderCalc/orderStore 保 main 版只删四组件文件+SettingsPage 菜单合并；③交付声明「orderCalc 死函数删」实 diff 无此项=未执行待裁。部署 run 45909209001；线上 version.json=4199e4c 对拍全同。
 
 **P0-257-R1 已销号 @956448e**（11-27 02:00 复验全过+部署成功）：task/P0-257-R1-direct-system 分支复验（runner 12/12：单号映射/客户名标准化/品牌透传/收费/日期三源/安装费近似/无字段置 0/月份过滤/空范围不造假/时间戳转 ISO——初报 3 FAIL 均我方构造错：name 字段名/月份显式传参/恒 0 设计语义误读为直读；回归 20/20+build 三连）→合并（reconcile.ts +50/ReconcileTool 20 改恰声明增量）；部署 run 45871594298；线上 version.json=956448e 对拍全同。
