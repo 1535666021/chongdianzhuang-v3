@@ -25,3 +25,8 @@ D. 保留滑动取消阈值、震动反馈；姓名/电话/地址/水印等所�
 
 施工队自行部署
 监理窗口 · 签发完毕
+
+## 已完成页补充实证（2026-11-28 21:25）
+- 首页/已完成页都用同一 `OrderCard`，但 phone/address/contact 的 `onClick` 没有像 header 一样判断 `longPressFiredRef`。
+- 结果：长按复制后松手，click 仍触发 `tel:`/高德导航，复制 toast 被后续动作盖掉/用户误判为不支持；已完成页更容易在电话/地址上长按，所以更明显。
+- 必须修：所有长按热区（header、phone、contacts、address、水印）统一在 click 前检查 `longPressFiredRef`，长按后跳过本次 click。
